@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Three comic panels with an amber page corner folding over. Safe zone is the central 66dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#F2F2F5"
+        android:pathData="M34,32h16a4,4 0,0 1,4 4v36a4,4 0,0 1,-4 4h-16a4,4 0,0 1,-4 -4v-36a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#F2F2F5"
+        android:pathData="M62,32h12a4,4 0,0 1,4 4v12a4,4 0,0 1,-4 4h-12a4,4 0,0 1,-4 -4v-12a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#F2F2F5"
+        android:pathData="M62,56h16v8l-12,12h-4a4,4 0,0 1,-4 -4v-12a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#F2B544"
+        android:pathData="M78,64v8a4,4 0,0 1,-4 4h-8z" />
+</vector>
