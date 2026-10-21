@@ -187,6 +187,8 @@ private fun Reader(
         val balloons by produceState<List<Rect>?>(null, host, spread) {
             value = null
             val pages = spreads[spread]
+            // Outside balloon mode this only serves double taps, so let page turns finish first.
+            if (!balloonMode) delay(700)
             val found = store.detectionsFor(comic.id, pages) { p -> cache.get(p, host.decodeW, host.decodeH) }
             val placed = SpreadLayout.place(pages, double, rtl, wPx.toFloat(), hPx.toFloat()) { p ->
                 cache.peek(p, host.decodeW, host.decodeH)?.let { IntSize(it.width, it.height) }
