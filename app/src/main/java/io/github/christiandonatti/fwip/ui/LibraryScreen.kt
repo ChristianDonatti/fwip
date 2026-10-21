@@ -124,9 +124,9 @@ private fun shelfFromToken(t: String?): Shelf? {
     if (t == null || t.length < 2) return null
     val body = t.substring(2)
     return when (t[0]) {
-        's' -> body.split('\u0000', limit = 2).let { Shelf.Series(it[0], it.getOrElse(1) { it[0] }) }
+        's' -> body.split('\u0000', limit = 2).let { parts -> Shelf.Series(parts[0], parts.getOrElse(1) { parts[0] }) }
         'f' -> Shelf.Folder(body)
-        'c' -> body.split('\u0000', limit = 2).let { Shelf.Custom(it[0], it.getOrElse(1) { "" }) }
+        'c' -> body.split('\u0000', limit = 2).let { parts -> Shelf.Custom(parts[0], parts.getOrElse(1) { "" }) }
         'm' -> runCatching { Shelf.Smart(SmartKind.valueOf(body)) }.getOrNull()
         else -> null
     }
