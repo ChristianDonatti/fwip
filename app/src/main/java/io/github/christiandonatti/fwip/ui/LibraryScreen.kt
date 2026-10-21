@@ -104,6 +104,7 @@ fun LibraryScreen(
                 .navigationBarsPadding()
         ) {
             val wide = maxWidth >= 840.dp
+            val boxHeight = maxHeight
             val gutter = if (wide) 48.dp else 20.dp
             Column(Modifier.fillMaxSize()) {
                 Header(
@@ -125,7 +126,7 @@ fun LibraryScreen(
                         onOpen = onOpen,
                         onFolder = { folderFilter = it; tab = Tab.Library },
                         gutter = gutter,
-                        maxHeight = maxHeight,
+                        maxHeight = boxHeight,
                     )
                     tab == Tab.Home -> PhoneHome(
                         state = state,
