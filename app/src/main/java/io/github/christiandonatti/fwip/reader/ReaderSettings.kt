@@ -1,6 +1,7 @@
 package io.github.christiandonatti.fwip.reader
 
 import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
