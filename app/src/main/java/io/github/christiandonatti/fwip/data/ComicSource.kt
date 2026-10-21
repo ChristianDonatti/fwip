@@ -74,9 +74,12 @@ private fun openNet(context: Context, comic: Comic): ComicSource {
         return when (comic.format) {
             ComicFormat.ZIP -> ZipComicSource(ZipFile(io.github.christiandonatti.fwip.remote.BlockChannel(reader)), reader)
             ComicFormat.SEVEN_ZIP -> SevenZipComicSource(SevenZFile(io.github.christiandonatti.fwip.remote.BlockChannel(reader)), reader)
-            ComicFormat.RAR -> RarComicSource.open(context, comic) {
-                Archive(io.github.christiandonatti.fwip.remote.NetRarVolumes(reader), null, null)
-            }.also { (it as? RarComicSource)?.onFinished = { runCatching { reader.close() } } }
+            ComicFormat.RAR -> RarComicSource.open(
+                context,
+                comic,
+                archive = { Archive(io.github.christiandonatti.fwip.remote.NetRarVolumes(reader), null, null) },
+                rar5 = { PositionalInStream(reader.length, reader::read) },
+            ).also { (it as? Finishing)?.onFinished = { runCatching { reader.close() } } }
             ComicFormat.PDF -> error("handled above")
         }
     } catch (e: Exception) {
@@ -285,10 +288,16 @@ private class SevenZipComicSource(
  * so pages cannot be pulled out one at a time in reading order. Pages become readable as soon as
  * their file is written, and a fully extracted comic opens instantly the next time.
  */
+/** A source that keeps reading its archive in the background and can say when it is done. */
+private interface Finishing {
+    /** Called once the archive is no longer read (all pages out, or closed). */
+    var onFinished: (() -> Unit)?
+}
+
 private class RarComicSource(
     private val archive: Archive,
     private val dir: File,
-) : ComicSource {
+) : ComicSource, Finishing {
     private val pages: List<FileHeader> = archive.fileHeaders
         .filter { !it.isDirectory && isPageImage(it.fileName) }
         .sortedWith(compareBy(NaturalOrder) { it.fileName })
@@ -306,8 +315,7 @@ private class RarComicSource(
     @Volatile private var closed = false
     @Volatile private var finished = false
 
-    /** Called once the archive is no longer read (all pages out, or closed). */
-    @Volatile var onFinished: (() -> Unit)? = null
+    @Volatile override var onFinished: (() -> Unit)? = null
         set(value) {
             field = value
             if (finished) value?.invoke()
@@ -423,6 +431,7 @@ private class RarComicSource(
             context: Context,
             comic: Comic,
             archive: () -> Archive = { Archive(ArchiveCache.fileFor(context, comic)) },
+            rar5: () -> net.sf.sevenzipjbinding.IInStream = { localInStream(ArchiveCache.fileFor(context, comic)) },
         ): ComicSource {
             val root = File(context.cacheDir, "pages").apply { mkdirs() }
             val dir = File(root, sha1(comic.id))
@@ -432,8 +441,214 @@ private class RarComicSource(
                 ?.sortedByDescending { it.lastModified() }
                 ?.drop(KEEP - 1)
                 ?.forEach { it.deleteRecursively() }
-            return RarComicSource(archive(), dir)
+            return try {
+                RarComicSource(archive(), dir)
+            } catch (e: com.github.junrar.exception.UnsupportedRarV5Exception) {
+                Rar5ComicSource(rar5(), dir)
+            }
         }
+    }
+}
+
+/** A seekable stream for 7-Zip over anything that can be read at a position. */
+private class PositionalInStream(
+    private val length: Long,
+    private val readAt: (Long, ByteArray, Int, Int) -> Int,
+    private val onClose: () -> Unit = {},
+) : net.sf.sevenzipjbinding.IInStream {
+    private var pos = 0L
+
+    override fun seek(offset: Long, seekOrigin: Int): Long {
+        pos = when (seekOrigin) {
+            net.sf.sevenzipjbinding.ISeekableStream.SEEK_SET -> offset
+            net.sf.sevenzipjbinding.ISeekableStream.SEEK_CUR -> pos + offset
+            net.sf.sevenzipjbinding.ISeekableStream.SEEK_END -> length + offset
+            else -> throw net.sf.sevenzipjbinding.SevenZipException("Bad seek origin $seekOrigin")
+        }
+        return pos
+    }
+
+    // 7-Zip expects 0, not -1, at the end of the stream.
+    override fun read(data: ByteArray): Int {
+        if (data.isEmpty() || pos >= length) return 0
+        val n = try {
+            readAt(pos, data, 0, data.size)
+        } catch (e: java.io.IOException) {
+            throw net.sf.sevenzipjbinding.SevenZipException("Read failed", e)
+        }
+        if (n <= 0) return 0
+        pos += n
+        return n
+    }
+
+    override fun close() = onClose()
+}
+
+private fun localInStream(file: File): net.sf.sevenzipjbinding.IInStream {
+    val raf = java.io.RandomAccessFile(file, "r")
+    return PositionalInStream(raf.length(), { pos, buf, off, len ->
+        synchronized(raf) {
+            raf.seek(pos)
+            raf.read(buf, off, len)
+        }
+    }, onClose = { runCatching { raf.close() } })
+}
+
+/**
+ * RAR5 comics (what recent WinRAR versions make by default), read with 7-Zip. Like
+ * [RarComicSource], pages are extracted in archive order on a background thread, which
+ * also suits solid archives, and become readable one by one.
+ */
+private class Rar5ComicSource(
+    private val input: net.sf.sevenzipjbinding.IInStream,
+    private val dir: File,
+) : ComicSource, Finishing {
+    private val archive: net.sf.sevenzipjbinding.IInArchive = try {
+        net.sf.sevenzipjbinding.SevenZip.openInArchive(null, input)
+    } catch (e: Exception) {
+        runCatching { input.close() }
+        throw e
+    }
+
+    private val items: List<Pair<Int, String>> = (0 until archive.numberOfItems).mapNotNull { i ->
+        val path = archive.getStringProperty(i, net.sf.sevenzipjbinding.PropID.PATH) ?: return@mapNotNull null
+        val folder = archive.getProperty(i, net.sf.sevenzipjbinding.PropID.IS_FOLDER) as? Boolean ?: false
+        if (folder) null else i to path
+    }
+    private val pages: List<Int> = items.filter { isPageImage(it.second) }.sortedWith(compareBy(NaturalOrder) { it.second }).map { it.first }
+    private val pageOf: Map<Int, Int> = pages.withIndex().associate { (page, item) -> item to page }
+    private val infoItem: Int? = items.filter { isComicInfo(it.second) }.minByOrNull { it.second.count { c -> c == '/' || c == '\\' } }?.first
+
+    private val ready = BooleanArray(pages.size)
+    private val lock = Object()
+    private val complete = File(dir, ".complete")
+    private val infoFile = File(dir, "comicinfo.xml")
+    @Volatile private var comicInfo: ByteArray? = null
+    @Volatile private var closed = false
+    @Volatile private var finished = false
+    @Volatile private var failure: Throwable? = null
+
+    @Volatile override var onFinished: (() -> Unit)? = null
+        set(value) {
+            field = value
+            if (finished) value?.invoke()
+        }
+
+    override val pageCount: Int get() = pages.size
+
+    init {
+        dir.mkdirs()
+        if (complete.exists() && pages.indices.all { pageFile(it).length() > 0 }) {
+            ready.fill(true)
+            if (infoFile.exists()) comicInfo = runCatching { infoFile.readBytes() }.getOrNull()
+            finished = true
+            release()
+        } else {
+            Thread(::extractAll, "fwip-rar5").apply { isDaemon = true }.start()
+        }
+    }
+
+    private fun pageFile(i: Int) = File(dir, "p$i")
+
+    private fun release() {
+        runCatching { archive.close() }
+        runCatching { input.close() }
+    }
+
+    private fun extractAll() {
+        try {
+            val wanted = (pages + listOfNotNull(infoItem)).sorted().toIntArray()
+            archive.extract(wanted, false, object : net.sf.sevenzipjbinding.IArchiveExtractCallback {
+                private var current = -1
+                private var tmp: File? = null
+                private var out: java.io.OutputStream? = null
+
+                override fun getStream(index: Int, mode: net.sf.sevenzipjbinding.ExtractAskMode): net.sf.sevenzipjbinding.ISequentialOutStream? {
+                    if (closed) throw net.sf.sevenzipjbinding.SevenZipException("closed")
+                    if (mode != net.sf.sevenzipjbinding.ExtractAskMode.EXTRACT) return null
+                    current = index
+                    val stream: java.io.OutputStream = if (index == infoItem) {
+                        tmp = null
+                        ByteArrayOutputStream()
+                    } else {
+                        val f = File(dir, "p${pageOf[index]}.${System.nanoTime()}.part")
+                        tmp = f
+                        f.outputStream().buffered()
+                    }
+                    out = stream
+                    return net.sf.sevenzipjbinding.ISequentialOutStream { data ->
+                        if (closed) throw net.sf.sevenzipjbinding.SevenZipException("closed")
+                        stream.write(data)
+                        data.size
+                    }
+                }
+
+                override fun prepareOperation(mode: net.sf.sevenzipjbinding.ExtractAskMode) {}
+
+                override fun setOperationResult(result: net.sf.sevenzipjbinding.ExtractOperationResult) {
+                    val stream = out ?: return
+                    out = null
+                    runCatching { stream.close() }
+                    if (result != net.sf.sevenzipjbinding.ExtractOperationResult.OK) {
+                        tmp?.delete()
+                        throw net.sf.sevenzipjbinding.SevenZipException(result.toString())
+                    }
+                    if (current == infoItem && stream is ByteArrayOutputStream) {
+                        val bytes = stream.toByteArray()
+                        runCatching { infoFile.writeBytes(bytes) }
+                        synchronized(lock) { comicInfo = bytes; lock.notifyAll() }
+                        return
+                    }
+                    val page = pageOf[current] ?: return
+                    tmp?.renameTo(pageFile(page))
+                    synchronized(lock) { ready[page] = true; lock.notifyAll() }
+                }
+
+                override fun setTotal(total: Long) {}
+                override fun setCompleted(complete: Long) {}
+            })
+            if (!closed) complete.createNewFile()
+        } catch (t: Throwable) {
+            if (!closed) failure = t
+        } finally {
+            synchronized(lock) {
+                finished = true
+                lock.notifyAll()
+            }
+            release()
+            onFinished?.invoke()
+        }
+    }
+
+    private fun waitFor(index: Int) {
+        synchronized(lock) {
+            while (!ready[index] && !finished && !closed) lock.wait(250)
+        }
+    }
+
+    override fun decodePage(index: Int, maxWidth: Int, maxHeight: Int): Bitmap? {
+        waitFor(index)
+        if (!ready[index]) throw failure ?: java.io.IOException(str(R.string.error_page_missing))
+        return ImageDecoding.decodeBytes(pageFile(index).readBytes(), maxWidth, maxHeight)
+    }
+
+    override fun pageSize(index: Int): android.util.Size? {
+        waitFor(index)
+        if (!ready[index]) return null
+        return boundsOf { pageFile(index).inputStream() }
+    }
+
+    override fun readComicInfo(): ByteArray? {
+        if (infoItem == null) return null
+        synchronized(lock) {
+            while (comicInfo == null && !finished && !closed) lock.wait(250)
+        }
+        return comicInfo
+    }
+
+    override fun close() {
+        closed = true
+        synchronized(lock) { lock.notifyAll() }
     }
 }
 

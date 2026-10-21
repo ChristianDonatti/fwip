@@ -85,6 +85,13 @@ class NetFolderTest {
         checkRar("Sub/Solid.cbr")
     }
 
+    /** RAR5 is left to 7-Zip on the device; junrar must refuse it in a way the app can catch. */
+    @Test(expected = com.github.junrar.exception.UnsupportedRarV5Exception::class)
+    fun recognisesRar5() {
+        assumeTrue(address != null)
+        BlockReader(client().open("New.cbr")).use { reader -> Archive(NetRarVolumes(reader), null, null) }
+    }
+
     @Test
     fun writesSyncFiles() {
         assumeTrue(address != null)

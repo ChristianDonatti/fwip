@@ -1,0 +1,26 @@
+Fwip is a comic reader for Android tablets and phones, inspired by Panels on iOS. It is fluid, simple and made to feel like reading a real comic book.
+
+<b>Reading</b>
+<ul>
+<li>Paper page curl that follows your finger, with two-page spreads on tablets in landscape</li>
+<li>Guided reading panel by panel or balloon by balloon, found on the device; double tap a balloon to zoom right into it</li>
+<li>Page overview, bookmarks, manga mode (right to left), automatic margin cropping, wide double pages shown whole</li>
+<li>Comfort: brightness just for reading, warm night light, rotation lock, configurable tap zones, volume keys</li>
+</ul>
+
+<b>Library</b>
+<ul>
+<li>CBZ, CBR (including solid archives), CB7 and PDF from your own folders</li>
+<li>Series and issue numbers from ComicInfo.xml or file names, folders, collections, read and unread, search</li>
+<li>Next issue at the end of a comic, a home screen widget and shortcuts to continue reading</li>
+</ul>
+
+<b>Your NAS and your devices</b>
+<ul>
+<li>Network folders over SMB or WebDAV, read in place or copied for offline reading</li>
+<li>Komga, Kavita and OPDS servers, with reading progress synced back to Komga</li>
+<li>Progress, bookmarks and collections kept in step between your tablet and phone through a shared folder (Syncthing, a NAS folder and so on), no account needed</li>
+<li>Backup and restore in a single file</li>
+</ul>
+
+Free software under the GPL 3.0. No ads, no tracking, no account.

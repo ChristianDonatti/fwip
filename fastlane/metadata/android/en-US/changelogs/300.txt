@@ -1,0 +1,1 @@
+First public release: page curl, guided reading by panel or balloon, library with series and collections, ComicInfo.xml, Komga/Kavita/OPDS servers, SMB and WebDAV network folders, sync between devices through a shared folder, backups, page overview, bookmarks, reading comfort settings, widget and shortcuts.

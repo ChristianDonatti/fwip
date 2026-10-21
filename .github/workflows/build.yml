@@ -92,8 +92,9 @@ jobs:
           PY
           cd /tmp/fwip/pages
           zip -q ../share/Test.cbz p1.png p2.png p3.png
-          rar a -idq ../share/Plain.cbr p1.png p2.png p3.png
-          rar a -s -idq ../share/Sub/Solid.cbr p1.png p2.png p3.png
+          rar a -ma4 -idq ../share/Plain.cbr p1.png p2.png p3.png
+          rar a -ma4 -s -idq ../share/Sub/Solid.cbr p1.png p2.png p3.png
+          rar a -ma5 -s -idq ../share/New.cbr p1.png p2.png p3.png
           chmod -R a+rwX /tmp/fwip
           sudo useradd -M fwip || true
           (echo fwippass; echo fwippass) | sudo smbpasswd -a -s fwip

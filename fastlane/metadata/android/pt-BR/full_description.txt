@@ -1,0 +1,26 @@
+Fwip é um leitor de HQs para tablets e celulares Android, inspirado no Panels do iOS. É fluido, simples e feito para parecer que você está lendo uma revista de verdade.
+
+<b>Leitura</b>
+<ul>
+<li>Virada de página de papel que acompanha o dedo, com páginas duplas no tablet deitado</li>
+<li>Leitura guiada quadro a quadro ou balão por balão, detectados no próprio aparelho; dois toques num balão dão zoom direto nele</li>
+<li>Grade de páginas, marcadores, modo mangá (da direita para a esquerda), corte automático de margens, páginas duplas largas inteiras</li>
+<li>Conforto: brilho próprio para a leitura, luz quente para a noite, trava de rotação, zonas de toque configuráveis, botões de volume</li>
+</ul>
+
+<b>Biblioteca</b>
+<ul>
+<li>CBZ, CBR (inclusive arquivos sólidos), CB7 e PDF das suas próprias pastas</li>
+<li>Séries e números das edições pelo ComicInfo.xml ou pelo nome do arquivo, pastas, coleções, lidas e não lidas, busca</li>
+<li>Próxima edição no fim da HQ, widget na tela inicial e atalhos para continuar lendo</li>
+</ul>
+
+<b>Seu NAS e seus aparelhos</b>
+<ul>
+<li>Pastas de rede por SMB ou WebDAV, lidas direto ou copiadas para ler sem internet</li>
+<li>Servidores Komga, Kavita e OPDS, com o progresso sincronizado de volta no Komga</li>
+<li>Progresso, marcadores e coleções iguais no tablet e no celular por uma pasta compartilhada (Syncthing, uma pasta do NAS etc.), sem precisar de conta</li>
+<li>Backup e restauração num único arquivo</li>
+</ul>
+
+Software livre sob a GPL 3.0. Sem anúncios, sem rastreamento, sem conta.

@@ -12,8 +12,9 @@ android {
         applicationId = "io.github.christiandonatti.fwip"
         minSdk = 26
         targetSdk = 35
-        versionCode = (System.getenv("FWIP_VERSION_CODE") ?: "1").toInt()
-        versionName = "0.2.0"
+        // Test builds pass the CI run number; releases pass a code derived from the tag (v0.3.0 -> 300).
+        versionCode = (System.getenv("FWIP_VERSION_CODE") ?: "300").toInt()
+        versionName = System.getenv("FWIP_VERSION_NAME") ?: "0.3.0"
 
         ndk {
             // Phones and tablets; keeps the ML runtime from bloating the APK with emulator builds.
@@ -21,9 +22,19 @@ android {
         }
     }
 
+    // The private release key only exists in CI secrets (see RELEASING.md).
+    val releaseStore = System.getenv("FWIP_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
+
     signingConfigs {
+        if (releaseStore != null) {
+            create("release") {
+                storeFile = releaseStore
+                storePassword = System.getenv("FWIP_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("FWIP_KEY_ALIAS")
+                keyPassword = System.getenv("FWIP_KEY_PASSWORD")
+            }
+        }
         // Development key kept in the repo so every test build installs over the previous one.
-        // Replace with a private key (kept out of the repo) before an official release.
         create("dev") {
             storeFile = rootProject.file("keystore/fwip-dev.jks")
             storePassword = "fwipdev"
@@ -38,7 +49,7 @@ android {
         }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("dev")
+            signingConfig = signingConfigs.getByName(if (releaseStore != null) "release" else "dev")
         }
     }
 
@@ -103,6 +114,8 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.27.1")
     implementation("org.tukaani:xz:1.10")
     implementation("com.github.junrar:junrar:7.5.5")
+    // RAR5 archives (newer WinRAR default), which junrar cannot read
+    implementation("com.github.omicronapps:7-Zip-JBinding-4Android:Release-16.02-2.03")
 
     // Network folders: SMB shares (smbj, with Bouncy Castle for NTLM) and WebDAV (OkHttp)
     implementation("com.hierynomus:smbj:0.13.0")

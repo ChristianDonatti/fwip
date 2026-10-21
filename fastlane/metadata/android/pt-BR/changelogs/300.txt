@@ -1,0 +1,1 @@
+Primeira versão pública: virada de página de papel, leitura guiada por quadro ou balão, biblioteca com séries e coleções, ComicInfo.xml, servidores Komga/Kavita/OPDS, pastas de rede SMB e WebDAV, sincronização entre aparelhos por uma pasta compartilhada, backup, grade de páginas, marcadores, ajustes de conforto, widget e atalhos.
