@@ -238,7 +238,37 @@ class LibraryRepository(private val context: Context) {
     /** ComicInfo per comic; a null value means "looked, there is none". */
     private val metas: MutableMap<String, ComicMeta?> = loadMetas()
 
-    fun metaFor(comic: Comic): ComicMeta? = synchronized(metas) { metas[comic.id] }
+    /** ComicInfo.xml, with what was found online or typed in by the user on top. */
+    fun metaFor(comic: Comic): ComicMeta? {
+        val file = synchronized(metas) { metas[comic.id] }
+        val extra = onlineFor(comic.id)?.meta ?: return file
+        return file?.overlaidWith(extra) ?: extra
+    }
+
+    // ---------- Metadata found online or edited by hand ----------
+
+    private val onlineFile = File(context.filesDir, "metadata_online.json")
+    private val online: MutableMap<String, OnlineMeta> = loadOnline()
+
+    fun onlineFor(id: String): OnlineMeta? = synchronized(online) { online[id] }
+
+    fun allOnline(): Map<String, OnlineMeta> = synchronized(online) { online.toMap() }
+
+    fun setOnline(id: String, value: OnlineMeta?) {
+        synchronized(online) {
+            if (value == null) online.remove(id) else online[id] = value
+            runCatching {
+                val o = JSONObject()
+                online.forEach { (k, v) -> o.put(k, v.toJson()) }
+                onlineFile.writeText(o.toString())
+            }
+        }
+    }
+
+    private fun loadOnline(): MutableMap<String, OnlineMeta> = runCatching {
+        val o = JSONObject(onlineFile.readText())
+        o.keys().asSequence().associateWith { OnlineMeta.fromJson(o.getJSONObject(it)) }.toMutableMap()
+    }.getOrDefault(mutableMapOf())
 
     private fun loadMetas(): MutableMap<String, ComicMeta?> = runCatching {
         val root = JSONObject(metasFile.readText())

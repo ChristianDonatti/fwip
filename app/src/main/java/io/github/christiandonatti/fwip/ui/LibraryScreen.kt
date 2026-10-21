@@ -145,12 +145,40 @@ private fun shelfFromToken(t: String?): Shelf? {
 }
 
 @Composable
-fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: ServerActions, syncActions: SyncActions) {
+fun LibraryScreen(
+    state: LibraryState,
+    actions: LibraryActions,
+    serverActions: ServerActions,
+    syncActions: SyncActions,
+    metaActions: MetaActions,
+) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var shelfToken by rememberSaveable { mutableStateOf<String?>(null) }
     val shelf = shelfFromToken(shelfToken)
     var showFolders by remember { mutableStateOf(false) }
     var showSync by rememberSaveable { mutableStateOf(false) }
+    // Comic Vine: which comics to identify, which one to edit by hand, and the key dialog.
+    var identifyFor by remember { mutableStateOf<List<String>?>(null) }
+    var editFor by remember { mutableStateOf<String?>(null) }
+    var askKey by remember { mutableStateOf(false) }
+    var afterKey by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var showUnresolved by remember { mutableStateOf(false) }
+    val identify: (List<String>) -> Unit = { ids ->
+        if (state.cvKey.isBlank()) {
+            askKey = true
+            afterKey = { identifyFor = ids }
+        } else {
+            identifyFor = ids
+        }
+    }
+    val identifyLibrary: () -> Unit = {
+        if (state.cvKey.isBlank()) {
+            askKey = true
+            afterKey = metaActions.identifyLibrary
+        } else {
+            metaActions.identifyLibrary()
+        }
+    }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var menuFor by remember { mutableStateOf<String?>(null) }
     var pickerFor by remember { mutableStateOf<List<String>?>(null) }
@@ -206,6 +234,7 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
             ) { current ->
                 if (current != null) {
                     ShelfScreen(
+                        onIdentify = { list -> identify(list.map { it.comic.id }) },
                         shelf = current,
                         state = state,
                         actions = actions,
@@ -258,6 +287,18 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
             } else if (!wide && shelf == null && browsingServer == null && !showAbout && (state.items.isNotEmpty() || tab == Tab.Servers)) {
                 PhoneTabBar(tab, onTab = { tab = it }, Modifier.align(Alignment.BottomCenter))
             }
+            if (!selection.active) {
+                MetaStatus(
+                    work = state.metaWork,
+                    message = state.metaMessage,
+                    unresolved = state.unresolved.size,
+                    onReview = { showUnresolved = true },
+                    onDismiss = metaActions.dismissMessage,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = if (!wide && shelf == null) 84.dp else 0.dp),
+                )
+            }
         }
     }
 
@@ -269,6 +310,8 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
             onAdd = { showFolders = false; actions.addFolder() },
             onAddNet = { showFolders = false; tab = Tab.Servers },
             onSync = { showFolders = false; showSync = true },
+            onIdentifyLibrary = { showFolders = false; identifyLibrary() },
+            onCvKey = { showFolders = false; askKey = true; afterKey = null },
             onRemove = actions.removeFolder,
             onDismiss = { showFolders = false },
         )
@@ -304,8 +347,50 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
                     menuFor = null
                     shelfToken = Shelf.Series(seriesKeyOf, item.series.name).toToken()
                 },
+                onShown = { metaActions.loadCredits(id) },
+                onIdentify = {
+                    menuFor = null
+                    identify(state.items.filter { seriesKey(it.series.name) == seriesKeyOf }.map { it.comic.id }.ifEmpty { listOf(id) })
+                },
+                onEdit = { menuFor = null; editFor = id },
             )
         }
+    }
+
+    if (askKey) {
+        ComicVineKeyDialog(
+            current = state.cvKey,
+            onSave = { key ->
+                metaActions.setKey(key)
+                askKey = false
+                afterKey?.invoke()
+                afterKey = null
+            },
+            onDismiss = { askKey = false; afterKey = null },
+        )
+    }
+
+    identifyFor?.let { ids ->
+        val list = ids.mapNotNull(state::item)
+        if (list.isEmpty() || state.cvKey.isBlank()) {
+            identifyFor = null
+        } else {
+            IdentifyDialog(list, state.cvKey, metaActions, onDismiss = { identifyFor = null })
+        }
+    }
+
+    editFor?.let { id ->
+        val item = state.item(id)
+        if (item == null) editFor = null else EditInfoDialog(item, metaActions, onDismiss = { editFor = null })
+    }
+
+    if (showUnresolved) {
+        val groups = state.unresolved.map { g -> g.mapNotNull(state::item) }.filter { it.isNotEmpty() }
+        UnresolvedDialog(
+            groups,
+            onPick = { group -> showUnresolved = false; identify(group.map { it.comic.id }) },
+            onDismiss = { showUnresolved = false },
+        )
     }
 
     pickerFor?.let { ids ->
@@ -1023,6 +1108,7 @@ private fun Hint(text: String) {
 /** A series, folder or collection opened full screen. */
 @Composable
 private fun ShelfScreen(
+    onIdentify: (List<LibraryItem>) -> Unit,
     shelf: Shelf,
     state: LibraryState,
     actions: LibraryActions,
@@ -1112,6 +1198,14 @@ private fun ShelfScreen(
                             height = 48.dp,
                             style = PillStyle.Ghost,
                         )
+                        if (shelf is Shelf.Series || shelf is Shelf.Folder) {
+                            PillButton(
+                                str(R.string.cv_find_series),
+                                onClick = { onIdentify(list) },
+                                height = 48.dp,
+                                style = PillStyle.Ghost,
+                            )
+                        }
                     }
                 }
             }
@@ -1231,6 +1325,8 @@ private fun FoldersDialog(
     onAdd: () -> Unit,
     onAddNet: () -> Unit,
     onSync: () -> Unit,
+    onIdentifyLibrary: () -> Unit,
+    onCvKey: () -> Unit,
     onRemove: (Uri) -> Unit,
     onDismiss: () -> Unit,
     onAbout: () -> Unit,
@@ -1258,6 +1354,8 @@ private fun FoldersDialog(
         PillButton(str(R.string.add_folder), onAdd, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
         PillButton(str(R.string.add_network_folder), onAddNet, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
         SheetButton(str(R.string.sync_title), onSync)
+        SheetButton(str(R.string.cv_identify_library), onIdentifyLibrary)
+        SheetButton(str(R.string.cv_title), onCvKey)
         SheetButton(str(R.string.about), onAbout)
     }
 }

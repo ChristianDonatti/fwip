@@ -14,6 +14,7 @@ import io.github.christiandonatti.fwip.data.seriesKey
 import io.github.christiandonatti.fwip.data.sortedFor
 import io.github.christiandonatti.fwip.data.LibraryItem
 import io.github.christiandonatti.fwip.data.LibraryRepository
+import io.github.christiandonatti.fwip.data.overlaidWith
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,9 @@ data class SyncInfo(
     val failed: Boolean = false,
 )
 
+/** A metadata job in progress (identifying a series or the whole library). */
+data class MetaWork(val label: String, val done: Int, val total: Int)
+
 data class LibraryState(
     val items: List<LibraryItem> = emptyList(),
     val folders: List<Uri> = emptyList(),
@@ -44,6 +48,13 @@ data class LibraryState(
     /** A book opened straight from a server or a fresh download, not (yet) in the library. */
     val outsideComic: Comic? = null,
     val sync: SyncInfo = SyncInfo(),
+    /** The user's Comic Vine API key; blank until they add one. */
+    val cvKey: String = "",
+    val metaWork: MetaWork? = null,
+    /** Result of the last metadata job, shown once. */
+    val metaMessage: String? = null,
+    /** Series (as lists of comic ids) the automatic search could not settle on its own. */
+    val unresolved: List<List<String>> = emptyList(),
 ) {
     /** Started but not finished, most recent first. */
     val continueReading: List<LibraryItem>
@@ -106,6 +117,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     val repository = LibraryRepository(app)
     private val serverStore = io.github.christiandonatti.fwip.remote.ServerStore(app)
     private val sync = io.github.christiandonatti.fwip.data.SyncManager(app, repository)
+    private val metaPrefs = app.getSharedPreferences("fwip_meta", android.content.Context.MODE_PRIVATE)
 
     private val _state = MutableStateFlow(LibraryState())
     val state: StateFlow<LibraryState> = _state.asStateFlow()
@@ -121,6 +133,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
             collections = repository.collections(),
             servers = serverStore.load(),
             sync = SyncInfo(sync.place?.uri, sync.lastSync, sync.devices),
+            cvKey = metaPrefs.getString("cv_key", "").orEmpty(),
         )
         refresh()
     }
@@ -247,13 +260,158 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Progress, collections and bookmarks may have changed underneath (sync, restore). */
+    /** Progress, collections, bookmarks and metadata may have changed underneath (sync, restore). */
     private fun reloadReadingState() {
         _state.update { s ->
             s.copy(
-                items = s.items.map { it.copy(progress = repository.progressFor(it.comic.id)) },
+                items = s.items.map { itemFor(it.comic) },
                 collections = repository.collections(),
             )
+        }
+    }
+
+    // ---------- Metadata (Comic Vine and manual edits) ----------
+
+    fun setCvKey(key: String) {
+        metaPrefs.edit().putString("cv_key", key.trim()).apply()
+        _state.update { it.copy(cvKey = key.trim()) }
+    }
+
+    fun dismissMetaMessage() = _state.update { it.copy(metaMessage = null) }
+
+    private fun refreshItems(ids: Collection<String>) {
+        val set = ids.toSet()
+        _state.update { s -> s.copy(items = s.items.map { if (it.comic.id in set) itemFor(it.comic) else it }) }
+        refreshHomeScreen()
+    }
+
+    /** Saves what Comic Vine says about these comics (comic id to its issue of [volume]). */
+    fun applyComicVine(volume: io.github.christiandonatti.fwip.remote.CvVolume, matches: Map<String, io.github.christiandonatti.fwip.remote.CvIssue>, total: Int) {
+        val now = System.currentTimeMillis()
+        matches.forEach { (id, issue) ->
+            repository.setOnline(
+                id,
+                io.github.christiandonatti.fwip.data.OnlineMeta(
+                    io.github.christiandonatti.fwip.remote.ComicVine.metaFor(volume, issue),
+                    source = "comicvine",
+                    issueId = issue.id,
+                    volumeId = volume.id,
+                    updated = now,
+                ),
+            )
+        }
+        refreshItems(matches.keys)
+        _state.update {
+            it.copy(
+                metaMessage = if (total <= 1) str(R.string.cv_applied_one, volume.label)
+                else str(R.string.cv_applied_many, matches.size, total, volume.label),
+                unresolved = it.unresolved.filterNot { group -> group.any { id -> id in matches } },
+            )
+        }
+        scheduleSync()
+    }
+
+    /** Writers and artists come from a separate Comic Vine call, made the first time a comic's details open. */
+    fun loadCredits(id: String) {
+        val key = _state.value.cvKey
+        val current = repository.onlineFor(id) ?: return
+        if (key.isBlank() || current.source != "comicvine" || current.creditsLoaded || current.issueId == null) return
+        viewModelScope.launch {
+            runCatching { io.github.christiandonatti.fwip.remote.ComicVine.issueCredits(key, current.issueId) }.onSuccess { credits ->
+                val latest = repository.onlineFor(id) ?: return@onSuccess
+                repository.setOnline(id, latest.copy(meta = latest.meta.overlaidWith(credits), creditsLoaded = true, updated = System.currentTimeMillis()))
+                refreshItems(listOf(id))
+            }
+        }
+    }
+
+    /** Series, number, title and year typed in by the user. */
+    fun saveManual(id: String, series: String, number: String, title: String, year: String) {
+        val base = repository.onlineFor(id)
+        val meta = (base?.meta ?: io.github.christiandonatti.fwip.data.ComicMeta()).copy(
+            series = series.trim().ifBlank { null },
+            number = number.trim().ifBlank { null },
+            title = title.trim().ifBlank { null },
+            year = year.trim().toIntOrNull(),
+        )
+        repository.setOnline(id, io.github.christiandonatti.fwip.data.OnlineMeta(meta, "manual", base?.issueId, base?.volumeId, System.currentTimeMillis(), base?.creditsLoaded ?: false))
+        refreshItems(listOf(id))
+        scheduleSync()
+    }
+
+    /** Back to what the file itself says. */
+    fun clearOnline(ids: List<String>) {
+        ids.forEach { repository.setOnline(it, null) }
+        refreshItems(ids)
+        scheduleSync()
+    }
+
+    /**
+     * Looks up every series that has no online metadata yet. A series is settled on its own
+     * only when Comic Vine has a series of exactly that name starting no later than its issues;
+     * the rest are listed for the user to pick.
+     */
+    fun identifyLibrary() {
+        val key = _state.value.cvKey
+        if (key.isBlank() || _state.value.metaWork != null) return
+        viewModelScope.launch {
+            val groups = _state.value.items
+                .filter { it.comic.remote == null && repository.onlineFor(it.comic.id) == null }
+                .groupBy { seriesKey(it.series.name) }
+                .values.toList()
+            var done = 0
+            var found = 0
+            val unresolved = mutableListOf<List<String>>()
+            var stopped: String? = null
+            for (group in groups) {
+                val name = group.first().series.name
+                _state.update { it.copy(metaWork = MetaWork(name, done, groups.size)) }
+                val years = group.mapNotNull { it.meta?.year ?: it.parsed.year }
+                try {
+                    val target = io.github.christiandonatti.fwip.remote.ComicVine.normalize(name)
+                    val exact = io.github.christiandonatti.fwip.remote.ComicVine.searchVolumes(key, name)
+                        .filter { io.github.christiandonatti.fwip.remote.ComicVine.normalize(it.name) == target }
+                    val first = years.minOrNull()
+                    val pick = when {
+                        exact.size == 1 && (first == null || (exact[0].startYear ?: 0) <= first + 1) -> exact[0]
+                        first != null -> exact.filter { (it.startYear ?: 9999) <= first + 1 }.maxByOrNull { it.startYear ?: 0 }
+                        else -> null
+                    }
+                    if (pick == null) {
+                        unresolved += group.map { it.comic.id }
+                    } else {
+                        val issues = io.github.christiandonatti.fwip.remote.ComicVine.volumeIssues(key, pick.id)
+                        val matches = io.github.christiandonatti.fwip.remote.ComicVine.match(group.map { it.comic.id to it.issueNumber }, issues)
+                        if (matches.isEmpty()) {
+                            unresolved += group.map { it.comic.id }
+                        } else {
+                            val now = System.currentTimeMillis()
+                            matches.forEach { (id, issue) ->
+                                repository.setOnline(id, io.github.christiandonatti.fwip.data.OnlineMeta(
+                                    io.github.christiandonatti.fwip.remote.ComicVine.metaFor(pick, issue), "comicvine", issue.id, pick.id, now,
+                                ))
+                            }
+                            found += matches.size
+                            refreshItems(matches.keys)
+                        }
+                    }
+                } catch (e: io.github.christiandonatti.fwip.remote.ComicVineException) {
+                    stopped = e.message
+                    break
+                } catch (e: Exception) {
+                    unresolved += group.map { it.comic.id }
+                }
+                done++
+            }
+            _state.update {
+                it.copy(
+                    metaWork = null,
+                    unresolved = unresolved,
+                    metaMessage = stopped?.let { msg -> str(R.string.cv_library_stopped, found, msg) }
+                        ?: str(R.string.cv_library_done, found, unresolved.size),
+                )
+            }
+            scheduleSync()
         }
     }
 

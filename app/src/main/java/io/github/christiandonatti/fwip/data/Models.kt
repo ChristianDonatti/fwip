@@ -50,14 +50,27 @@ data class LibraryItem(
     val progress: ReadingProgress?,
     val meta: ComicMeta? = null,
 ) {
-    /** "Series #Number" from ComicInfo.xml when present, otherwise the cleaned-up file name. */
-    val title: String = meta?.displayTitle ?: comic.title
+    /** What the file name says, for comics without metadata. */
+    val parsed: ParsedName by lazy { parseFileName(comic.fileName) }
 
-    /** Series from ComicInfo.xml when present, otherwise guessed from the file name. */
+    /** "Series #Number" from the metadata when known, otherwise read from the file name. */
+    val title: String = meta?.displayTitle ?: parseFileName(comic.fileName).display
+
+    /**
+     * Series from the metadata when known, otherwise from the file name. A start year in the
+     * metadata keeps relaunches apart: "Batman (2011)" and "Batman (2016)" are two shelves.
+     */
     val series: SeriesInfo = meta?.series?.takeIf { it.isNotBlank() }
-        ?.let { SeriesInfo(it, meta.numberValue) }
-        ?: parseSeries(comic.title)
+        ?.let { SeriesInfo(seriesLabel(it, meta.volume), meta.numberValue) }
+        ?: parseFileName(comic.fileName).let { SeriesInfo(it.series, it.sortNumber) }
+
+    /** Issue number to match against an online database. */
+    val issueNumber: String?
+        get() = meta?.number?.takeIf { it.isNotBlank() } ?: parsed.number ?: parsed.volume?.toString()
 }
+
+/** "Batman (2016)" when the volume is a start year. */
+fun seriesLabel(name: String, volume: Int?): String = if (volume != null && volume > 1900) "$name ($volume)" else name
 
 /** Turns "Batman_Vol.2_#07" into "Batman Vol.2 #07". */
 fun prettyTitle(fileName: String): String =

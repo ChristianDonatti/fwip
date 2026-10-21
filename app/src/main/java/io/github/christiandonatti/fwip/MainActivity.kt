@@ -54,6 +54,17 @@ class MainActivity : ComponentActivity() {
                 val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                     if (uri != null) viewModel.importBackup(uri)
                 }
+                val metaActions = remember(viewModel) {
+                    io.github.christiandonatti.fwip.ui.MetaActions(
+                        setKey = viewModel::setCvKey,
+                        apply = viewModel::applyComicVine,
+                        loadCredits = viewModel::loadCredits,
+                        saveManual = viewModel::saveManual,
+                        clear = viewModel::clearOnline,
+                        identifyLibrary = viewModel::identifyLibrary,
+                        dismissMessage = viewModel::dismissMetaMessage,
+                    )
+                }
                 val syncActions = remember(viewModel) {
                     io.github.christiandonatti.fwip.ui.SyncActions(
                         pickLocal = { pickSyncFolder.launch(null) },
@@ -108,6 +119,7 @@ class MainActivity : ComponentActivity() {
                             actions = actions,
                             serverActions = serverActions,
                             syncActions = syncActions,
+                            metaActions = metaActions,
                         )
                     } else {
                         val progress = viewModel.repository.progressFor(comic.id)

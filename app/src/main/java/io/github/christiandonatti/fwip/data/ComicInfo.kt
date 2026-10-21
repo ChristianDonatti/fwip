@@ -171,3 +171,69 @@ data class ComicMeta(
 
 internal fun isComicInfo(path: String): Boolean =
     path.replace('\\', '/').substringAfterLast('/').equals("ComicInfo.xml", ignoreCase = true)
+
+/** This metadata with every field [other] has replacing ours. */
+fun ComicMeta.overlaidWith(other: ComicMeta): ComicMeta = ComicMeta(
+    title = other.title ?: title,
+    series = other.series ?: series,
+    number = other.number ?: number,
+    volume = other.volume ?: volume,
+    count = other.count ?: count,
+    summary = other.summary ?: summary,
+    year = other.year ?: year,
+    month = other.month ?: month,
+    writer = other.writer ?: writer,
+    penciller = other.penciller ?: penciller,
+    inker = other.inker ?: inker,
+    colorist = other.colorist ?: colorist,
+    letterer = other.letterer ?: letterer,
+    coverArtist = other.coverArtist ?: coverArtist,
+    editor = other.editor ?: editor,
+    publisher = other.publisher ?: publisher,
+    imprint = other.imprint ?: imprint,
+    genre = other.genre ?: genre,
+    tags = other.tags ?: tags,
+    storyArc = other.storyArc ?: storyArc,
+    characters = other.characters ?: characters,
+    language = other.language ?: language,
+    ageRating = other.ageRating ?: ageRating,
+    manga = other.manga ?: manga,
+    pageCount = pageCount ?: other.pageCount,
+    doublePages = doublePages.ifEmpty { other.doublePages },
+)
+
+/**
+ * Metadata from Comic Vine or typed in by the user, kept apart from the file's own
+ * ComicInfo.xml. [updated] lets synced devices keep the newest.
+ */
+data class OnlineMeta(
+    val meta: ComicMeta,
+    /** "comicvine" or "manual". */
+    val source: String,
+    val issueId: Long? = null,
+    val volumeId: Long? = null,
+    val updated: Long = System.currentTimeMillis(),
+    /** Comic Vine credits are fetched separately, the first time the details are shown. */
+    val creditsLoaded: Boolean = false,
+) {
+    fun toJson(): JSONObject = JSONObject()
+        .put("meta", meta.toJson())
+        .put("source", source)
+        .put("t", updated)
+        .put("credits", creditsLoaded)
+        .apply {
+            issueId?.let { put("issue", it) }
+            volumeId?.let { put("volume", it) }
+        }
+
+    companion object {
+        fun fromJson(o: JSONObject) = OnlineMeta(
+            meta = ComicMeta.fromJson(o.optJSONObject("meta") ?: JSONObject()),
+            source = o.optString("source", "manual"),
+            issueId = if (o.has("issue")) o.optLong("issue") else null,
+            volumeId = if (o.has("volume")) o.optLong("volume") else null,
+            updated = o.optLong("t"),
+            creditsLoaded = o.optBoolean("credits"),
+        )
+    }
+}

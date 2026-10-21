@@ -36,6 +36,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -300,7 +302,11 @@ fun ComicActionsDialog(
     onCollections: () -> Unit,
     onSeries: () -> Unit,
     onSelect: () -> Unit,
+    onShown: () -> Unit = {},
+    onIdentify: () -> Unit = {},
+    onEdit: () -> Unit = {},
 ) {
+    LaunchedEffect(item.comic.id) { onShown() }
     FwipDialog(onDismiss) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             CoverImage(item, Modifier.size(72.dp, 108.dp), corner = 10.dp, titleSize = 10)
@@ -333,6 +339,10 @@ fun ComicActionsDialog(
             leading = { Icon(Icons.Filled.Check, null) },
         )
         SheetButton(str(R.string.add_to_collection), onCollections, leading = { Icon(Icons.Filled.Add, null) })
+        if (item.comic.remote == null) {
+            SheetButton(str(R.string.cv_find_info), onIdentify, leading = { Icon(Icons.Filled.Search, null) })
+            SheetButton(str(R.string.edit_info), onEdit, leading = { Icon(Icons.Filled.Edit, null) })
+        }
         SheetButton(str(R.string.select_several), onSelect, leading = { SelectIcon(LocalContentColor.current) })
         if (seriesSize >= 2) {
             SheetButton(

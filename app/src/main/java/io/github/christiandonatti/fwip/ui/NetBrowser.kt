@@ -196,7 +196,7 @@ fun NetBrowser(
 
     menu?.let { e ->
         FwipDialog({ menu = null }) {
-            DialogTitle(io.github.christiandonatti.fwip.data.prettyTitle(e.name), { menu = null })
+            DialogTitle(io.github.christiandonatti.fwip.data.parseFileName(e.name).display, { menu = null })
             Text(fileSizeLabel(e.size), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
             SheetButton(str(R.string.read_now), { menu = null; comicFor(e)?.let(actions.openNet) }, leading = { Icon(Icons.Filled.PlayArrow, null) })
             SheetButton(str(R.string.download_offline), { startDownload(e) }, leading = { Icon(Icons.Filled.Add, null) })
@@ -206,7 +206,7 @@ fun NetBrowser(
     download?.let { (e, progress) ->
         FwipDialog({}) {
             Text(str(R.string.downloading), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
-            Text(io.github.christiandonatti.fwip.data.prettyTitle(e.name), style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(io.github.christiandonatti.fwip.data.parseFileName(e.name).display, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             ProgressBar(progress, FwipColors.Amber, Modifier.fillMaxWidth())
             Text(
                 if (progress > 0f) "${(progress * 100).toInt()}%" else str(R.string.starting),
@@ -246,7 +246,7 @@ private fun NetRow(e: NetEntry, onClick: () -> Unit, onLongClick: () -> Unit) {
         }
         Column(Modifier.weight(1f)) {
             Text(
-                if (e.isDir) e.name else io.github.christiandonatti.fwip.data.prettyTitle(e.name),
+                if (e.isDir) e.name else io.github.christiandonatti.fwip.data.parseFileName(e.name).display,
                 style = MaterialTheme.typography.labelLarge,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
