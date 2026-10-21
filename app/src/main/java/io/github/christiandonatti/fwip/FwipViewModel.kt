@@ -161,11 +161,23 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                 _state.update { s -> s.copy(items = s.items.map { if (it.comic.id == comic.id) fresh else it }) }
             }
             _state.update { it.copy(scanning = false) }
+            refreshHomeScreen()
         }
     }
 
     fun open(comic: Comic) {
         _state.update { it.copy(openComicId = comic.id) }
+    }
+
+    /** From a shortcut or the widget. */
+    fun openById(id: String) {
+        val comic = _state.value.item(id)?.comic ?: repository.cachedComics().firstOrNull { it.id == id } ?: return
+        _state.update { it.copy(openComicId = comic.id, outsideComic = if (it.item(id) == null) comic else null) }
+    }
+
+    /** Home screen widget and icon shortcuts follow what is being read. */
+    private fun refreshHomeScreen() {
+        viewModelScope.launch { io.github.christiandonatti.fwip.widget.ContinueReadingWidget.refresh(getApplication()) }
     }
 
     /** Goes straight from one comic to another (the "next issue" button). */
@@ -187,6 +199,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
         scheduleSync(0)
+        refreshHomeScreen()
     }
 
     // ---------- Sync & backup ----------
@@ -216,7 +229,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(sync = it.sync.copy(busy = true, message = null, failed = false)) }
                 val comics = _state.value.items.map { it.comic }
                 val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { sync.syncNow(comics) } }
-                result.onSuccess { changed -> if (changed) reloadReadingState() }
+                result.onSuccess { changed -> if (changed) { reloadReadingState(); refreshHomeScreen() } }
                 _state.update {
                     it.copy(
                         sync = SyncInfo(

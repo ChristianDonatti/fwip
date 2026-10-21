@@ -93,6 +93,9 @@ dependencies {
 
     implementation("io.coil-kt:coil-compose:2.7.0")
 
+    // Home screen widget
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+
     // On-device speech balloon detection
     implementation("com.google.ai.edge.litert:litert:1.2.0")
 
@@ -105,4 +108,6 @@ dependencies {
     implementation("com.hierynomus:smbj:0.13.0")
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    testImplementation("junit:junit:4.13.2")
 }

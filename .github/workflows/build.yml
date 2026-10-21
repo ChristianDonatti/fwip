@@ -61,3 +61,65 @@ jobs:
             --prerelease \
             --title "Versão de teste (build ${{ github.run_number }})" \
             --notes "APK gerado automaticamente a partir do commit ${GITHUB_SHA::7}. Baixe o arquivo fwip.apk abaixo e abra no tablet ou celular para instalar."
+
+  # Reads real comics from a Samba share, the way the app does with a NAS.
+  network-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Samba share with test comics
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq samba rar zip > /dev/null
+          mkdir -p /tmp/fwip/pages /tmp/fwip/share/Sub
+          python3 - <<'PY'
+          import struct, zlib, random
+          def png(w, h, seed):
+              random.seed(seed)
+              rows = b''.join(b'\x00' + bytes(random.randrange(256) for _ in range(w * 3)) for _ in range(h))
+              def chunk(t, d): return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+              return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(rows)) + chunk(b'IEND', b'')
+          for i in range(1, 4):
+              open(f'/tmp/fwip/pages/p{i}.png', 'wb').write(png(120, 180, i))
+          PY
+          cd /tmp/fwip/pages
+          zip -q ../share/Test.cbz p1.png p2.png p3.png
+          rar a -idq ../share/Plain.cbr p1.png p2.png p3.png
+          rar a -s -idq ../share/Sub/Solid.cbr p1.png p2.png p3.png
+          chmod -R a+rwX /tmp/fwip
+          sudo useradd -M fwip || true
+          (echo fwippass; echo fwippass) | sudo smbpasswd -a -s fwip
+          printf '[Comics]\n  path = /tmp/fwip/share\n  read only = no\n  valid users = fwip\n  force user = runner\n' | sudo tee -a /etc/samba/smb.conf > /dev/null
+          sudo systemctl restart smbd
+          ls -la /tmp/fwip/share /tmp/fwip/share/Sub
+
+      - name: Read comics over SMB
+        env:
+          FWIP_SMB: 127.0.0.1/Comics
+          FWIP_SMB_USER: fwip
+          FWIP_SMB_PASS: fwippass
+          FWIP_PAGES: /tmp/fwip/pages
+        run: |
+          chmod +x gradlew
+          set +e
+          ./gradlew testReleaseUnitTest --tests '*NetFolderTest*' --console=plain 2>&1 | tee test.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            grep -E '^e: |FAILED|Exception|expected|at io.github' test.log | head -40 | awk '{printf "%s%%0A", $0}' | sed 's/^/::error::/' || true
+            for f in app/build/test-results/testReleaseUnitTest/*.xml; do
+              grep -A8 '<failure' "$f" | head -30 | awk '{printf "%s%%0A", $0}' | sed 's/^/::error::/' || true
+              echo
+            done
+            exit "$status"
+          fi
+          grep -h '<testcase' app/build/test-results/testReleaseUnitTest/*.xml | sed 's/^/::notice::/' || true
+

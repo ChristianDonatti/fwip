@@ -266,4 +266,7 @@
     <string name="backup_not_fwip">Este arquivo não é um backup do Fwip</string>
     <string name="backup_restored">Backup restaurado</string>
     <string name="backup_restored_passwords">Backup restaurado. Digite de novo as senhas dos servidores na aba Servidores.</string>
+    <string name="widget_title">Continuar lendo</string>
+    <string name="widget_empty">Nada em andamento. Toque para abrir o Fwip.</string>
+    <string name="widget_description">As HQs que você está lendo, a um toque</string>
 </resources>

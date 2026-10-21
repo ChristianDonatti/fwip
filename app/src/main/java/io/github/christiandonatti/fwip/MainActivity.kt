@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) handleOpenIntent(intent)
 
         setContent {
             FwipTheme {
@@ -131,6 +132,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleOpenIntent(intent)
+    }
+
+    /** A home screen shortcut or the widget asked for a specific comic. */
+    private fun handleOpenIntent(intent: android.content.Intent?) {
+        if (intent?.action != io.github.christiandonatti.fwip.widget.ACTION_OPEN_COMIC) return
+        intent.getStringExtra(io.github.christiandonatti.fwip.widget.EXTRA_COMIC)?.let(viewModel::openById)
+        intent.action = null
     }
 
     override fun onResume() {
