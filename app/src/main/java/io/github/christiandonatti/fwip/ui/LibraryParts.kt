@@ -302,11 +302,10 @@ fun ComicActionsDialog(
     onCollections: () -> Unit,
     onSeries: () -> Unit,
     onSelect: () -> Unit,
-    onShown: () -> Unit = {},
-    onIdentify: () -> Unit = {},
+    onCover: () -> Unit = {},
     onEdit: () -> Unit = {},
+    onEditSeries: () -> Unit = {},
 ) {
-    LaunchedEffect(item.comic.id) { onShown() }
     FwipDialog(onDismiss) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             CoverImage(item, Modifier.size(72.dp, 108.dp), corner = 10.dp, titleSize = 10)
@@ -340,8 +339,9 @@ fun ComicActionsDialog(
         )
         SheetButton(str(R.string.add_to_collection), onCollections, leading = { Icon(Icons.Filled.Add, null) })
         if (item.comic.remote == null) {
-            SheetButton(str(R.string.cv_find_info), onIdentify, leading = { Icon(Icons.Filled.Search, null) })
             SheetButton(str(R.string.edit_info), onEdit, leading = { Icon(Icons.Filled.Edit, null) })
+            SheetButton(str(R.string.series_edit), onEditSeries, leading = { StackIcon(LocalContentColor.current) })
+            SheetButton(str(R.string.cover_change), onCover, leading = { CoverIcon(LocalContentColor.current) })
         }
         SheetButton(str(R.string.select_several), onSelect, leading = { SelectIcon(LocalContentColor.current) })
         if (seriesSize >= 2) {
@@ -547,4 +547,19 @@ internal fun folderLabel(uri: Uri, servers: List<io.github.christiandonatti.fwip
     val (volume, path) = raw.split(':', limit = 2).let { it[0] to it.getOrElse(1) { "" } }
     val vol = if (volume == "primary") str(R.string.internal_storage) else str(R.string.sd_card, volume)
     return if (path.isBlank()) vol else "$vol / $path"
+}
+
+/** A small picture frame: the cover. */
+@Composable
+fun CoverIcon(color: Color, modifier: Modifier = Modifier, size: Dp = 22.dp) {
+    Canvas(modifier.size(size)) {
+        val u = this.size.width / 24f
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f * u)
+        drawRoundRect(color, Offset(5 * u, 3 * u), androidx.compose.ui.geometry.Size(14 * u, 18 * u), androidx.compose.ui.geometry.CornerRadius(2f * u), style = stroke)
+        val hill = androidx.compose.ui.graphics.Path().apply {
+            moveTo(7 * u, 18 * u); lineTo(11 * u, 12.5f * u); lineTo(13.5f * u, 15.5f * u); lineTo(15 * u, 14 * u); lineTo(17 * u, 18 * u); close()
+        }
+        drawPath(hill, color)
+        drawCircle(color, radius = 1.6f * u, center = Offset(14.5f * u, 8 * u))
+    }
 }

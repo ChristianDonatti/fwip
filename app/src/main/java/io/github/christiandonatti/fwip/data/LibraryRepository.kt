@@ -183,13 +183,51 @@ class LibraryRepository(private val context: Context) {
 
     fun coverFile(comic: Comic): File = File(coversDir, sha1(comic.id) + ".jpg")
 
-    fun coverPathIfReady(comic: Comic): String? = coverFile(comic).takeIf { it.exists() }?.absolutePath
+    fun coverPathIfReady(comic: Comic): String? =
+        customCoverFor(comic)?.absolutePath ?: coverFile(comic).takeIf { it.exists() }?.absolutePath
+
+    // ---------- Covers chosen by the user ----------
+
+    private val customDir = File(context.filesDir, "covers_custom").apply { mkdirs() }
+
+    /** A new file name each time, so image caches never show the old cover. */
+    private fun customCoverFor(comic: Comic): File? =
+        customDir.listFiles { f -> f.name.startsWith(sha1(comic.id) + "-") }?.maxByOrNull { it.name }
+
+    /** Uses [bitmap] (a page of the comic, or any picture) as the cover. */
+    suspend fun setCustomCover(comic: Comic, bitmap: Bitmap) = withContext(Dispatchers.IO) {
+        clearCustomCover(comic)
+        val scale = minOf(1f, COVER_H / bitmap.height.toFloat(), (COVER_W * 2) / bitmap.width.toFloat())
+        val scaled = if (scale < 1f) Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt().coerceAtLeast(1), (bitmap.height * scale).toInt().coerceAtLeast(1), true) else bitmap
+        File(customDir, sha1(comic.id) + "-" + System.currentTimeMillis() + ".jpg").outputStream().use {
+            scaled.compress(Bitmap.CompressFormat.JPEG, 90, it)
+        }
+        synchronized(colors) {
+            colors[comic.id] = ambientColor(scaled)
+            saveColors()
+        }
+        if (scaled !== bitmap) scaled.recycle()
+    }
+
+    /** Back to the first page as the cover. */
+    fun clearCustomCover(comic: Comic) {
+        customDir.listFiles { f -> f.name.startsWith(sha1(comic.id) + "-") }?.forEach { it.delete() }
+    }
+
+    /** Renders the cover from the first page again (after a failed read, or to drop a custom cover). */
+    suspend fun resetCover(comic: Comic) {
+        clearCustomCover(comic)
+        coverFile(comic).delete()
+        synchronized(colors) { colors.remove(comic.id); saveColors() }
+        analyze(comic)
+    }
 
     fun colorFor(comic: Comic): Int? = colors[comic.id]
 
     /** Renders the first page as a small cover and remembers its ambient color. */
     fun isAnalyzed(comic: Comic): Boolean =
-        coverFile(comic).exists() && colors.containsKey(comic.id) && synchronized(metas) { metas.containsKey(comic.id) }
+        (coverFile(comic).exists() || customCoverFor(comic) != null) && colors.containsKey(comic.id) &&
+            synchronized(metas) { metas.containsKey(comic.id) }
 
     /**
      * Opens a comic once to render its cover, pick its ambient colour and read its
@@ -197,7 +235,7 @@ class LibraryRepository(private val context: Context) {
      */
     suspend fun analyze(comic: Comic): Unit = withContext(Dispatchers.IO) {
         val file = coverFile(comic)
-        val needCover = !(file.exists() && colors.containsKey(comic.id))
+        val needCover = customCoverFor(comic) == null && !(file.exists() && colors.containsKey(comic.id))
         val needMeta = synchronized(metas) { !metas.containsKey(comic.id) }
         if (!needCover && !needMeta) return@withContext
         try {

@@ -199,7 +199,7 @@ private fun FilterChip(label: String, on: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun Thumb(page: Int, cache: PageCache, current: Boolean, marked: Boolean, onClick: () -> Unit) {
+internal fun Thumb(page: Int, cache: PageCache, current: Boolean, marked: Boolean, onClick: () -> Unit) {
     val bitmap by produceState<Bitmap?>(cache.peek(page, THUMB_W, THUMB_H), page) {
         if (value == null) value = cache.get(page, THUMB_W, THUMB_H)
     }
@@ -234,3 +234,52 @@ private fun Thumb(page: Int, cache: PageCache, current: Boolean, marked: Boolean
 
 private const val THUMB_W = 240
 private const val THUMB_H = 360
+
+/** Every page of a comic as thumbnails, to pick one (the cover chooser). */
+@Composable
+fun PagePickerDialog(comic: io.github.christiandonatti.fwip.data.Comic, title: String, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val source by produceState<io.github.christiandonatti.fwip.data.ComicSource?>(null, comic.id) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { io.github.christiandonatti.fwip.data.ComicSources.open(context, comic) }.getOrNull()
+        }
+    }
+    val current = source
+    androidx.compose.runtime.DisposableEffect(current) { onDispose { current?.close() } }
+    val cache = remember(current) { current?.let { PageCache(it) } }
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(Color(0xFF16171E))
+                .border(1.dp, FwipColors.Stroke, RoundedCornerShape(28.dp)),
+        ) {
+            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                CircleIconButton(Icons.Filled.Close, str(R.string.close), onDismiss, size = 40.dp)
+            }
+            if (current == null || cache == null) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = FwipColors.TextSoft)
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(104.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items((0 until current.pageCount).toList(), key = { it }) { page ->
+                        Thumb(page, cache, current = false, marked = false) { onPick(page) }
+                    }
+                }
+            }
+        }
+    }
+}

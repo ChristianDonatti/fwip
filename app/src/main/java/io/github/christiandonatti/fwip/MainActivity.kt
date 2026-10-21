@@ -56,13 +56,12 @@ class MainActivity : ComponentActivity() {
                 }
                 val metaActions = remember(viewModel) {
                     io.github.christiandonatti.fwip.ui.MetaActions(
-                        setKey = viewModel::setCvKey,
-                        apply = viewModel::applyComicVine,
-                        loadCredits = viewModel::loadCredits,
                         saveManual = viewModel::saveManual,
-                        clear = viewModel::clearOnline,
-                        identifyLibrary = viewModel::identifyLibrary,
-                        dismissMessage = viewModel::dismissMetaMessage,
+                        renameSeries = viewModel::renameSeries,
+                        clear = viewModel::clearEdited,
+                        coverFromPage = viewModel::coverFromPage,
+                        coverFromImage = viewModel::coverFromImage,
+                        resetCover = viewModel::resetCover,
                     )
                 }
                 val syncActions = remember(viewModel) {
