@@ -46,6 +46,18 @@ data class LibraryState(
 
     fun item(id: String): LibraryItem? = items.firstOrNull { it.comic.id == id }
 
+    /** What to read after [item]: the next issue of its series, or else the next file in its folder. */
+    fun nextAfter(item: LibraryItem): LibraryItem? {
+        val key = seriesKey(item.series.name)
+        val series = items.filter { seriesKey(it.series.name) == key }.sortedFor(SortOrder.Title)
+        if (series.size >= 2) {
+            return series.getOrNull(series.indexOfFirst { it.comic.id == item.comic.id } + 1)
+        }
+        val folder = items.filter { it.comic.folder == item.comic.folder }
+            .sortedWith(compareBy(io.github.christiandonatti.fwip.data.NaturalOrder) { it.comic.fileName })
+        return folder.getOrNull(folder.indexOfFirst { it.comic.id == item.comic.id } + 1)
+    }
+
     /** Series with at least two issues, biggest first. */
     val series: List<Pair<Shelf.Series, List<LibraryItem>>>
         get() = items.groupBy { seriesKey(it.series.name) }
@@ -129,6 +141,16 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
 
     fun open(comic: Comic) {
         _state.update { it.copy(openComicId = comic.id) }
+    }
+
+    /** Goes straight from one comic to another (the "next issue" button). */
+    fun switchTo(comic: Comic) {
+        _state.update { s ->
+            s.copy(
+                openComicId = comic.id,
+                items = s.items.map { it.copy(progress = repository.progressFor(it.comic.id)) },
+            )
+        }
     }
 
     fun closeReader() {

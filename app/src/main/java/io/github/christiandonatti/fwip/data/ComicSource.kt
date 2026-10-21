@@ -31,6 +31,15 @@ interface ComicSource : Closeable {
 
     /** Raw ComicInfo.xml inside the archive, if there is one. */
     fun readComicInfo(): ByteArray? = null
+
+    /** Pixel size of a page without decoding it fully; null when unknown. */
+    fun pageSize(index: Int): android.util.Size? = null
+}
+
+internal fun boundsOf(open: () -> InputStream): android.util.Size? {
+    val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    open().use { BitmapFactory.decodeStream(it.buffered(), null, o) }
+    return if (o.outWidth > 0 && o.outHeight > 0) android.util.Size(o.outWidth, o.outHeight) else null
 }
 
 object ComicSources {
@@ -159,6 +168,9 @@ private class ZipComicSource(
         ImageDecoding.decode({ zip.getInputStream(pages[index]) }, maxWidth, maxHeight)
 
     @Synchronized
+    override fun pageSize(index: Int): android.util.Size? = boundsOf { zip.getInputStream(pages[index]) }
+
+    @Synchronized
     override fun readComicInfo(): ByteArray? = zip.entries.toList()
         .filter { !it.isDirectory && isComicInfo(it.name) }
         .minByOrNull { it.name.count { c -> c == '/' } }
@@ -198,6 +210,9 @@ private class SevenZipComicSource(
     @Synchronized
     override fun decodePage(index: Int, maxWidth: Int, maxHeight: Int): Bitmap? =
         ImageDecoding.decode({ archive.getInputStream(pages[index]) }, maxWidth, maxHeight)
+
+    @Synchronized
+    override fun pageSize(index: Int): android.util.Size? = boundsOf { archive.getInputStream(pages[index]) }
 
     @Synchronized
     override fun readComicInfo(): ByteArray? = archive.entries.toList()
@@ -329,6 +344,14 @@ private class RarComicSource(
         return ImageDecoding.decodeBytes(pageFile(index).readBytes(), maxWidth, maxHeight)
     }
 
+    override fun pageSize(index: Int): android.util.Size? {
+        synchronized(lock) {
+            while (!ready[index] && !finished && !closed) lock.wait(250)
+        }
+        if (!ready[index]) return null
+        return boundsOf { pageFile(index).inputStream() }
+    }
+
     override fun readComicInfo(): ByteArray? {
         if (infoHeader == null) return null
         synchronized(lock) {
@@ -385,6 +408,12 @@ private class PdfComicSource(
         } finally {
             page.close()
         }
+    }
+
+    @Synchronized
+    override fun pageSize(index: Int): android.util.Size? {
+        val page = renderer.openPage(index)
+        return try { android.util.Size(page.width, page.height) } finally { page.close() }
     }
 
     override fun close() {

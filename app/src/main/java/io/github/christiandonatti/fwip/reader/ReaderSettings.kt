@@ -23,11 +23,14 @@ class ReaderSettings(context: Context) {
         private set
     var volumeKeys by mutableStateOf(prefs.getBoolean("volume", true))
         private set
+    var cropMargins by mutableStateOf(prefs.getBoolean("crop", true))
+        private set
 
     fun updateManga(value: Boolean) { mangaMode = value; prefs.edit().putBoolean("manga", value).apply() }
     fun updateTurn(value: TurnStyle) { turnStyle = value; prefs.edit().putString("turn2", value.name).apply() }
     fun updateSpread(value: SpreadMode) { spreadMode = value; prefs.edit().putString("spread", value.name).apply() }
     fun updateVolume(value: Boolean) { volumeKeys = value; prefs.edit().putBoolean("volume", value).apply() }
+    fun updateCrop(value: Boolean) { cropMargins = value; prefs.edit().putBoolean("crop", value).apply() }
 }
 
 /** Volume key presses forwarded from the activity while the reader is open. +1 = next, -1 = previous. */

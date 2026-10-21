@@ -9,7 +9,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** Keeps recently decoded pages in memory so turning back and forth is instant. */
-class PageCache(private val source: ComicSource) {
+class PageCache(private val source: ComicSource, private val cropMargins: Boolean = false) {
 
     private val budget = (Runtime.getRuntime().maxMemory() / 4).toInt()
 
@@ -34,7 +34,10 @@ class PageCache(private val source: ComicSource) {
         cache.get(k)?.let { return it }
         return withContext(Dispatchers.IO) {
             mutex.withLock {
-                cache.get(k) ?: runCatching { source.decodePage(index, w, h) }
+                cache.get(k) ?: runCatching {
+                    val raw = source.decodePage(index, w, h)
+                    if (raw != null && cropMargins) MarginCrop.crop(raw).also { if (it !== raw) raw.recycle() } else raw
+                }
                     .onFailure {
                         android.util.Log.w("Fwip", "Failed to decode page $index", it)
                         val cause = generateSequence(it) { e -> e.cause }.last()

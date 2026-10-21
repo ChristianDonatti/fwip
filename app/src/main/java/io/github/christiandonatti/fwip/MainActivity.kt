@@ -75,10 +75,13 @@ class MainActivity : ComponentActivity() {
                         val progress = viewModel.repository.progressFor(comic.id)
                         val start = if (progress == null || progress.finished) 0 else progress.page
                         val item = state.item(comic.id)
+                        val next = item?.let(state::nextAfter)
                         ReaderScreen(
                             comic = comic,
                             title = item?.title ?: comic.title,
                             meta = item?.meta,
+                            next = next,
+                            onOpenNext = { next?.let { viewModel.switchTo(it.comic) } },
                             startPage = start,
                             onClose = viewModel::closeReader,
                             onProgress = { page, count -> viewModel.saveProgress(comic, page, count) },

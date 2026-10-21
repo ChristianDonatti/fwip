@@ -39,6 +39,7 @@ fun PagerReader(
     onZoomState: (ZoomState) -> Unit,
     onTap: (Offset, IntSize, ZoomState) -> Unit,
     onDoubleTap: (Offset, ZoomState) -> Boolean,
+    onEnd: () -> Unit,
 ) {
     val spreads = host.spreads
     val pagerState = rememberPagerState(initialPage = startSpread.coerceIn(0, spreads.lastIndex)) { spreads.size }
@@ -51,8 +52,12 @@ fun PagerReader(
         commands.collect { cmd ->
             when (cmd) {
                 is NavCommand.Go -> {
-                    val target = (pagerState.currentPage + cmd.delta).coerceIn(0, spreads.lastIndex)
-                    if (target != pagerState.currentPage) pagerState.animateScrollToPage(target)
+                    if (cmd.delta > 0 && pagerState.currentPage == spreads.lastIndex) {
+                        onEnd()
+                    } else {
+                        val target = (pagerState.currentPage + cmd.delta).coerceIn(0, spreads.lastIndex)
+                        if (target != pagerState.currentPage) pagerState.animateScrollToPage(target)
+                    }
                 }
                 is NavCommand.Seek -> pagerState.scrollToPage(cmd.spread.coerceIn(0, spreads.lastIndex))
             }
@@ -62,7 +67,7 @@ fun PagerReader(
     LaunchedEffect(pagerState.settledPage, host) {
         val s = pagerState.settledPage
         for (n in listOf(s + 1, s - 1, s + 2)) {
-            spreads.getOrNull(n)?.forEach { host.cache.get(it, host.decodeW, host.decodeH) }
+            spreads.getOrNull(n)?.forEach { host.cache.get(it, host.wFor(it), host.decodeH) }
         }
     }
 
@@ -93,7 +98,7 @@ fun PagerReader(
                 onDoubleTap = { pos -> onDoubleTap(pos, zoom) },
                 modifier = Modifier.fillMaxSize(),
             ) {
-                SpreadView(spreads[index], host.double, host.rtl, host.cache, host.decodeW, host.decodeH)
+                SpreadView(spreads[index], host.double, host.rtl, host.cache, host.decodeW, host.decodeH, isWide = host::isWide)
             }
         }
     }

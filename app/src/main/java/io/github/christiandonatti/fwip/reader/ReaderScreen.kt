@@ -55,6 +55,7 @@ import io.github.christiandonatti.fwip.balloons.panelOrder
 import io.github.christiandonatti.fwip.balloons.readingOrder
 import io.github.christiandonatti.fwip.data.Comic
 import io.github.christiandonatti.fwip.data.ComicMeta
+import io.github.christiandonatti.fwip.data.LibraryItem
 import io.github.christiandonatti.fwip.data.ComicSource
 import io.github.christiandonatti.fwip.data.ComicSources
 import io.github.christiandonatti.fwip.ui.PillButton
@@ -62,6 +63,7 @@ import io.github.christiandonatti.fwip.ui.theme.FwipColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
@@ -76,7 +78,14 @@ class ReaderHost(
     /** Size pages are decoded at: half the screen width per page in double mode. */
     val decodeW: Int,
     val decodeH: Int,
-)
+    /** Pages that are a double-page image and stand alone across the whole screen. */
+    val wide: Set<Int> = emptySet(),
+) {
+    fun isWide(page: Int) = page in wide
+
+    /** Decode width for a page: wide pages in double mode get the full screen width. */
+    fun wFor(page: Int) = if (double && page in wide) decodeW * 2 else decodeW
+}
 
 sealed interface NavCommand {
     data class Go(val delta: Int) : NavCommand
@@ -98,6 +107,8 @@ fun ReaderScreen(
     comic: Comic,
     title: String,
     meta: ComicMeta?,
+    next: LibraryItem?,
+    onOpenNext: () -> Unit,
     startPage: Int,
     onClose: () -> Unit,
     onProgress: (page: Int, pageCount: Int) -> Unit,
@@ -135,7 +146,7 @@ fun ReaderScreen(
                 Text(l.message, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted, textAlign = TextAlign.Center)
                 PillButton("Voltar", onClose)
             }
-            is Loaded.Ready -> Reader(comic, title, meta, l.source, startPage, settings, onClose, onProgress)
+            is Loaded.Ready -> Reader(comic, title, meta, next, onOpenNext, l.source, startPage, settings, onClose, onProgress)
         }
     }
 }
@@ -145,6 +156,8 @@ private fun Reader(
     comic: Comic,
     title: String,
     meta: ComicMeta?,
+    next: LibraryItem?,
+    onOpenNext: () -> Unit,
     source: ComicSource,
     startPage: Int,
     settings: ReaderSettings,
@@ -152,7 +165,7 @@ private fun Reader(
     onProgress: (Int, Int) -> Unit,
 ) {
     val context = LocalContext.current
-    val cache = remember(source) { PageCache(source) }
+    val cache = remember(source, settings.cropMargins) { PageCache(source, settings.cropMargins) }
     DisposableEffect(cache) { onDispose { cache.clear() } }
 
     val config = LocalConfiguration.current
@@ -164,7 +177,26 @@ private fun Reader(
     }
     // Manga flagged in ComicInfo.xml reads right to left whatever the global setting says.
     val rtl = settings.mangaMode || meta?.rightToLeft == true
-    val spreads = remember(source.pageCount, double) { buildSpreads(source.pageCount, double) }
+    // Wide (double-page) images: known from ComicInfo.xml and earlier visits, then found as pages are measured.
+    val wideStore = remember { WidePages(context) }
+    var wide by remember(source) { mutableStateOf(wideStore.load(comic.id).first + meta?.doublePages.orEmpty()) }
+    LaunchedEffect(source) {
+        val (known, done) = wideStore.load(comic.id)
+        if (done) return@LaunchedEffect
+        val found = (known + meta?.doublePages.orEmpty()).toMutableSet()
+        withContext(Dispatchers.IO) {
+            for (i in 0 until source.pageCount) {
+                if (!isActive) return@withContext
+                val size = runCatching { source.pageSize(i) }.getOrNull() ?: continue
+                if (size.width > size.height * 1.1f && found.add(i)) {
+                    val snapshot = found.toSet()
+                    withContext(Dispatchers.Main) { wide = snapshot }
+                }
+            }
+            if (isActive) wideStore.save(comic.id, found, done = true)
+        }
+    }
+    val spreads = remember(source.pageCount, double, wide) { buildSpreads(source.pageCount, double, wide) }
 
     // The first page in view, kept across layout changes (rotation, single/double).
     var lastPage by rememberSaveable { mutableIntStateOf(startPage.coerceIn(0, source.pageCount - 1)) }
@@ -176,17 +208,21 @@ private fun Reader(
     val scope = rememberCoroutineScope()
     val commands = remember { MutableSharedFlow<NavCommand>(extraBufferCapacity = 8) }
     val store = remember { BalloonStore.get(context) }
+    // Detections are relative to the page as shown, so cropped and uncropped pages are kept apart.
+    val storeKey = if (settings.cropMargins) comic.id + "#crop" else comic.id
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val wPx = with(density) { maxWidth.toPx() }.roundToInt().coerceAtLeast(1)
         val hPx = with(density) { maxHeight.toPx() }.roundToInt().coerceAtLeast(1)
-        val host = remember(spreads, double, rtl, cache, wPx, hPx) {
-            ReaderHost(spreads, double, rtl, cache, if (double) wPx / 2 else wPx, hPx)
+        val host = remember(spreads, double, rtl, cache, wPx, hPx, wide) {
+            ReaderHost(spreads, double, rtl, cache, if (double) wPx / 2 else wPx, hPx, wide)
         }
         val startSpread = remember(host) { spreads.indexOfFirst { lastPage in it }.coerceAtLeast(0) }
         var spread by remember(host) { mutableIntStateOf(startSpread) }
         var zoom by remember(host) { mutableStateOf<ZoomState?>(null) }
+
+        var showEnd by remember { mutableStateOf(false) }
 
         // ---------- Guided reading: panel by panel, or balloon by balloon ----------
         var guide by rememberSaveable { mutableStateOf<GuideKind?>(null) }
@@ -199,10 +235,10 @@ private fun Reader(
             val pages = spreads[spread]
             // Outside guided reading this only serves double taps, so let page turns finish first.
             if (guide == null) delay(700)
-            val found = store.detectionsFor(comic.id, pages) { p -> cache.get(p, host.decodeW, host.decodeH) }
-            val placed = SpreadLayout.place(pages, double, rtl, wPx.toFloat(), hPx.toFloat()) { p ->
-                cache.peek(p, host.decodeW, host.decodeH)?.let { IntSize(it.width, it.height) }
-            }
+            val found = store.detectionsFor(storeKey, pages) { p -> cache.get(p, host.wFor(p), host.decodeH) }
+            val placed = SpreadLayout.place(pages, double, rtl, wPx.toFloat(), hPx.toFloat(), isWide = host::isWide, sizeOf = { p ->
+                cache.peek(p, host.wFor(p), host.decodeH)?.let { IntSize(it.width, it.height) }
+            })
             value = placed.map { it to found[it.page].orEmpty() }
         }
 
@@ -230,7 +266,7 @@ private fun Reader(
         LaunchedEffect(guide, spread, host) {
             if (guide == null) return@LaunchedEffect
             spreads.getOrNull(spread + 1)?.let { next ->
-                store.detectionsFor(comic.id, next) { p -> cache.get(p, host.decodeW, host.decodeH) }
+                store.detectionsFor(storeKey, next) { p -> cache.get(p, host.wFor(p), host.decodeH) }
             }
         }
 
@@ -258,6 +294,8 @@ private fun Reader(
                 pending = PendingStop.First
                 showWholePage()
                 commands.tryEmit(NavCommand.Go(1))
+            } else {
+                showEnd = true
             }
         }
 
@@ -368,6 +406,7 @@ private fun Reader(
                     onZoomState = { zoom = it },
                     onTap = onTap,
                     onDoubleTap = onDoubleTap,
+                    onEnd = { showEnd = true },
                 )
             } else {
                 PagerReader(
@@ -379,6 +418,7 @@ private fun Reader(
                     onZoomState = { zoom = it },
                     onTap = onTap,
                     onDoubleTap = onDoubleTap,
+                    onEnd = { showEnd = true },
                 )
             }
         }
@@ -435,6 +475,16 @@ private fun Reader(
                 onExit = { setGuide(null) },
             )
         }
+
+        if (showEnd) {
+            EndCard(
+                title = title,
+                next = next,
+                onNext = { showEnd = false; onOpenNext() },
+                onLibrary = onClose,
+                onDismiss = { showEnd = false },
+            )
+        }
     }
 
     if (showSettings) {
@@ -473,5 +523,26 @@ private fun KeepScreenOn() {
     DisposableEffect(view) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false }
+    }
+}
+
+/** Remembers which pages of each comic are wide double-page images, so later visits lay out instantly. */
+private class WidePages(context: Context) {
+    private val dir = java.io.File(context.filesDir, "wide").apply { mkdirs() }
+
+    private fun file(id: String) = java.io.File(
+        dir,
+        java.security.MessageDigest.getInstance("SHA-1").digest(id.toByteArray()).joinToString("") { "%02x".format(it) } + ".txt",
+    )
+
+    /** Known wide pages, and whether every page has already been measured. */
+    fun load(id: String): Pair<Set<Int>, Boolean> = runCatching {
+        val lines = file(id).readLines()
+        val pages = lines.firstOrNull().orEmpty().split(',').mapNotNull { it.trim().toIntOrNull() }.toSet()
+        pages to (lines.getOrNull(1) == "done")
+    }.getOrDefault(emptySet<Int>() to false)
+
+    fun save(id: String, pages: Set<Int>, done: Boolean) {
+        runCatching { file(id).writeText(pages.sorted().joinToString(",") + "\n" + (if (done) "done" else "")) }
     }
 }

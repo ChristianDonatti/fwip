@@ -61,12 +61,25 @@ class CurlTurn(
     }
 }
 
+/**
+ * A bitmap drawn into [dst]: only its [src] part when given, and only right of [clipLeft]
+ * (used for wide double-page images, half of which belongs to each side of the spine).
+ */
+class PageDraw(
+    val bitmap: Bitmap,
+    val dst: Rect,
+    val src: android.graphics.Rect? = null,
+    val clipLeft: Float? = null,
+)
+
 /** What is visible around a turn. Any of these can be missing (cover, last page, still loading). */
 class CurlPages(
-    val fromLeft: Pair<Bitmap, Rect>?,
-    val fromLeaf: Bitmap?,
-    val back: Bitmap?,
-    val toRight: Pair<Bitmap, Rect>?,
+    val fromLeft: PageDraw?,
+    /** The page being lifted. For a wide image its rect spans both sides; only the sheet turns. */
+    val fromLeaf: PageDraw?,
+    /** Printed on the back of the sheet: the next spread's left page (drawn into the sheet). */
+    val back: PageDraw?,
+    val toRight: PageDraw?,
     /** Single-page mode: the back of the leaf is plain paper showing the page through it. */
     val paperBack: Boolean,
 )
@@ -93,8 +106,8 @@ class CurlRenderer {
         c.drawColor(background)
 
         // What lies underneath: the left page that stays, and the page that gets revealed.
-        pages.fromLeft?.let { (b, r) -> page(c, b, r, rtl, mirror = false) }
-        pages.toRight?.let { (b, r) -> page(c, b, r, rtl, mirror = false) }
+        pages.fromLeft?.let { page(c, it, rtl, mirror = false) }
+        pages.toRight?.let { page(c, it, rtl, mirror = false) }
 
         val leaf = turn.leaf
         val corner = turn.corner
@@ -102,7 +115,7 @@ class CurlRenderer {
         val d = p - corner
         val len = d.getDistance()
         if (len < 1f) {
-            pages.fromLeaf?.let { page(c, it, leaf, rtl, mirror = false) }
+            pages.fromLeaf?.let { page(c, it, rtl, mirror = false) }
             c.restore()
             return
         }
@@ -113,8 +126,7 @@ class CurlRenderer {
         c.save()
         halfPlane(m, n, +1f)
         c.clipPath(path)
-        clipRect(c, leaf)
-        pages.fromLeaf?.let { page(c, it, leaf, rtl, mirror = false) }
+        pages.fromLeaf?.let { page(c, it, rtl, mirror = false) }
         c.restore()
 
         // 2. Shadow the lifted page casts on what is revealed, darkest along the fold.
@@ -142,12 +154,12 @@ class CurlRenderer {
         c.drawRect(toRectF(leaf), fillPaint)
         if (pages.paperBack) {
             // Single page: we see the printed side through thin paper, mirrored by the fold itself.
-            pages.fromLeaf?.let { page(c, it, leaf, rtl, mirror = false) }
+            pages.fromLeaf?.let { page(c, it, rtl, mirror = false) }
             fillPaint.color = (paper and 0x00FFFFFF) or (0xD9 shl 24)
             c.drawRect(toRectF(leaf), fillPaint)
         } else {
             // Double page: the back of this sheet is the next spread's left page.
-            pages.back?.let { page(c, it, leaf, rtl, mirror = true) }
+            pages.back?.let { page(c, it, rtl, mirror = true) }
         }
         // Curvature: dark close to the fold, a soft highlight further out.
         val depth = len / 2f
@@ -163,11 +175,13 @@ class CurlRenderer {
         c.restore()
     }
 
-    private fun page(c: Canvas, b: Bitmap, r: Rect, rtl: Boolean, mirror: Boolean) {
+    private fun page(c: Canvas, d: PageDraw, rtl: Boolean, mirror: Boolean) {
         c.save()
+        d.clipLeft?.let { c.clipRect(it, d.dst.top, d.dst.right, d.dst.bottom) }
+        val r = d.dst
         // Undo the manga mirroring for the artwork itself, and mirror the back side of a sheet.
         if (rtl xor mirror) c.scale(-1f, 1f, r.center.x, r.center.y)
-        c.drawBitmap(b, null, toRectF(r), bitmapPaint)
+        c.drawBitmap(d.bitmap, d.src, toRectF(r), bitmapPaint)
         c.restore()
     }
 

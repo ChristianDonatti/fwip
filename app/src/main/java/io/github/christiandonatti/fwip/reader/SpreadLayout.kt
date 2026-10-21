@@ -43,14 +43,22 @@ enum class Slot { Left, Right, Full }
 
 data class PlacedPage(val page: Int, val slot: Slot, val rect: Rect)
 
-/** Groups page indices into what is shown at once: single pages, or the cover alone and then pairs. */
-fun buildSpreads(pageCount: Int, double: Boolean): List<List<Int>> {
+/**
+ * Groups page indices into what is shown at once: single pages, or the cover alone and then
+ * pairs. A [wide] page (a double-page spread scanned as one image) always stands alone.
+ */
+fun buildSpreads(pageCount: Int, double: Boolean, wide: Set<Int> = emptySet()): List<List<Int>> {
     if (!double) return (0 until pageCount).map { listOf(it) }
     val out = mutableListOf(listOf(0))
     var i = 1
     while (i < pageCount) {
-        out += if (i + 1 < pageCount) listOf(i, i + 1) else listOf(i)
-        i += 2
+        if (i in wide || i + 1 >= pageCount || (i + 1) in wide) {
+            out += listOf(i)
+            i += 1
+        } else {
+            out += listOf(i, i + 1)
+            i += 2
+        }
     }
     return out
 }
@@ -58,9 +66,10 @@ fun buildSpreads(pageCount: Int, double: Boolean): List<List<Int>> {
 object SpreadLayout {
     private val DEFAULT_SIZE = IntSize(1000, 1530)
 
-    fun slots(pages: List<Int>, double: Boolean): List<Pair<Int, Slot>> = when {
+    fun slots(pages: List<Int>, double: Boolean, isWide: (Int) -> Boolean = { false }): List<Pair<Int, Slot>> = when {
         !double -> pages.map { it to Slot.Full }
         pages.size >= 2 -> listOf(pages[0] to Slot.Left, pages[1] to Slot.Right)
+        pages.firstOrNull()?.let(isWide) == true -> pages.map { it to Slot.Full }
         pages.firstOrNull() == 0 -> listOf(0 to Slot.Right)
         else -> pages.map { it to Slot.Left }
     }
@@ -76,7 +85,8 @@ object SpreadLayout {
         w: Float,
         h: Float,
         sizeOf: (Int) -> IntSize?,
-    ): List<PlacedPage> = slots(pages, double).map { (page, slot) ->
+        isWide: (Int) -> Boolean = { false },
+    ): List<PlacedPage> = slots(pages, double, isWide).map { (page, slot) ->
         val size = sizeOf(page) ?: DEFAULT_SIZE
         val logical = fit(size, slot, w, h)
         PlacedPage(page, slot, if (rtl) mirror(logical, w) else logical)
@@ -143,13 +153,16 @@ fun SpreadView(
     decodeW: Int,
     decodeH: Int,
     modifier: Modifier = Modifier,
+    isWide: (Int) -> Boolean = { false },
 ) {
-    val bitmaps = rememberSpreadBitmaps(pages, cache, decodeW, decodeH)
+    // A wide page in double mode gets the whole screen width to decode at.
+    val wideAlone = double && pages.size == 1 && isWide(pages[0])
+    val bitmaps = rememberSpreadBitmaps(pages, cache, if (wideAlone) decodeW * 2 else decodeW, decodeH)
     BoxWithConstraints(modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val w = with(density) { maxWidth.toPx() }
         val h = with(density) { maxHeight.toPx() }
-        val placed = SpreadLayout.place(pages, double, rtl, w, h, bitmaps::sizeOf)
+        val placed = SpreadLayout.place(pages, double, rtl, w, h, bitmaps::sizeOf, isWide)
         placed.forEach { p ->
             val dpW = with(density) { p.rect.width.toDp() }
             val dpH = with(density) { p.rect.height.toDp() }

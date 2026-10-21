@@ -379,6 +379,7 @@ internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
             Choice("Virada de página", TurnStyle.entries, settings.turnStyle, { it.label }, settings::updateTurn)
             Choice("Páginas na tela", SpreadMode.entries, settings.spreadMode, { it.label }, settings::updateSpread)
             Toggle("Modo mangá", "Lê da direita para a esquerda", settings.mangaMode, settings::updateManga)
+            Toggle("Cortar margens", "Remove bordas brancas ou pretas das páginas", settings.cropMargins, settings::updateCrop)
             Toggle("Teclas de volume", "Viram a página para frente e para trás", settings.volumeKeys, settings::updateVolume)
         }
     }
@@ -435,3 +436,87 @@ private fun Toggle(title: String, subtitle: String, checked: Boolean, onChange: 
     }
 }
 
+
+/** Shown after the last page: what you just finished and what comes next. */
+@Composable
+internal fun EndCard(
+    title: String,
+    next: io.github.christiandonatti.fwip.data.LibraryItem?,
+    onNext: () -> Unit,
+    onLibrary: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.activity.compose.BackHandler(onBack = onDismiss)
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color(0xF00B0C10))
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss,
+            )
+            .windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility)
+            .windowInsetsPadding(WindowInsets.navigationBarsIgnoringVisibility)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier
+                .widthIn(max = 520.dp)
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text("FIM", style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
+            Text(
+                title,
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (next != null) {
+                Spacer(Modifier.height(10.dp))
+                io.github.christiandonatti.fwip.ui.CoverImage(
+                    next,
+                    Modifier
+                        .size(150.dp, 225.dp)
+                        .clickable(onClickLabel = next.title, onClick = onNext),
+                    corner = 16.dp,
+                    titleSize = 18,
+                )
+                Text("A seguir", style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
+                Text(
+                    next.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(4.dp))
+                io.github.christiandonatti.fwip.ui.PillButton(
+                    if (next.progress?.started == true && next.progress.finished.not()) "Continuar a próxima" else "Ler a próxima",
+                    onNext,
+                    style = io.github.christiandonatti.fwip.ui.PillStyle.Amber,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            io.github.christiandonatti.fwip.ui.PillButton(
+                "Voltar para a biblioteca",
+                onLibrary,
+                style = if (next == null) io.github.christiandonatti.fwip.ui.PillStyle.Solid else io.github.christiandonatti.fwip.ui.PillStyle.Ghost,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                "Toque fora para continuar na última página",
+                style = MaterialTheme.typography.bodySmall,
+                color = FwipColors.TextMuted,
+            )
+        }
+    }
+}

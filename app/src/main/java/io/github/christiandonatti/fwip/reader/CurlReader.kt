@@ -50,18 +50,27 @@ private class CurlController(private val host: ReaderHost, start: Int) {
     val w get() = size.width.toFloat().coerceAtLeast(1f)
     val h get() = size.height.toFloat().coerceAtLeast(1f)
 
-    private fun sizeOf(page: Int): IntSize? =
-        host.cache.peek(page, host.decodeW, host.decodeH)?.let { IntSize(it.width, it.height) }
+    var onEnd: () -> Unit = {}
+
+    fun bitmap(page: Int) = host.cache.peek(page, host.wFor(page), host.decodeH)
+
+    private fun sizeOf(page: Int): IntSize? = bitmap(page)?.let { IntSize(it.width, it.height) }
 
     /** Logical (left-to-right) placement of a spread; manga mode mirrors only when drawing. */
-    fun logical(spread: Int) = SpreadLayout.place(host.spreads[spread], host.double, rtl = false, w, h, ::sizeOf)
+    fun logical(spread: Int) = SpreadLayout.place(host.spreads[spread], host.double, rtl = false, w, h, ::sizeOf, host::isWide)
+
+    /** Whether going [forward] from the current spread is possible at all. */
+    fun canGo(forward: Boolean) = if (forward) current < host.spreads.lastIndex else current > 0
 
     fun makeTurn(forward: Boolean, touchY: Float): CurlTurn? {
         val from = if (forward) current else current - 1
         val to = from + 1
         if (from < 0 || to > host.spreads.lastIndex) return null
-        val leaf: Rect = logical(from).firstOrNull { it.slot != Slot.Left }?.rect ?: return null
-        val spine = if (host.double) w / 2f else leaf.left
+        val page: Rect = logical(from).firstOrNull { it.slot != Slot.Left }?.rect ?: return null
+        val spine = if (host.double) w / 2f else page.left
+        // Only the part right of the spine turns; for a wide image that is its right half.
+        val leaf = Rect(maxOf(page.left, spine), page.top, page.right, page.bottom)
+        if (leaf.width < 8f) return null
         val corner = Offset(leaf.right, if (touchY < leaf.center.y) leaf.top else leaf.bottom)
         val t = CurlTurn(from, to, leaf, spine, corner, corner)
         if (!forward) t.point = t.end
@@ -88,7 +97,17 @@ private class CurlController(private val host: ReaderHost, start: Int) {
     /** A full turn with no finger: the corner lifts in an arc and lands on the other side. */
     suspend fun autoTurn(forward: Boolean) {
         if (animating || turn != null) return
-        val t = makeTurn(forward, touchY = Float.MAX_VALUE) ?: return
+        if (!canGo(forward)) {
+            if (forward) onEnd()
+            return
+        }
+        val t = makeTurn(forward, touchY = Float.MAX_VALUE)
+        if (t == null) {
+            // A layout with nothing to lift (e.g. a lone left page before a wide one): just move.
+            zoom?.snapReset()
+            current += if (forward) 1 else -1
+            return
+        }
         zoom?.snapReset()
         turn = t
         animating = true
@@ -120,9 +139,11 @@ fun CurlReader(
     onZoomState: (ZoomState) -> Unit,
     onTap: (Offset, IntSize, ZoomState) -> Unit,
     onDoubleTap: (Offset, ZoomState) -> Boolean,
+    onEnd: () -> Unit,
 ) {
     val spreads = host.spreads
     val ctl = remember(host) { CurlController(host, startSpread) }
+    ctl.onEnd = onEnd
     val renderer = remember { CurlRenderer() }
     val scope = rememberCoroutineScope()
     // Bumped when a neighbour finishes decoding so a turn in progress redraws with it.
@@ -132,7 +153,7 @@ fun CurlReader(
 
     LaunchedEffect(ctl.current, host) {
         for (n in listOf(ctl.current + 1, ctl.current - 1, ctl.current + 2)) {
-            spreads.getOrNull(n)?.forEach { host.cache.get(it, host.decodeW, host.decodeH) }
+            spreads.getOrNull(n)?.forEach { host.cache.get(it, host.wFor(it), host.decodeH) }
             loadedVersion++
         }
     }
@@ -167,7 +188,15 @@ fun CurlReader(
 
                     fun lx(x: Float) = if (host.rtl) ctl.w - x else x
                     val forward = (if (host.rtl) -overSlop else overSlop) < 0
-                    val t = ctl.makeTurn(forward, down.position.y) ?: return@awaitEachGesture
+                    val t = ctl.makeTurn(forward, down.position.y)
+                    if (t == null) {
+                        if (!ctl.canGo(forward)) {
+                            if (forward) ctl.onEnd()
+                        } else {
+                            ctl.current += if (forward) 1 else -1
+                        }
+                        return@awaitEachGesture
+                    }
                     ctl.turn = t
                     val start = if (forward) t.corner else t.end
                     // The corner travels twice the leaf width while the finger crosses the screen.
@@ -210,7 +239,7 @@ fun CurlReader(
                 onDoubleTap = { pos -> onDoubleTap(pos, zoom) },
                 modifier = Modifier.fillMaxSize(),
             ) {
-                SpreadView(spreads[ctl.current], host.double, host.rtl, host.cache, host.decodeW, host.decodeH)
+                SpreadView(spreads[ctl.current], host.double, host.rtl, host.cache, host.decodeW, host.decodeH, isWide = host::isWide)
             }
         }
 
@@ -220,12 +249,25 @@ fun CurlReader(
                 if (loadedVersion < 0) return@Canvas
                 val fromPlaced = ctl.logical(t.from)
                 val toPlaced = ctl.logical(t.to)
-                fun bmp(page: Int) = host.cache.peek(page, host.decodeW, host.decodeH)
+                val spine = t.spine
+                fun draw(p: PlacedPage?, clip: Boolean = false) = p?.let { pp ->
+                    ctl.bitmap(pp.page)?.let { PageDraw(it, pp.rect, clipLeft = if (clip && host.double && pp.slot == Slot.Full) spine else null) }
+                }
+                val toWide = toPlaced.firstOrNull { it.slot == Slot.Full && host.double }
                 val pages = CurlPages(
-                    fromLeft = fromPlaced.firstOrNull { it.slot == Slot.Left }?.let { p -> bmp(p.page)?.let { it to p.rect } },
-                    fromLeaf = fromPlaced.firstOrNull { it.slot != Slot.Left }?.page?.let(::bmp),
-                    back = toPlaced.firstOrNull { it.slot == Slot.Left }?.page?.let(::bmp),
-                    toRight = toPlaced.firstOrNull { it.slot != Slot.Left }?.let { p -> bmp(p.page)?.let { it to p.rect } },
+                    fromLeft = draw(fromPlaced.firstOrNull { it.slot == Slot.Left }),
+                    fromLeaf = draw(fromPlaced.firstOrNull { it.slot != Slot.Left }),
+                    back = if (toWide != null) {
+                        // The back of the sheet is the half of the wide image that lands on the left.
+                        ctl.bitmap(toWide.page)?.let { b ->
+                            val half = if (host.rtl) android.graphics.Rect(b.width / 2, 0, b.width, b.height)
+                            else android.graphics.Rect(0, 0, b.width / 2, b.height)
+                            PageDraw(b, t.leaf, src = half)
+                        }
+                    } else {
+                        toPlaced.firstOrNull { it.slot == Slot.Left }?.let { pp -> ctl.bitmap(pp.page)?.let { PageDraw(it, t.leaf) } }
+                    },
+                    toRight = draw(toPlaced.firstOrNull { it.slot != Slot.Left }, clip = true),
                     paperBack = !host.double,
                 )
                 drawIntoCanvas {
