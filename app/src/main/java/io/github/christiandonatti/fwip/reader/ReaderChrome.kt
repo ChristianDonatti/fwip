@@ -226,6 +226,8 @@ internal fun ReaderChrome(
     bookmarked: Boolean,
     onBookmark: () -> Unit,
     onPages: () -> Unit,
+    /** Panel and balloon reading need whole pages; vertical scrolling has none. */
+    guidedAvailable: Boolean = true,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val roomy = maxWidth >= 600.dp
@@ -256,10 +258,12 @@ internal fun ReaderChrome(
                     BookmarkIcon(it, filled = bookmarked)
                 }
                 Spacer(Modifier.width(8.dp))
-                GuideToggle(guide == GuideKind.Panels, str(R.string.panels), roomy, { onGuide(GuideKind.Panels) }) { PanelsIcon(it) }
-                Spacer(Modifier.width(8.dp))
-                GuideToggle(guide == GuideKind.Balloons, str(R.string.balloons), roomy, { onGuide(GuideKind.Balloons) }) { BalloonIcon(it) }
-                Spacer(Modifier.width(8.dp))
+                if (guidedAvailable) {
+                    GuideToggle(guide == GuideKind.Panels, str(R.string.panels), roomy, { onGuide(GuideKind.Panels) }) { PanelsIcon(it) }
+                    Spacer(Modifier.width(8.dp))
+                    GuideToggle(guide == GuideKind.Balloons, str(R.string.balloons), roomy, { onGuide(GuideKind.Balloons) }) { BalloonIcon(it) }
+                    Spacer(Modifier.width(8.dp))
+                }
                 CircleIconButton(Icons.Filled.Settings, str(R.string.reading_settings), onSettings, size = 44.dp)
             }
         }

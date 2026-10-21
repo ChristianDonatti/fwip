@@ -171,9 +171,20 @@ private fun Reader(
     val cache = remember(source, settings.cropMargins) { PageCache(source, settings.cropMargins) }
     DisposableEffect(cache) { onDispose { cache.clear() } }
 
+    // Webtoons: pages much taller than wide always scroll vertically.
+    var strips by remember(source) { mutableStateOf(false) }
+    LaunchedEffect(source) {
+        if (comic.remote != null) return@LaunchedEffect
+        strips = withContext(Dispatchers.IO) {
+            val sizes = (0 until minOf(3, source.pageCount)).mapNotNull { runCatching { source.pageSize(it) }.getOrNull() }
+            sizes.isNotEmpty() && sizes.all { it.height > it.width * 2.2f }
+        }
+    }
+    val scroll = settings.turnStyle == TurnStyle.Scroll || strips
+
     val config = LocalConfiguration.current
     val landscape = config.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val double = when (settings.spreadMode) {
+    val double = !scroll && when (settings.spreadMode) {
         SpreadMode.Single -> false
         SpreadMode.Double -> true
         SpreadMode.Auto -> landscape && config.smallestScreenWidthDp >= 600
@@ -233,6 +244,7 @@ private fun Reader(
 
         // ---------- Guided reading: panel by panel, or balloon by balloon ----------
         var guide by rememberSaveable { mutableStateOf<GuideKind?>(null) }
+        LaunchedEffect(scroll) { if (scroll) guide = null }
         var stop by remember { mutableIntStateOf(-1) }
         var pending by remember { mutableStateOf<PendingStop?>(null) }
 
@@ -412,8 +424,18 @@ private fun Reader(
             }
         }
 
-        key(host, settings.turnStyle) {
-            if (settings.turnStyle == TurnStyle.Curl) {
+        val flatZoom = remember { ZoomState() }
+        key(host, settings.turnStyle, scroll) {
+            if (scroll) {
+                ScrollReader(
+                    host = host,
+                    startSpread = spread,
+                    commands = commands,
+                    onSpreadChanged = onSpreadChanged,
+                    onTap = { pos, size -> onTap(pos, size, flatZoom) },
+                    onEnd = { showEnd = true },
+                )
+            } else if (settings.turnStyle == TurnStyle.Curl) {
                 CurlReader(
                     host = host,
                     startSpread = spread,
@@ -482,6 +504,7 @@ private fun Reader(
                 bookmarkStore.set(comic.id, marks)
             },
             onPages = { showPages = true },
+            guidedAvailable = !scroll,
         )
 
         AnimatedVisibility(

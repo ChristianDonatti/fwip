@@ -10,7 +10,9 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 enum class TurnStyle(@androidx.annotation.StringRes private val labelRes: Int) {
-    Curl(R.string.turn_curl), Flip(R.string.turn_flip), Slide(R.string.turn_slide);
+    Curl(R.string.turn_curl), Flip(R.string.turn_flip), Slide(R.string.turn_slide),
+    /** Vertical scrolling for webtoons and long strips. */
+    Scroll(R.string.turn_scroll);
 
     val label: String get() = str(labelRes)
 }

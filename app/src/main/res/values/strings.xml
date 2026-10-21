@@ -284,4 +284,5 @@
     <string name="cover_from_page">Use a page of the comic</string>
     <string name="cover_from_image">Use a picture from the device</string>
     <string name="cover_reset">Back to the first page</string>
+    <string name="turn_scroll">Scroll</string>
 </resources>
