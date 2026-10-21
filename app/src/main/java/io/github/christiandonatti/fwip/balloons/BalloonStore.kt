@@ -129,8 +129,8 @@ class BalloonStore private constructor(private val context: Context) {
 }
 
 /**
- * Orders the balloons of a page the way a reader would: panel by panel (rows top to bottom,
- * left to right, or right to left for manga), and inside each panel the same way.
+ * Orders the balloons of a page the way a reader would: panel by panel, and inside each panel
+ * from top to bottom and left to right (right to left for manga).
  */
 fun readingOrder(detections: List<Detection>, rtl: Boolean): List<RectF> {
     val balloons = detections.filter { it.kind == DetectionKind.Balloon }.map { it.rect }
@@ -140,23 +140,22 @@ fun readingOrder(detections: List<Detection>, rtl: Boolean): List<RectF> {
 
     val units = panels.map { Unit(it) }.toMutableList()
     for (b in balloons) {
-        val area = b.width() * b.height()
+        // A balloon crossing a gutter belongs to the panel holding most of it.
         val best = units.maxByOrNull { overlap(it.rect, b) }
-        if (best != null && area > 0f && overlap(best.rect, b) / area > 0.5f) {
+        if (best != null && overlap(best.rect, b) > 0f) {
             best.members += b
         } else {
-            // A balloon outside every panel (or spanning gutters) is its own stop.
             units += Unit(RectF(b), mutableListOf(b))
         }
     }
-    return rows(units.filter { it.members.isNotEmpty() }, { it.rect }, rtl)
-        .flatMap { unit -> rows(unit.members, { it }, rtl) }
+    return xyOrder(units.filter { it.members.isNotEmpty() }, { it.rect }, rtl)
+        .flatMap { unit -> xyOrder(unit.members, { it }, rtl) }
 }
 
 /** Panels of a page in reading order; empty when the page is a single image. */
 fun panelOrder(detections: List<Detection>, rtl: Boolean): List<RectF> {
     val panels = bestPanels(detections)
-    return if (panels.size >= 2) rows(panels, { it }, rtl) else emptyList()
+    return if (panels.size >= 2) xyOrder(panels, { it }, rtl) else emptyList()
 }
 
 /**
@@ -179,25 +178,47 @@ private fun overlap(a: RectF, b: RectF): Float {
     return if (w > 0f && h > 0f) w * h else 0f
 }
 
-/** Groups items into rows by vertical overlap, then reads each row horizontally. */
-private fun <T> rows(items: List<T>, rectOf: (T) -> RectF, rtl: Boolean): List<T> {
-    val sorted = items.sortedBy { rectOf(it).top }
-    val out = mutableListOf<MutableList<T>>()
-    var rowTop = 0f
-    var rowBottom = 0f
-    for (item in sorted) {
+/**
+ * Reading order by recursive XY-cut on the boxes themselves: split the group into bands
+ * wherever a horizontal line crosses no box (read top to bottom); if there is none, into
+ * columns wherever a vertical line crosses no box (left to right, or right to left for manga);
+ * repeat inside each part. This follows the page layout the way gutters do: a tall panel next
+ * to two stacked ones is read before or after the whole stack, never in the middle of it.
+ * Boxes are shrunk a little first so slightly overlapping detections still separate.
+ */
+internal fun <T> xyOrder(items: List<T>, rectOf: (T) -> RectF, rtl: Boolean, depth: Int = 0): List<T> {
+    if (items.size <= 1 || depth > 12) return items
+    val shrunk = items.associateWith { item ->
         val r = rectOf(item)
-        val current = out.lastOrNull()
-        val shared = minOf(rowBottom, r.bottom) - maxOf(rowTop, r.top)
-        if (current != null && shared > 0.5f * minOf(r.height(), rowBottom - rowTop)) {
-            current += item
-            rowTop = minOf(rowTop, r.top)
-            rowBottom = maxOf(rowBottom, r.bottom)
+        val dx = r.width() * SHRINK
+        val dy = r.height() * SHRINK
+        RectF(r.left + dx, r.top + dy, r.right - dx, r.bottom - dy)
+    }
+    val rows = bands(items, { shrunk.getValue(it).top }, { shrunk.getValue(it).bottom })
+    if (rows.size > 1) return rows.flatMap { xyOrder(it, rectOf, rtl, depth + 1) }
+    val cols = bands(items, { shrunk.getValue(it).left }, { shrunk.getValue(it).right })
+    if (cols.size > 1) return (if (rtl) cols.reversed() else cols).flatMap { xyOrder(it, rectOf, rtl, depth + 1) }
+    // Tangled boxes that no straight line separates: higher first, then by side.
+    return items.sortedWith(
+        compareBy<T> { (((rectOf(it).top + rectOf(it).bottom) / 2f) * 10f).toInt() }
+            .thenBy { if (rtl) -rectOf(it).right else rectOf(it).left }
+    )
+}
+
+private const val SHRINK = 0.08f
+
+/** Splits items into consecutive groups along one axis, cutting wherever no box spans the gap. */
+private fun <T> bands(items: List<T>, start: (T) -> Float, end: (T) -> Float): List<List<T>> {
+    val groups = mutableListOf<MutableList<T>>()
+    var reach = Float.NEGATIVE_INFINITY
+    for (item in items.sortedBy(start)) {
+        if (groups.isEmpty() || start(item) >= reach) {
+            groups += mutableListOf(item)
+            reach = end(item)
         } else {
-            out += mutableListOf(item)
-            rowTop = r.top
-            rowBottom = r.bottom
+            groups.last() += item
+            reach = maxOf(reach, end(item))
         }
     }
-    return out.flatMap { row -> if (rtl) row.sortedByDescending { rectOf(it).right } else row.sortedBy { rectOf(it).left } }
+    return groups
 }
