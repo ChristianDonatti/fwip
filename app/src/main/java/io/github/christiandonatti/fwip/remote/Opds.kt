@@ -1,5 +1,7 @@
 package io.github.christiandonatti.fwip.remote
 
+import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 import android.util.Base64
 import android.util.Xml
 import kotlinx.coroutines.Dispatchers
@@ -99,16 +101,16 @@ object Http {
             c.setRequestProperty("User-Agent", "Fwip")
             val code = c.responseCode
             if (code in 300..399) {
-                val location = c.getHeaderField("Location") ?: throw HttpException(code, "Redirecionamento sem destino")
+                val location = c.getHeaderField("Location") ?: throw HttpException(code, str(R.string.error_redirect))
                 current = resolve(current, location)
                 c.disconnect()
                 return@repeat
             }
-            if (code == 401 || code == 403) throw HttpException(code, "Usuário ou senha recusados pelo servidor")
-            if (code !in 200..299) throw HttpException(code, "O servidor respondeu com erro $code")
+            if (code == 401 || code == 403) throw HttpException(code, str(R.string.error_auth))
+            if (code !in 200..299) throw HttpException(code, str(R.string.error_http, code))
             return c
         }
-        throw IOException("Redirecionamentos demais")
+        throw IOException(str(R.string.error_redirects))
     }
 
     suspend fun bytes(server: Server, url: String, accept: String? = null): ByteArray = withContext(Dispatchers.IO) {

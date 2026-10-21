@@ -228,7 +228,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
 
     fun createCollection(name: String, comicIds: List<String> = emptyList()): String {
         val id = java.util.UUID.randomUUID().toString()
-        updateCollections { it + ComicCollection(id, name.trim().ifBlank { "Nova coleção" }, comicIds.distinct()) }
+        updateCollections { it + ComicCollection(id, name.trim().ifBlank { str(R.string.new_collection) }, comicIds.distinct()) }
         return id
     }
 

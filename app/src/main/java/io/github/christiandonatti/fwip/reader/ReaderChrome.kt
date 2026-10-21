@@ -2,6 +2,8 @@
 
 package io.github.christiandonatti.fwip.reader
 
+import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -150,7 +152,7 @@ internal fun GuideBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        CircleIconButton(Icons.Filled.Close, "Sair da leitura guiada", onExit, size = 48.dp)
+        CircleIconButton(Icons.Filled.Close, str(R.string.exit_guided), onExit, size = 48.dp)
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             if (busy) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -163,11 +165,11 @@ internal fun GuideBar(
         }
         // In manga mode "next" sits on the left, where the reading goes.
         if (rtl) {
-            CircleIconButton(Icons.Filled.KeyboardArrowLeft, "Próximo", onNext, size = 48.dp, filled = true)
-            CircleIconButton(Icons.Filled.KeyboardArrowRight, "Anterior", onPrev, size = 48.dp)
+            CircleIconButton(Icons.Filled.KeyboardArrowLeft, str(R.string.next), onNext, size = 48.dp, filled = true)
+            CircleIconButton(Icons.Filled.KeyboardArrowRight, str(R.string.previous), onPrev, size = 48.dp)
         } else {
-            CircleIconButton(Icons.Filled.KeyboardArrowLeft, "Anterior", onPrev, size = 48.dp)
-            CircleIconButton(Icons.Filled.KeyboardArrowRight, "Próximo", onNext, size = 48.dp, filled = true)
+            CircleIconButton(Icons.Filled.KeyboardArrowLeft, str(R.string.previous), onPrev, size = 48.dp)
+            CircleIconButton(Icons.Filled.KeyboardArrowRight, str(R.string.next), onNext, size = 48.dp, filled = true)
         }
     }
 }
@@ -239,16 +241,16 @@ internal fun ReaderChrome(
                     .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CircleIconButton(Icons.Filled.ArrowBack, "Voltar para a biblioteca", onBack, size = 44.dp)
+                CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back_to_library), onBack, size = 44.dp)
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                     Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(pageLabel, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
                 }
-                GuideToggle(guide == GuideKind.Panels, "Quadros", roomy, { onGuide(GuideKind.Panels) }) { PanelsIcon(it) }
+                GuideToggle(guide == GuideKind.Panels, str(R.string.panels), roomy, { onGuide(GuideKind.Panels) }) { PanelsIcon(it) }
                 Spacer(Modifier.width(8.dp))
-                GuideToggle(guide == GuideKind.Balloons, "Balões", roomy, { onGuide(GuideKind.Balloons) }) { BalloonIcon(it) }
+                GuideToggle(guide == GuideKind.Balloons, str(R.string.balloons), roomy, { onGuide(GuideKind.Balloons) }) { BalloonIcon(it) }
                 Spacer(Modifier.width(8.dp))
-                CircleIconButton(Icons.Filled.Settings, "Ajustes de leitura", onSettings, size = 44.dp)
+                CircleIconButton(Icons.Filled.Settings, str(R.string.reading_settings), onSettings, size = 44.dp)
             }
         }
         AnimatedVisibility(
@@ -373,14 +375,14 @@ internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Ajustes de leitura", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                CircleIconButton(Icons.Filled.Close, "Fechar", onDismiss, size = 40.dp)
+                Text(str(R.string.reading_settings), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                CircleIconButton(Icons.Filled.Close, str(R.string.close), onDismiss, size = 40.dp)
             }
-            Choice("Virada de página", TurnStyle.entries, settings.turnStyle, { it.label }, settings::updateTurn)
-            Choice("Páginas na tela", SpreadMode.entries, settings.spreadMode, { it.label }, settings::updateSpread)
-            Toggle("Modo mangá", "Lê da direita para a esquerda", settings.mangaMode, settings::updateManga)
-            Toggle("Cortar margens", "Remove bordas brancas ou pretas das páginas", settings.cropMargins, settings::updateCrop)
-            Toggle("Teclas de volume", "Viram a página para frente e para trás", settings.volumeKeys, settings::updateVolume)
+            Choice(str(R.string.page_turn), TurnStyle.entries, settings.turnStyle, { it.label }, settings::updateTurn)
+            Choice(str(R.string.pages_on_screen), SpreadMode.entries, settings.spreadMode, { it.label }, settings::updateSpread)
+            Toggle(str(R.string.manga_mode), str(R.string.manga_mode_hint), settings.mangaMode, settings::updateManga)
+            Toggle(str(R.string.crop_margins), str(R.string.crop_margins_hint), settings.cropMargins, settings::updateCrop)
+            Toggle(str(R.string.volume_keys), str(R.string.volume_keys_hint), settings.volumeKeys, settings::updateVolume)
         }
     }
 }
@@ -472,7 +474,7 @@ internal fun EndCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("FIM", style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
+            Text(str(R.string.the_end), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
             Text(
                 title,
                 style = MaterialTheme.typography.headlineSmall,
@@ -490,7 +492,7 @@ internal fun EndCard(
                     corner = 16.dp,
                     titleSize = 18,
                 )
-                Text("A seguir", style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
+                Text(str(R.string.up_next), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
                 Text(
                     next.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -500,20 +502,20 @@ internal fun EndCard(
                 )
                 Spacer(Modifier.height(4.dp))
                 io.github.christiandonatti.fwip.ui.PillButton(
-                    if (next.progress?.started == true && next.progress.finished.not()) "Continuar a próxima" else "Ler a próxima",
+                    if (next.progress?.started == true && next.progress.finished.not()) str(R.string.continue_next) else str(R.string.read_next),
                     onNext,
                     style = io.github.christiandonatti.fwip.ui.PillStyle.Amber,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
             io.github.christiandonatti.fwip.ui.PillButton(
-                "Voltar para a biblioteca",
+                str(R.string.back_to_library),
                 onLibrary,
                 style = if (next == null) io.github.christiandonatti.fwip.ui.PillStyle.Solid else io.github.christiandonatti.fwip.ui.PillStyle.Ghost,
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
-                "Toque fora para continuar na última página",
+                str(R.string.end_tap_outside),
                 style = MaterialTheme.typography.bodySmall,
                 color = FwipColors.TextMuted,
             )

@@ -2,6 +2,8 @@
 
 package io.github.christiandonatti.fwip.ui
 
+import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -89,11 +91,11 @@ class ServerActions(
 )
 
 private fun errorText(t: Throwable): String = when (t) {
-    is HttpException -> t.message ?: "Erro ${t.code}"
-    is java.net.UnknownHostException -> "Endereço não encontrado. Confira o URL."
+    is HttpException -> t.message ?: str(R.string.error_http, t.code)
+    is java.net.UnknownHostException -> str(R.string.error_host)
     is java.net.ConnectException, is java.net.SocketTimeoutException ->
-        "Não foi possível conectar. O servidor está ligado e na mesma rede?"
-    is org.xmlpull.v1.XmlPullParserException -> "Esse endereço não parece ser um catálogo OPDS."
+        str(R.string.error_connect)
+    is org.xmlpull.v1.XmlPullParserException -> str(R.string.error_not_opds)
     else -> t.message ?: t.javaClass.simpleName
 }
 
@@ -117,9 +119,9 @@ fun ServersTab(
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(bottom = 8.dp)) {
-                Text("Servidores", style = MaterialTheme.typography.headlineSmall)
+                Text(str(R.string.tab_servers), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Leia direto do seu Komga, Kavita ou de qualquer catálogo OPDS, sem copiar os arquivos para o aparelho.",
+                    str(R.string.servers_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = FwipColors.TextMuted,
                 )
@@ -146,13 +148,13 @@ fun ServersTab(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                CircleIconButton(Icons.Filled.Edit, "Editar servidor", { editing = server }, size = 40.dp)
+                CircleIconButton(Icons.Filled.Edit, str(R.string.edit_server), { editing = server }, size = 40.dp)
                 Icon(Icons.Filled.KeyboardArrowRight, null, tint = FwipColors.TextMuted)
             }
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
             PillButton(
-                "Adicionar servidor",
+                str(R.string.add_server),
                 { adding = true },
                 style = if (servers.isEmpty()) PillStyle.Solid else PillStyle.Ghost,
                 leading = { Icon(Icons.Filled.Add, null, Modifier.size(20.dp)) },
@@ -219,7 +221,7 @@ private fun ServerDialog(initial: Server?, onSave: (Server) -> Unit, onDelete: (
     val scope = rememberCoroutineScope()
 
     FwipDialog(onDismiss) {
-        DialogTitle(if (initial == null) "Adicionar servidor" else "Editar servidor", onDismiss)
+        DialogTitle(if (initial == null) str(R.string.add_server) else str(R.string.edit_server), onDismiss)
         Row(
             Modifier
                 .clip(CircleShape)
@@ -245,28 +247,28 @@ private fun ServerDialog(initial: Server?, onSave: (Server) -> Unit, onDelete: (
         }
         Text(
             when (kind) {
-                ServerKind.Komga -> "Endereço do Komga, como http://192.168.0.10:25600, e o mesmo e-mail e senha que você usa nele."
-                ServerKind.Kavita -> "No Kavita, abra Configurações do usuário > 3rd Party Clients e copie o \"OPDS URL\" (ele já inclui a sua chave)."
-                ServerKind.Opds -> "Endereço do catálogo OPDS. Usuário e senha só se o servidor pedir."
+                ServerKind.Komga -> str(R.string.server_hint_komga)
+                ServerKind.Kavita -> str(R.string.server_hint_kavita)
+                ServerKind.Opds -> str(R.string.server_hint_opds)
             },
             style = MaterialTheme.typography.bodySmall,
             color = FwipColors.TextMuted,
         )
-        Field("Nome", name, { name = it }, "Ex.: NAS de casa")
-        Field(if (kind == ServerKind.Komga) "Endereço" else "OPDS URL", url, { url = it.trim(); error = null }, if (kind == ServerKind.Komga) "http://192.168.0.10:25600" else "http://...", keyboard = KeyboardType.Uri)
+        Field(str(R.string.name), name, { name = it }, str(R.string.server_name_hint))
+        Field(if (kind == ServerKind.Komga) str(R.string.address) else "OPDS URL", url, { url = it.trim(); error = null }, if (kind == ServerKind.Komga) "http://192.168.0.10:25600" else "http://...", keyboard = KeyboardType.Uri)
         if (kind != ServerKind.Kavita) {
-            Field(if (kind == ServerKind.Komga) "E-mail" else "Usuário", user, { user = it.trim(); error = null }, if (kind == ServerKind.Komga) "voce@email.com" else "opcional", keyboard = KeyboardType.Email)
-            Field("Senha", password, { password = it; error = null }, if (kind == ServerKind.Komga) "" else "opcional", password = true, keyboard = KeyboardType.Password)
+            Field(if (kind == ServerKind.Komga) "E-mail" else str(R.string.user), user, { user = it.trim(); error = null }, if (kind == ServerKind.Komga) str(R.string.email_hint) else str(R.string.optional), keyboard = KeyboardType.Email)
+            Field(str(R.string.password), password, { password = it; error = null }, if (kind == ServerKind.Komga) "" else str(R.string.optional), password = true, keyboard = KeyboardType.Password)
         }
         error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFFF8A80)) }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (onDelete != null) {
-                CircleIconButton(Icons.Filled.Delete, "Remover servidor", onDelete, size = 48.dp)
+                CircleIconButton(Icons.Filled.Delete, str(R.string.remove_server), onDelete, size = 48.dp)
             }
             Spacer(Modifier.weight(1f))
             if (testing) CircularProgressIndicator(Modifier.size(22.dp), color = FwipColors.TextSoft, strokeWidth = 2.dp)
             PillButton(
-                "Testar e salvar",
+                str(R.string.test_and_save),
                 {
                     var address = url.trim()
                     if (address.isNotBlank() && !address.contains("://")) address = "http://$address"
@@ -359,7 +361,7 @@ fun ServerBrowser(
                 actions.openDownloaded(file)
             }.onFailure {
                 download = null
-                error = "Falha ao baixar: " + errorText(it)
+                error = str(R.string.download_failed, errorText(it))
             }
         }
     }
@@ -378,7 +380,7 @@ fun ServerBrowser(
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    CircleIconButton(Icons.Filled.ArrowBack, "Voltar", { back() }, size = 44.dp)
+                    CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), { back() }, size = 44.dp)
                     Column(Modifier.weight(1f)) {
                         Text(server.name.uppercase(), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft, maxLines = 1)
                         Text(
@@ -389,10 +391,10 @@ fun ServerBrowser(
                         )
                     }
                     if (feed?.search != null) {
-                        CircleIconButton(if (searching) Icons.Filled.Close else Icons.Filled.Search, "Buscar no servidor", { searching = !searching; query = "" }, size = 44.dp)
+                        CircleIconButton(if (searching) Icons.Filled.Close else Icons.Filled.Search, str(R.string.search_server), { searching = !searching; query = "" }, size = 44.dp)
                     }
                     if (stack.size > 1) {
-                        CircleButton("Início do catálogo", { stack = listOf(server.catalogUrl) }, size = 44.dp) { FolderIcon(FwipColors.Text) }
+                        CircleButton(str(R.string.catalog_start), { stack = listOf(server.catalogUrl) }, size = 44.dp) { FolderIcon(FwipColors.Text) }
                     }
                 }
                 if (searching) {
@@ -407,7 +409,7 @@ fun ServerBrowser(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                            if (query.isEmpty()) Text("Buscar séries no servidor", style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextMuted)
+                            if (query.isEmpty()) Text(str(R.string.search_server_hint), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextMuted)
                             BasicTextField(
                                 value = query,
                                 onValueChange = { query = it },
@@ -424,7 +426,7 @@ fun ServerBrowser(
                                             searching = false
                                             stack = stack + url
                                         } else {
-                                            error = "Este servidor não informou como buscar."
+                                            error = str(R.string.error_no_search)
                                         }
                                     }
                                 }),
@@ -445,11 +447,11 @@ fun ServerBrowser(
             error != null && entries.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(vertical = 24.dp)) {
                     Text(error.orEmpty(), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextSoft)
-                    PillButton("Tentar de novo", { reload++ }, style = PillStyle.Ghost, height = 46.dp)
+                    PillButton(str(R.string.try_again), { reload++ }, style = PillStyle.Ghost, height = 46.dp)
                 }
             }
             entries.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
-                Text("Nada por aqui.", style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextMuted, modifier = Modifier.padding(vertical = 24.dp))
+                Text(str(R.string.nothing_here), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextMuted, modifier = Modifier.padding(vertical = 24.dp))
             }
         }
 
@@ -512,7 +514,7 @@ fun ServerBrowser(
                         if (loadingMore) {
                             CircularProgressIndicator(Modifier.size(24.dp), color = FwipColors.TextSoft, strokeWidth = 2.dp)
                         } else {
-                            PillButton("Carregar mais", {
+                            PillButton(str(R.string.load_more), {
                                 loadingMore = true
                                 scope.launch {
                                     runCatching { Opds.feed(server, more) }
@@ -538,30 +540,30 @@ fun ServerBrowser(
                         Text(entry.authors.distinct().joinToString(", "), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
-                CircleIconButton(Icons.Filled.Close, "Fechar", { bookMenu = null }, size = 40.dp)
+                CircleIconButton(Icons.Filled.Close, str(R.string.close), { bookMenu = null }, size = 40.dp)
             }
             entry.summary?.let {
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft, maxLines = 8, overflow = TextOverflow.Ellipsis)
             }
             if (entry.stream?.pseCount != null) {
-                SheetButton("Ler online", { bookMenu = null; read(entry) }, leading = { Icon(Icons.Filled.PlayArrow, null) })
+                SheetButton(str(R.string.read_online), { bookMenu = null; read(entry) }, leading = { Icon(Icons.Filled.PlayArrow, null) })
             }
             if (entry.acquisition != null) {
-                SheetButton("Baixar para ler offline", { startDownload(entry) }, leading = { Icon(Icons.Filled.Add, null) })
+                SheetButton(str(R.string.download_offline), { startDownload(entry) }, leading = { Icon(Icons.Filled.Add, null) })
             }
             if (entry.stream == null && entry.acquisition == null) {
-                Text("Este item não pode ser lido pelo Fwip.", style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
+                Text(str(R.string.error_unreadable), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
             }
         }
     }
 
     download?.let { (entry, progress) ->
         FwipDialog({}) {
-            Text("Baixando", style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
+            Text(str(R.string.downloading), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
             Text(entry.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             ProgressBar(progress, FwipColors.Amber, Modifier.fillMaxWidth())
             Text(
-                if (progress > 0f) "${(progress * 100).toInt()}%" else "Começando...",
+                if (progress > 0f) "${(progress * 100).toInt()}%" else str(R.string.starting),
                 style = MaterialTheme.typography.bodySmall,
                 color = FwipColors.TextMuted,
             )

@@ -2,6 +2,8 @@
 
 package io.github.christiandonatti.fwip.ui
 
+import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -84,8 +86,8 @@ fun CoverTile(
     Column(
         modifier.combinedClickable(
             role = Role.Button,
-            onClickLabel = if (selecting) "Selecionar" else item.title,
-            onLongClickLabel = if (selecting) "Selecionar" else "Opções",
+            onClickLabel = if (selecting) str(R.string.select) else item.title,
+            onLongClickLabel = if (selecting) str(R.string.select) else str(R.string.options),
             onLongClick = { if (selecting) selection?.toggle(item.comic.id) else onMenu() },
             onClick = { if (selecting) selection?.toggle(item.comic.id) else onOpen() },
         ),
@@ -111,7 +113,7 @@ fun CoverTile(
                         .background(FwipColors.Amber),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Filled.Check, "Lida", tint = FwipColors.AmberInk, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Check, str(R.string.read_badge), tint = FwipColors.AmberInk, modifier = Modifier.size(16.dp))
                 }
             }
             if (selecting) {
@@ -132,7 +134,7 @@ fun CoverTile(
                         .border(2.dp, if (selected) FwipColors.Amber else Color.White, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    if (selected) Icon(Icons.Filled.Check, "Selecionada", tint = FwipColors.AmberInk, modifier = Modifier.size(16.dp))
+                    if (selected) Icon(Icons.Filled.Check, str(R.string.selected), tint = FwipColors.AmberInk, modifier = Modifier.size(16.dp))
                 }
             }
         }
@@ -219,7 +221,7 @@ fun CoverFan(items: List<LibraryItem>, modifier: Modifier = Modifier) {
     }
 }
 
-fun countLabel(n: Int): String = if (n == 1) "1 item" else "$n itens"
+fun countLabel(n: Int): String = if (n == 1) str(R.string.one_item) else str(R.string.n_items, n)
 
 fun fileSizeLabel(bytes: Long): String = when {
     bytes <= 0 -> ""
@@ -251,7 +253,7 @@ fun DialogTitle(text: String, onClose: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(text, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.width(12.dp))
-        CircleIconButton(Icons.Filled.Close, "Fechar", onClose, size = 40.dp)
+        CircleIconButton(Icons.Filled.Close, str(R.string.close), onClose, size = 40.dp)
     }
 }
 
@@ -304,7 +306,7 @@ fun ComicActionsDialog(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 val p = item.progress
-                val pages = p?.pageCount?.takeIf { it > 0 }?.let { "$it páginas" }
+                val pages = p?.pageCount?.takeIf { it > 0 }?.let { str(R.string.n_pages, it) }
                 Text(
                     listOfNotNull(item.comic.format.label, pages, fileSizeLabel(item.comic.size).ifBlank { null }).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
@@ -314,26 +316,26 @@ fun ComicActionsDialog(
                     Text(item.comic.folder, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            CircleIconButton(Icons.Filled.Close, "Fechar", onDismiss, size = 40.dp)
+            CircleIconButton(Icons.Filled.Close, str(R.string.close), onDismiss, size = 40.dp)
         }
         item.meta?.let { MetaDetails(it) }
         val finished = item.progress?.finished == true
         val started = item.progress?.started == true
         SheetButton(
-            when { finished -> "Ler de novo"; started -> "Continuar lendo"; else -> "Ler" },
+            when { finished -> str(R.string.read_again); started -> str(R.string.continue_reading); else -> str(R.string.read) },
             onOpen,
             leading = { Icon(Icons.Filled.PlayArrow, null) },
         )
         SheetButton(
-            if (finished) "Marcar como não lida" else "Marcar como lida",
+            if (finished) str(R.string.mark_unread) else str(R.string.mark_read),
             onToggleRead,
             leading = { Icon(Icons.Filled.Check, null) },
         )
-        SheetButton("Adicionar a uma coleção", onCollections, leading = { Icon(Icons.Filled.Add, null) })
-        SheetButton("Selecionar várias", onSelect, leading = { SelectIcon(LocalContentColor.current) })
+        SheetButton(str(R.string.add_to_collection), onCollections, leading = { Icon(Icons.Filled.Add, null) })
+        SheetButton(str(R.string.select_several), onSelect, leading = { SelectIcon(LocalContentColor.current) })
         if (seriesSize >= 2) {
             SheetButton(
-                "Ver série ${item.series.name}",
+                str(R.string.see_series, item.series.name),
                 onSeries,
                 leading = { StackIcon(LocalContentColor.current) },
                 trailing = { Text(countLabel(seriesSize), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted) },
@@ -347,12 +349,12 @@ fun ComicActionsDialog(
 fun MetaDetails(meta: io.github.christiandonatti.fwip.data.ComicMeta) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         val facts = listOfNotNull(
-            meta.writer?.let { "Roteiro" to it },
-            meta.artists?.let { "Arte" to it },
-            meta.publisher?.let { p -> "Editora" to listOfNotNull(p, meta.imprint).distinct().joinToString(" / ") },
-            meta.date?.let { "Publicação" to it },
-            meta.storyArc?.let { "Arco" to it },
-            meta.genre?.let { "Gênero" to it },
+            meta.writer?.let { str(R.string.meta_writer) to it },
+            meta.artists?.let { str(R.string.meta_art) to it },
+            meta.publisher?.let { p -> str(R.string.meta_publisher) to listOfNotNull(p, meta.imprint).distinct().joinToString(" / ") },
+            meta.date?.let { str(R.string.meta_date) to it },
+            meta.storyArc?.let { str(R.string.meta_arc) to it },
+            meta.genre?.let { str(R.string.meta_genre) to it },
         )
         facts.forEach { (label, value) ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -370,7 +372,7 @@ fun MetaDetails(meta: io.github.christiandonatti.fwip.data.ComicMeta) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable(onClickLabel = if (expanded) "Mostrar menos" else "Mostrar mais") { expanded = !expanded },
+                    .clickable(onClickLabel = if (expanded) str(R.string.show_less) else str(R.string.show_more)) { expanded = !expanded },
             )
         }
     }
@@ -411,12 +413,12 @@ fun CollectionPickerDialog(
         if (creating) {
             NameField(
                 initial = "",
-                placeholder = "Nome da nova coleção",
-                action = "Criar",
+                placeholder = str(R.string.new_collection_name),
+                action = str(R.string.create),
                 onDone = { onCreate(it); creating = false },
             )
         } else {
-            SheetButton("Nova coleção", { creating = true }, leading = { Icon(Icons.Filled.Add, null) })
+            SheetButton(str(R.string.new_collection), { creating = true }, leading = { Icon(Icons.Filled.Add, null) })
         }
     }
 }
@@ -425,7 +427,7 @@ fun CollectionPickerDialog(
 fun NameDialog(title: String, initial: String, action: String, onDone: (String) -> Unit, onDismiss: () -> Unit) {
     FwipDialog(onDismiss) {
         DialogTitle(title, onDismiss)
-        NameField(initial, "Nome", action, onDone)
+        NameField(initial, str(R.string.name), action, onDone)
     }
 }
 

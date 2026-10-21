@@ -1,5 +1,7 @@
 package io.github.christiandonatti.fwip.reader
 
+import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -119,8 +121,8 @@ fun ReaderScreen(
     val loaded by produceState<Loaded>(Loaded.Loading, comic.id) {
         value = withContext(Dispatchers.IO) {
             runCatching { ComicSources.open(context, comic) }.fold(
-                onSuccess = { src -> if (src.pageCount > 0) Loaded.Ready(src) else { src.close(); Loaded.Failed("Este arquivo não tem páginas de imagem.") } },
-                onFailure = { Loaded.Failed("Não foi possível abrir este arquivo.\n${it.message ?: it.javaClass.simpleName}") },
+                onSuccess = { src -> if (src.pageCount > 0) Loaded.Ready(src) else { src.close(); Loaded.Failed(str(R.string.error_no_pages)) } },
+                onFailure = { Loaded.Failed(str(R.string.error_open_file) + "\n" + (it.message ?: it.javaClass.simpleName)) },
             )
         }
     }
@@ -144,7 +146,7 @@ fun ReaderScreen(
             ) {
                 Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
                 Text(l.message, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted, textAlign = TextAlign.Center)
-                PillButton("Voltar", onClose)
+                PillButton(str(R.string.back), onClose)
             }
             is Loaded.Ready -> Reader(comic, title, meta, next, onOpenNext, l.source, startPage, settings, onClose, onProgress)
         }
@@ -440,7 +442,7 @@ private fun Reader(
             visible = chrome,
             title = title,
             pageLabel = spreads.getOrNull(spread)?.let { p ->
-                if (p.size == 2) "${p[0] + 1}-${p[1] + 1} de ${source.pageCount}" else "${p[0] + 1} de ${source.pageCount}"
+                if (p.size == 2) str(R.string.pages_x_y_of_n, p[0] + 1, p[1] + 1, source.pageCount) else str(R.string.page_x_of_n, p[0] + 1, source.pageCount)
             } ?: "",
             spreadIndex = spread,
             spreadCount = spreads.size,
@@ -463,13 +465,13 @@ private fun Reader(
             GuideBar(
                 label = when {
                     list == null -> ""
-                    list.isEmpty() -> if (panelsMode) "Página inteira" else "Nenhum balão nesta página"
-                    stop >= 0 -> (if (panelsMode) "Quadro" else "Balão") + " ${stop + 1} de ${list.size}"
-                    panelsMode -> if (list.size == 1) "Página inteira" else "${list.size} quadros"
-                    else -> if (list.size == 1) "1 balão" else "${list.size} balões"
+                    list.isEmpty() -> if (panelsMode) str(R.string.whole_page) else str(R.string.no_balloons)
+                    stop >= 0 -> str(if (panelsMode) R.string.panel_x_of_y else R.string.balloon_x_of_y, stop + 1, list.size)
+                    panelsMode -> if (list.size == 1) str(R.string.whole_page) else str(R.string.n_panels, list.size)
+                    else -> if (list.size == 1) str(R.string.one_balloon) else str(R.string.n_balloons, list.size)
                 },
                 busy = list == null,
-                busyLabel = if (panelsMode) "Procurando quadros" else "Procurando balões",
+                busyLabel = if (panelsMode) str(R.string.finding_panels) else str(R.string.finding_balloons),
                 rtl = rtl,
                 onPrev = ::prevStop,
                 onNext = ::nextStop,

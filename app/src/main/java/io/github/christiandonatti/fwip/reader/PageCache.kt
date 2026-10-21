@@ -1,5 +1,7 @@
 package io.github.christiandonatti.fwip.reader
 
+import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 import android.graphics.Bitmap
 import android.util.LruCache
 import io.github.christiandonatti.fwip.data.ComicSource
@@ -43,7 +45,7 @@ class PageCache(private val source: ComicSource, private val cropMargins: Boolea
                         val cause = generateSequence(it) { e -> e.cause }.last()
                         errors[index] = cause.javaClass.simpleName + (cause.message?.let { m -> ": $m" } ?: "")
                     }
-                    .onSuccess { b -> if (b == null) errors[index] = "Formato de imagem não suportado" }
+                    .onSuccess { b -> if (b == null) errors[index] = str(R.string.error_image_format) }
                     .getOrNull()?.also { cache.put(k, it) }
             }
         }

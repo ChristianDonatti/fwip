@@ -1,5 +1,7 @@
 package io.github.christiandonatti.fwip.data
 
+import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -140,7 +142,7 @@ internal object ArchiveCache {
         if (!target.exists() || target.length() == 0L || target.length() != comic.size && comic.size > 0) {
             val tmp = File(dir, target.name + ".part")
             context.contentResolver.openInputStream(comic.uri).use { input ->
-                requireNotNull(input) { "Não foi possível ler o arquivo" }
+                requireNotNull(input) { str(R.string.error_read_file) }
                 tmp.outputStream().use { output -> input.copyTo(output, 256 * 1024) }
             }
             tmp.renameTo(target)
@@ -341,7 +343,7 @@ private class RarComicSource(
             while (!ready[index] && !finished && !closed) lock.wait(250)
         }
         if (!ready[index]) {
-            throw failure ?: java.io.IOException("Página não encontrada no arquivo")
+            throw failure ?: java.io.IOException(str(R.string.error_page_missing))
         }
         return ImageDecoding.decodeBytes(pageFile(index).readBytes(), maxWidth, maxHeight)
     }

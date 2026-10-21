@@ -1,14 +1,23 @@
 package io.github.christiandonatti.fwip.reader
 
+import io.github.christiandonatti.fwip.R
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.MutableSharedFlow
 
-enum class TurnStyle(val label: String) { Curl("Folha"), Flip("Girar"), Slide("Deslizar") }
+enum class TurnStyle(@androidx.annotation.StringRes private val labelRes: Int) {
+    Curl(R.string.turn_curl), Flip(R.string.turn_flip), Slide(R.string.turn_slide);
 
-enum class SpreadMode(val label: String) { Auto("Automático"), Single("Uma página"), Double("Página dupla") }
+    val label: String get() = str(labelRes)
+}
+
+enum class SpreadMode(@androidx.annotation.StringRes private val labelRes: Int) {
+    Auto(R.string.spread_auto), Single(R.string.spread_single), Double(R.string.spread_double);
+
+    val label: String get() = str(labelRes)
+}
 
 /** Reader preferences, kept as Compose state so the screen updates the moment one changes. */
 class ReaderSettings(context: Context) {

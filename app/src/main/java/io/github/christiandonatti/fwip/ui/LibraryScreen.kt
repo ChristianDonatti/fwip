@@ -5,6 +5,8 @@
 
 package io.github.christiandonatti.fwip.ui
 
+import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -110,9 +112,17 @@ class LibraryActions(
     val setInCollection: (String, List<String>, Boolean) -> Unit,
 )
 
-private enum class Tab(val label: String) { Home("Início"), Library("Biblioteca"), Collections("Coleções"), Servers("Servidores") }
+private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
+    Home(R.string.tab_home), Library(R.string.tab_library), Collections(R.string.tab_collections), Servers(R.string.tab_servers);
 
-private enum class Filter(val label: String) { All("Tudo"), Series("Séries"), Folders("Pastas"), Unread("Não lidas"), Finished("Lidas") }
+    val label: String get() = str(labelRes)
+}
+
+private enum class Filter(@androidx.annotation.StringRes val labelRes: Int) {
+    All(R.string.filter_all), Series(R.string.filter_series), Folders(R.string.filter_folders), Unread(R.string.smart_unread), Finished(R.string.smart_read);
+
+    val label: String get() = str(labelRes)
+}
 
 /** Saveable pointer to a shelf (a sealed type cannot go into a Bundle directly). */
 private fun Shelf.toToken(): String = when (this) {
@@ -147,6 +157,7 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
     var query by rememberSaveable { mutableStateOf("") }
     var searching by rememberSaveable { mutableStateOf(false) }
     var browsing by rememberSaveable { mutableStateOf<String?>(null) }
+    var showAbout by rememberSaveable { mutableStateOf(false) }
     val browsingServer = state.servers.firstOrNull { it.id == browsing }
 
     BackHandler(enabled = selection.active) { selection.clear() }
@@ -174,7 +185,9 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
             val boxHeight = maxHeight
             val gutter = if (wide) 48.dp else 20.dp
 
-            if (browsingServer != null) {
+            if (showAbout) {
+                AboutScreen(gutter, onBack = { showAbout = false })
+            } else if (browsingServer != null) {
                 ServerBrowser(browsingServer, serverActions, wide, gutter, onClose = { browsing = null })
             } else AnimatedContent(
                 targetState = shelf,
@@ -210,6 +223,7 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
                             onAdd = actions.addFolder,
                             onFolders = { showFolders = true },
                             onSearch = { tab = Tab.Library; searching = true },
+                            onAbout = { showAbout = true },
                             modifier = Modifier.padding(horizontal = gutter, vertical = if (wide) 24.dp else 12.dp),
                         )
                         when {
@@ -238,7 +252,7 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
                     onClose = { selection.clear() },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
-            } else if (!wide && shelf == null && browsingServer == null && (state.items.isNotEmpty() || tab == Tab.Servers)) {
+            } else if (!wide && shelf == null && browsingServer == null && !showAbout && (state.items.isNotEmpty() || tab == Tab.Servers)) {
                 PhoneTabBar(tab, onTab = { tab = it }, Modifier.align(Alignment.BottomCenter))
             }
         }
@@ -246,6 +260,7 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
 
     if (showFolders) {
         FoldersDialog(
+            onAbout = { showFolders = false; showAbout = true },
             folders = state.folders,
             onAdd = { showFolders = false; actions.addFolder() },
             onRemove = actions.removeFolder,
@@ -285,7 +300,7 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
 
     pickerFor?.let { ids ->
         CollectionPickerDialog(
-            title = if (ids.size == 1) "Coleções" else "Coleções para ${ids.size} HQs",
+            title = if (ids.size == 1) str(R.string.tab_collections) else str(R.string.collections_for_n, ids.size),
             collections = state.collections,
             comicIds = ids,
             onToggle = { c, inside -> actions.setInCollection(c.id, ids, inside) },
@@ -308,27 +323,34 @@ private fun Header(
     onAdd: () -> Unit,
     onFolders: () -> Unit,
     onSearch: () -> Unit,
+    onAbout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val button = if (wide) 46.dp else 44.dp
     Row(modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-        FwipLogo(size = if (wide) 22 else 19)
+        FwipLogo(
+            size = if (wide) 22 else 19,
+            modifier = Modifier
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClickLabel = str(R.string.about), onClick = onAbout)
+                .padding(4.dp),
+        )
         Spacer(Modifier.weight(1f))
         if (wide) {
             Segmented(Tab.entries, tab, { it.label }, onTab)
             Spacer(Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(if (wide) 10.dp else 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            CircleIconButton(Icons.Filled.Search, "Buscar", onSearch, size = button)
+            CircleIconButton(Icons.Filled.Search, str(R.string.search), onSearch, size = button)
             if (scanning) {
                 Box(Modifier.size(button), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(Modifier.size(20.dp), color = FwipColors.TextSoft, strokeWidth = 2.dp)
                 }
             } else {
-                CircleIconButton(Icons.Filled.Refresh, "Atualizar biblioteca", onRefresh, size = button)
+                CircleIconButton(Icons.Filled.Refresh, str(R.string.refresh_library), onRefresh, size = button)
             }
-            CircleIconButton(Icons.Filled.Add, "Adicionar pasta", onAdd, size = button)
-            CircleButton("Pastas da biblioteca", onFolders, size = button) { FolderIcon(FwipColors.Text) }
+            CircleIconButton(Icons.Filled.Add, str(R.string.add_folder), onAdd, size = button)
+            CircleButton(str(R.string.library_folders), onFolders, size = button) { FolderIcon(FwipColors.Text) }
         }
     }
 }
@@ -377,15 +399,15 @@ private fun Chip(text: String, on: Boolean, onClick: () -> Unit) {
 }
 
 private fun kicker(item: LibraryItem): String = when {
-    item.progress?.finished == true -> "LER DE NOVO"
-    item.progress?.started == true -> "CONTINUAR LENDO"
-    else -> "COMEÇAR"
+    item.progress?.finished == true -> str(R.string.kicker_again)
+    item.progress?.started == true -> str(R.string.kicker_continue)
+    else -> str(R.string.kicker_start)
 }
 
 private fun cta(item: LibraryItem): String = when {
-    item.progress?.finished == true -> "Reler"
-    item.progress?.started == true -> "Continuar"
-    else -> "Começar"
+    item.progress?.finished == true -> str(R.string.reread)
+    item.progress?.started == true -> str(R.string.continue_)
+    else -> str(R.string.start)
 }
 
 private fun progressLine(item: LibraryItem): String {
@@ -393,9 +415,9 @@ private fun progressLine(item: LibraryItem): String {
     if (p.pageCount <= 0) return item.comic.format.label
     val remaining = p.pageCount - 1 - p.page
     return when {
-        p.finished -> "${p.pageCount} páginas · lido"
-        !p.started -> "${p.pageCount} páginas · não iniciado"
-        else -> "Página ${p.page + 1} de ${p.pageCount} · $remaining restantes"
+        p.finished -> str(R.string.progress_read, p.pageCount)
+        !p.started -> str(R.string.progress_unstarted, p.pageCount)
+        else -> str(R.string.progress_reading, p.page + 1, p.pageCount, remaining)
     }
 }
 
@@ -474,7 +496,7 @@ private fun WideHome(
                     Spacer(Modifier.height(4.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         PillButton(cta(hero), onClick = { actions.open(hero) }, leading = { Icon(Icons.Filled.PlayArrow, null, Modifier.size(20.dp)) })
-                        PillButton("Opções", onClick = { onMenu(hero) }, style = PillStyle.Ghost)
+                        PillButton(str(R.string.options), onClick = { onMenu(hero) }, style = PillStyle.Ghost)
                     }
                 }
             }
@@ -499,15 +521,15 @@ private fun WideHome(
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CircleIconButton(Icons.Filled.KeyboardArrowLeft, "Anterior", { onSelect((index - 1).coerceAtLeast(0)) }, size = 44.dp)
-                    CircleIconButton(Icons.Filled.KeyboardArrowRight, "Próxima", { onSelect((index + 1).coerceAtMost(row.lastIndex)) }, size = 44.dp)
-                    Text("${index + 1} de ${row.size}", style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+                    CircleIconButton(Icons.Filled.KeyboardArrowLeft, str(R.string.previous), { onSelect((index - 1).coerceAtLeast(0)) }, size = 44.dp)
+                    CircleIconButton(Icons.Filled.KeyboardArrowRight, str(R.string.next_item), { onSelect((index + 1).coerceAtMost(row.lastIndex)) }, size = 44.dp)
+                    Text(str(R.string.page_x_of_n, index + 1, row.size), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
                 }
             }
         }
         if (shelves.isNotEmpty()) {
             Column(Modifier.padding(horizontal = gutter), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("Estante", style = MaterialTheme.typography.titleLarge)
+                Text(str(R.string.shelf), style = MaterialTheme.typography.titleLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     shelves.forEach { (shelf, list) ->
                         ShelfRowCard(shelf.title, list, Modifier.weight(1f)) { openShelf(shelf) }
@@ -635,12 +657,12 @@ private fun PhoneHome(
             }
         }
         if (reading.isNotEmpty()) {
-            item { CoverRow("Continuar lendo", reading, actions, onMenu, gutter) }
+            item { CoverRow(str(R.string.continue_reading), reading, actions, onMenu, gutter) }
         }
         if (series.isNotEmpty()) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.padding(horizontal = gutter)) { SectionTitle("Séries") }
+                    Box(Modifier.padding(horizontal = gutter)) { SectionTitle(str(R.string.filter_series)) }
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = gutter),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -661,7 +683,7 @@ private fun PhoneHome(
         if (shelves.isNotEmpty()) {
             item {
                 Column(Modifier.padding(horizontal = gutter), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SectionTitle("Estante")
+                    SectionTitle(str(R.string.shelf))
                     shelves.chunked(2).forEach { pair ->
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             pair.forEach { (shelf, list) ->
@@ -691,14 +713,14 @@ private fun PhoneHome(
             }
         }
         if (recent.isNotEmpty()) {
-            item { CoverRow("Adicionadas recentemente", recent, actions, onMenu, gutter) }
+            item { CoverRow(str(R.string.smart_recent), recent, actions, onMenu, gutter) }
         }
     }
 }
 
 private fun seriesSubtitle(list: List<LibraryItem>): String {
     val read = list.count { it.progress?.finished == true }
-    return if (read > 0) "${list.size} edições · $read lidas" else "${list.size} edições"
+    return if (read > 0) str(R.string.n_issues_read, list.size, read) else str(R.string.n_issues, list.size)
 }
 
 @Composable
@@ -759,7 +781,7 @@ private fun LibraryTab(
         if (results != null) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
-                    when (results.size) { 0 -> "Nada encontrado para \"$query\""; 1 -> "1 resultado"; else -> "${results.size} resultados" },
+                    when (results.size) { 0 -> str(R.string.search_none, query); 1 -> str(R.string.search_one); else -> str(R.string.search_n, results.size) },
                     style = MaterialTheme.typography.bodyMedium,
                     color = FwipColors.TextMuted,
                 )
@@ -778,7 +800,7 @@ private fun LibraryTab(
                 Filter.entries.forEach { f -> Chip(f.label, f == filter) { filter = f } }
                 if (filter != Filter.Series && filter != Filter.Folders) {
                     Spacer(Modifier.width(8.dp))
-                    Chip("Ordem: ${sort.label}", false) { sort = SortOrder.entries[(sort.ordinal + 1) % SortOrder.entries.size] }
+                    Chip(str(R.string.sort_by, sort.label), false) { sort = SortOrder.entries[(sort.ordinal + 1) % SortOrder.entries.size] }
                 }
             }
         }
@@ -787,7 +809,7 @@ private fun LibraryTab(
                 val series = state.series
                 if (series.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Hint("Quando houver duas ou mais edições com o mesmo nome (como \"Saga #01\" e \"Saga #02\"), elas aparecem agrupadas aqui.")
+                        Hint(str(R.string.series_hint))
                     }
                 }
                 items(series, key = { it.first.key }) { (shelf, list) ->
@@ -805,7 +827,7 @@ private fun LibraryTab(
                 }.sortedFor(sort)
                 if (list.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Hint(if (filter == Filter.Finished) "Nenhuma HQ lida ainda." else "Tudo lido por aqui.")
+                        Hint(if (filter == Filter.Finished) str(R.string.none_read) else str(R.string.all_read))
                     }
                 }
                 items(list, key = { it.comic.id }) { it ->
@@ -857,7 +879,7 @@ private fun SearchField(query: String, onQuery: (String) -> Unit, onClose: () ->
         Icon(Icons.Filled.Search, null, tint = FwipColors.TextMuted, modifier = Modifier.size(20.dp))
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
             if (query.isEmpty()) {
-                Text("Título, série, autor ou editora", style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextMuted, maxLines = 1)
+                Text(str(R.string.search_hint), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextMuted, maxLines = 1)
             }
             androidx.compose.foundation.text.BasicTextField(
                 value = query,
@@ -869,7 +891,7 @@ private fun SearchField(query: String, onQuery: (String) -> Unit, onClose: () ->
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )
         }
-        CircleIconButton(Icons.Filled.Close, "Fechar busca", onClose, size = 42.dp)
+        CircleIconButton(Icons.Filled.Close, str(R.string.close_search), onClose, size = 42.dp)
     }
 }
 
@@ -896,9 +918,9 @@ private fun SelectionBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        CircleIconButton(Icons.Filled.Close, "Cancelar seleção", onClose, size = 46.dp)
+        CircleIconButton(Icons.Filled.Close, str(R.string.cancel_selection), onClose, size = 46.dp)
         Text(
-            if (count == 1) "1 selecionada" else "$count selecionadas",
+            if (count == 1) str(R.string.one_selected) else str(R.string.n_selected, count),
             style = MaterialTheme.typography.labelLarge,
             maxLines = 1,
             modifier = Modifier.padding(horizontal = 4.dp),
@@ -907,9 +929,9 @@ private fun SelectionBar(
             Modifier.weight(1f).horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
         ) {
-            PillButton("Lidas", onRead, height = 44.dp, style = PillStyle.Ghost)
-            PillButton("Não lidas", onUnread, height = 44.dp, style = PillStyle.Ghost)
-            PillButton("Coleção", onCollection, height = 44.dp, style = PillStyle.Amber)
+            PillButton(str(R.string.smart_read), onRead, height = 44.dp, style = PillStyle.Ghost)
+            PillButton(str(R.string.smart_unread), onUnread, height = 44.dp, style = PillStyle.Ghost)
+            PillButton(str(R.string.collection), onCollection, height = 44.dp, style = PillStyle.Amber)
         }
     }
 }
@@ -931,7 +953,7 @@ private fun CollectionsTab(
         horizontalArrangement = Arrangement.spacedBy(if (wide) 22.dp else 12.dp),
         verticalArrangement = Arrangement.spacedBy(if (wide) 22.dp else 12.dp),
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("Suas coleções") }
+        item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle(str(R.string.your_collections)) }
         items(state.collections, key = { it.id }) { c ->
             val shelf = Shelf.Custom(c.id, c.name)
             ShelfCard(c.name, state.itemsOf(shelf), onClick = { openShelf(shelf) })
@@ -952,12 +974,12 @@ private fun CollectionsTab(
                     ) { Icon(Icons.Filled.Add, null, tint = FwipColors.Text) }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Nova coleção", style = MaterialTheme.typography.labelLarge)
-                    Text("Segure uma capa para adicionar", style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 2)
+                    Text(str(R.string.new_collection), style = MaterialTheme.typography.labelLarge)
+                    Text(str(R.string.hold_cover_to_add), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 2)
                 }
             }
         }
-        item(span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.padding(top = 12.dp)) { SectionTitle("Automáticas") } }
+        item(span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.padding(top = 12.dp)) { SectionTitle(str(R.string.smart_collections)) } }
         items(smart, key = { "m:" + it.kind.name }) { shelf ->
             ShelfCard(shelf.title, state.itemsOf(shelf), onClick = { openShelf(shelf) })
         }
@@ -965,9 +987,9 @@ private fun CollectionsTab(
 
     if (creating) {
         NameDialog(
-            title = "Nova coleção",
+            title = str(R.string.new_collection),
             initial = "",
-            action = "Criar",
+            action = str(R.string.create),
             onDone = { name ->
                 creating = false
                 val id = actions.createCollection(name, emptyList())
@@ -1020,11 +1042,11 @@ private fun ShelfScreen(
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    CircleIconButton(Icons.Filled.ArrowBack, "Voltar", onBack, size = 44.dp)
+                    CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
                     Spacer(Modifier.weight(1f))
                     if (collection != null) {
-                        CircleIconButton(Icons.Filled.Edit, "Renomear coleção", { renaming = true }, size = 44.dp)
-                        CircleIconButton(Icons.Filled.Delete, "Apagar coleção", { confirmDelete = true }, size = 44.dp)
+                        CircleIconButton(Icons.Filled.Edit, str(R.string.rename_collection), { renaming = true }, size = 44.dp)
+                        CircleIconButton(Icons.Filled.Delete, str(R.string.delete_collection), { confirmDelete = true }, size = 44.dp)
                     }
                 }
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -1032,10 +1054,10 @@ private fun ShelfScreen(
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             when (shelf) {
-                                is Shelf.Series -> "SÉRIE"
-                                is Shelf.Folder -> "PASTA"
-                                is Shelf.Custom -> "COLEÇÃO"
-                                is Shelf.Smart -> "AUTOMÁTICA"
+                                is Shelf.Series -> str(R.string.kind_series)
+                                is Shelf.Folder -> str(R.string.kind_folder)
+                                is Shelf.Custom -> str(R.string.kind_collection)
+                                is Shelf.Smart -> str(R.string.kind_smart)
                             },
                             style = MaterialTheme.typography.labelSmall,
                             color = FwipColors.TextSoft,
@@ -1045,7 +1067,7 @@ private fun ShelfScreen(
                         val publisher = list.firstNotNullOfOrNull { it.meta?.publisher }
                         Text(
                             listOfNotNull(
-                                if (read > 0) "${countLabel(list.size)} · $read lidas" else countLabel(list.size),
+                                if (read > 0) str(R.string.count_read, countLabel(list.size), read) else countLabel(list.size),
                                 publisher,
                                 years.takeIf { it.isNotEmpty() }?.let { y -> if (y.min() == y.max()) "${y.min()}" else "${y.min()}-${y.max()}" },
                             ).joinToString(" · "),
@@ -1061,7 +1083,7 @@ private fun ShelfScreen(
                     ) {
                         if (next != null) {
                             PillButton(
-                                if (next.progress?.started == true) "Continuar ${next.series.number?.let { "#" + it.toInt() } ?: ""}".trim() else "Começar",
+                                if (next.progress?.started == true) (str(R.string.continue_) + " " + (next.series.number?.let { "#" + it.toInt() } ?: "")).trim() else str(R.string.start),
                                 onClick = { actions.open(next) },
                                 height = 48.dp,
                                 leading = { Icon(Icons.Filled.PlayArrow, null, Modifier.size(18.dp)) },
@@ -1069,13 +1091,13 @@ private fun ShelfScreen(
                         }
                         val allRead = read == list.size
                         PillButton(
-                            if (allRead) "Marcar tudo como não lido" else "Marcar tudo como lido",
+                            if (allRead) str(R.string.mark_all_unread) else str(R.string.mark_all_read),
                             onClick = { actions.setRead(list.map { it.comic.id }, !allRead) },
                             height = 48.dp,
                             style = PillStyle.Ghost,
                         )
                         PillButton(
-                            "Selecionar",
+                            str(R.string.select),
                             onClick = { selection.selectAll(list.map { it.comic.id }) },
                             height = 48.dp,
                             style = PillStyle.Ghost,
@@ -1087,8 +1109,8 @@ private fun ShelfScreen(
         if (list.isEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Hint(
-                    if (collection != null) "Coleção vazia. Segure a capa de uma HQ e escolha \"Adicionar a uma coleção\"."
-                    else "Nada por aqui ainda."
+                    if (collection != null) str(R.string.empty_collection)
+                    else str(R.string.nothing_yet)
                 )
             }
         }
@@ -1099,21 +1121,21 @@ private fun ShelfScreen(
 
     if (renaming && collection != null) {
         NameDialog(
-            title = "Renomear coleção",
+            title = str(R.string.rename_collection),
             initial = collection.name,
-            action = "Salvar",
+            action = str(R.string.save),
             onDone = { actions.renameCollection(collection.id, it); renaming = false },
             onDismiss = { renaming = false },
         )
     }
     if (confirmDelete && collection != null) {
         FwipDialog({ confirmDelete = false }) {
-            DialogTitle("Apagar \"${collection.name}\"?", { confirmDelete = false })
-            Text("As HQs continuam na biblioteca, só a coleção some.", style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
+            DialogTitle(str(R.string.delete_collection_q, collection.name), { confirmDelete = false })
+            Text(str(R.string.delete_collection_hint), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PillButton("Cancelar", { confirmDelete = false }, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.weight(1f))
+                PillButton(str(R.string.cancel), { confirmDelete = false }, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.weight(1f))
                 PillButton(
-                    "Apagar",
+                    str(R.string.delete),
                     {
                         confirmDelete = false
                         onBack()
@@ -1170,34 +1192,34 @@ private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit,
         ) {
             if (scanning) {
                 CircularProgressIndicator(color = FwipColors.Text)
-                Text("Procurando HQs nas suas pastas...", style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextSoft)
+                Text(str(R.string.scanning), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextSoft)
             } else {
                 Text(
-                    if (noFolders) "Sua estante está vazia" else "Nenhuma HQ encontrada",
+                    if (noFolders) str(R.string.empty_title) else str(R.string.empty_no_comics),
                     style = MaterialTheme.typography.headlineSmall,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    if (noFolders) "Escolha a pasta onde ficam suas HQs. O Fwip lê arquivos CBZ, CBR, CB7 e PDF, inclusive em subpastas."
-                    else "As pastas escolhidas não têm arquivos CBZ, CBR, CB7 ou PDF. Tente adicionar outra pasta.",
+                    if (noFolders) str(R.string.empty_hint)
+                    else str(R.string.empty_no_comics_hint),
                     style = MaterialTheme.typography.bodyLarge,
                     color = FwipColors.TextMuted,
                     textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(4.dp))
-                PillButton("Escolher pasta", onAdd, leading = { Icon(Icons.Filled.Add, null, Modifier.size(20.dp)) })
-                PillButton("Conectar a um servidor", onServers, style = PillStyle.Ghost)
+                PillButton(str(R.string.choose_folder), onAdd, leading = { Icon(Icons.Filled.Add, null, Modifier.size(20.dp)) })
+                PillButton(str(R.string.connect_server), onServers, style = PillStyle.Ghost)
             }
         }
     }
 }
 
 @Composable
-private fun FoldersDialog(folders: List<Uri>, onAdd: () -> Unit, onRemove: (Uri) -> Unit, onDismiss: () -> Unit) {
+private fun FoldersDialog(folders: List<Uri>, onAdd: () -> Unit, onRemove: (Uri) -> Unit, onDismiss: () -> Unit, onAbout: () -> Unit) {
     FwipDialog(onDismiss) {
-        DialogTitle("Pastas da biblioteca", onDismiss)
+        DialogTitle(str(R.string.library_folders), onDismiss)
         if (folders.isEmpty()) {
-            Text("Nenhuma pasta adicionada ainda.", style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
+            Text(str(R.string.no_folders), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
         }
         folders.forEach { uri ->
             Row(
@@ -1211,16 +1233,17 @@ private fun FoldersDialog(folders: List<Uri>, onAdd: () -> Unit, onRemove: (Uri)
             ) {
                 FolderIcon(FwipColors.TextSoft)
                 Text(readableFolder(uri), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                CircleIconButton(Icons.Filled.Delete, "Remover pasta", { onRemove(uri) }, size = 40.dp)
+                CircleIconButton(Icons.Filled.Delete, str(R.string.remove_folder), { onRemove(uri) }, size = 40.dp)
             }
         }
-        PillButton("Adicionar pasta", onAdd, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
+        PillButton(str(R.string.add_folder), onAdd, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
+        SheetButton(str(R.string.about), onAbout)
     }
 }
 
 private fun readableFolder(uri: Uri): String {
     val raw = Uri.decode(uri.lastPathSegment ?: uri.toString())
     val (volume, path) = raw.split(':', limit = 2).let { it[0] to it.getOrElse(1) { "" } }
-    val vol = if (volume == "primary") "Armazenamento interno" else "Cartão / $volume"
+    val vol = if (volume == "primary") str(R.string.internal_storage) else str(R.string.sd_card, volume)
     return if (path.isBlank()) vol else "$vol / $path"
 }

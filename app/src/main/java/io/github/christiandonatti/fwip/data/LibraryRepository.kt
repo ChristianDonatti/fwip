@@ -120,7 +120,7 @@ class LibraryRepository(private val context: Context) {
             uri = uri,
             fileName = f.name,
             title = prettyTitle(f.name),
-            folder = "Baixadas",
+            folder = io.github.christiandonatti.fwip.str(io.github.christiandonatti.fwip.R.string.downloads_folder),
             format = format,
             size = f.length(),
             lastModified = f.lastModified(),

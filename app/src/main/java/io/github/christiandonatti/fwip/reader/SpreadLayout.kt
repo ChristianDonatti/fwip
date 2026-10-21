@@ -1,5 +1,7 @@
 package io.github.christiandonatti.fwip.reader
 
+import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -177,7 +179,7 @@ fun SpreadView(
                         val image = remember(s.bitmap) { s.bitmap.asImageBitmap() }
                         Image(
                             image,
-                            contentDescription = "Página ${p.page + 1}",
+                            contentDescription = str(R.string.page_n, p.page + 1),
                             contentScale = ContentScale.FillBounds,
                             filterQuality = FilterQuality.High,
                             modifier = Modifier.fillMaxSize(),
@@ -189,7 +191,7 @@ fun SpreadView(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            "Não foi possível carregar a página ${p.page + 1}",
+                            str(R.string.error_load_page, p.page + 1),
                             style = MaterialTheme.typography.bodyMedium,
                             color = FwipColors.TextSoft,
                             textAlign = TextAlign.Center,

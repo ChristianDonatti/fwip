@@ -1,5 +1,7 @@
 package io.github.christiandonatti.fwip.data
 
+import io.github.christiandonatti.fwip.R
+import io.github.christiandonatti.fwip.str
 /** Series name and issue number guessed from a title like "Batman Vol.2 #07" or "Blacksad - Livro 1". */
 data class SeriesInfo(val name: String, val number: Float?)
 
@@ -26,7 +28,7 @@ sealed interface Shelf {
 
     data class Series(val key: String, override val title: String) : Shelf
     data class Folder(val name: String) : Shelf {
-        override val title: String get() = name.ifBlank { "Pasta principal" }
+        override val title: String get() = name.ifBlank { str(R.string.main_folder) }
     }
     data class Custom(val id: String, override val title: String) : Shelf
     data class Smart(val kind: SmartKind) : Shelf {
@@ -34,14 +36,20 @@ sealed interface Shelf {
     }
 }
 
-enum class SmartKind(val title: String) {
-    Reading("Lendo agora"),
-    Unread("Não lidas"),
-    Finished("Lidas"),
-    Recent("Adicionadas recentemente"),
+enum class SmartKind(@androidx.annotation.StringRes private val titleRes: Int) {
+    Reading(R.string.smart_reading),
+    Unread(R.string.smart_unread),
+    Finished(R.string.smart_read),
+    Recent(R.string.smart_recent);
+
+    val title: String get() = str(titleRes)
 }
 
-enum class SortOrder(val label: String) { Title("Título"), Recent("Lidas por último"), Added("Adicionadas") }
+enum class SortOrder(@androidx.annotation.StringRes private val labelRes: Int) {
+    Title(R.string.sort_title), Recent(R.string.sort_recent), Added(R.string.sort_added);
+
+    val label: String get() = str(labelRes)
+}
 
 fun List<LibraryItem>.sortedFor(order: SortOrder): List<LibraryItem> = when (order) {
     SortOrder.Title -> sortedWith(
