@@ -83,6 +83,7 @@ class MainActivity : ComponentActivity() {
                         open = { viewModel.open(it.comic) },
                         openIn = { item, context -> viewModel.open(item.comic, context) },
                         reorderCollection = viewModel::reorderCollection,
+                        stats = { viewModel.stats.all() },
                         addFolder = { pickFolder.launch(null) },
                         removeFolder = viewModel::removeFolder,
                         refresh = viewModel::refresh,
@@ -158,6 +159,11 @@ class MainActivity : ComponentActivity() {
         if (intent?.action != io.github.christiandonatti.fwip.widget.ACTION_OPEN_COMIC) return
         intent.getStringExtra(io.github.christiandonatti.fwip.widget.EXTRA_COMIC)?.let(viewModel::openById)
         intent.action = null
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.onPause()
     }
 
     override fun onResume() {

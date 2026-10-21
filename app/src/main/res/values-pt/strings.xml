@@ -293,4 +293,20 @@
     <string name="order_by_series">Por série e número</string>
     <string name="move_up">Subir</string>
     <string name="move_down">Descer</string>
+    <string name="stats_title">Estatísticas de leitura</string>
+    <string name="stats_finished">HQs terminadas</string>
+    <string name="stats_pages">Páginas lidas</string>
+    <string name="stats_time">Tempo de leitura</string>
+    <string name="stats_streak">Dias seguidos</string>
+    <string name="stats_one_day">1 dia</string>
+    <string name="stats_n_days">%1$d dias</string>
+    <string name="stats_two_weeks">Últimas duas semanas (páginas)</string>
+    <string name="stats_month">Este mês: %1$d páginas, %2$d HQs terminadas</string>
+    <string name="stats_top_series">Séries mais lidas</string>
+    <string name="stats_n_read">%1$d lidas</string>
+    <string name="stats_complete_series">Séries lidas até o fim (%1$d)</string>
+    <string name="stats_no_complete">Nenhuma ainda. Termine todas as edições de uma série para ela aparecer aqui.</string>
+    <string name="stats_note">O tempo só conta enquanto você vira as páginas. Páginas e tempo ficam em cada aparelho; as HQs terminadas vêm do progresso, que sincroniza.</string>
+    <string name="stats_minutes">%1$d min</string>
+    <string name="stats_hours">%1$d h %2$d min</string>
 </resources>

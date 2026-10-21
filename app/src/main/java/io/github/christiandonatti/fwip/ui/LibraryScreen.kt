@@ -114,6 +114,7 @@ class LibraryActions(
     /** Opens a comic from a collection, whose order then decides what comes next. */
     val openIn: (LibraryItem, String?) -> Unit,
     val reorderCollection: (String, List<String>) -> Unit,
+    val stats: () -> Map<java.time.LocalDate, io.github.christiandonatti.fwip.data.DayStats>,
 )
 
 private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
@@ -173,6 +174,7 @@ fun LibraryScreen(
     var searching by rememberSaveable { mutableStateOf(false) }
     var browsing by rememberSaveable { mutableStateOf<String?>(null) }
     var showAbout by rememberSaveable { mutableStateOf(false) }
+    var showStats by rememberSaveable { mutableStateOf(false) }
     val browsingServer = state.servers.firstOrNull { it.id == browsing }
 
     BackHandler(enabled = selection.active) { selection.clear() }
@@ -200,7 +202,9 @@ fun LibraryScreen(
             val boxHeight = maxHeight
             val gutter = if (wide) 48.dp else 20.dp
 
-            if (showAbout) {
+            if (showStats) {
+                StatsScreen(state, actions.stats, gutter, wide, onBack = { showStats = false })
+            } else if (showAbout) {
                 AboutScreen(gutter, onBack = { showAbout = false })
             } else if (browsingServer != null && browsingServer.kind.isFolder) {
                 NetBrowser(browsingServer, state.folders, serverActions, wide, gutter, onClose = { browsing = null })
@@ -271,7 +275,7 @@ fun LibraryScreen(
                     onClose = { selection.clear() },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
-            } else if (!wide && shelf == null && browsingServer == null && !showAbout && (state.items.isNotEmpty() || tab == Tab.Servers)) {
+            } else if (!wide && shelf == null && browsingServer == null && !showAbout && !showStats && (state.items.isNotEmpty() || tab == Tab.Servers)) {
                 PhoneTabBar(tab, onTab = { tab = it }, Modifier.align(Alignment.BottomCenter))
             }
 
@@ -286,6 +290,7 @@ fun LibraryScreen(
             onAdd = { showFolders = false; actions.addFolder() },
             onAddNet = { showFolders = false; tab = Tab.Servers },
             onSync = { showFolders = false; showSync = true },
+            onStats = { showFolders = false; showStats = true },
 
             onRemove = actions.removeFolder,
             onDismiss = { showFolders = false },
@@ -1321,6 +1326,7 @@ private fun FoldersDialog(
     onAdd: () -> Unit,
     onAddNet: () -> Unit,
     onSync: () -> Unit,
+    onStats: () -> Unit,
     onRemove: (Uri) -> Unit,
     onDismiss: () -> Unit,
     onAbout: () -> Unit,
@@ -1347,6 +1353,7 @@ private fun FoldersDialog(
         }
         PillButton(str(R.string.add_folder), onAdd, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
         PillButton(str(R.string.add_network_folder), onAddNet, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
+        SheetButton(str(R.string.stats_title), onStats)
         SheetButton(str(R.string.sync_title), onSync)
         SheetButton(str(R.string.about), onAbout)
     }

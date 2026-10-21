@@ -294,4 +294,20 @@
     <string name="order_by_series">By series and number</string>
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
+    <string name="stats_title">Reading stats</string>
+    <string name="stats_finished">Comics finished</string>
+    <string name="stats_pages">Pages read</string>
+    <string name="stats_time">Reading time</string>
+    <string name="stats_streak">Days in a row</string>
+    <string name="stats_one_day">1 day</string>
+    <string name="stats_n_days">%1$d days</string>
+    <string name="stats_two_weeks">Last two weeks (pages)</string>
+    <string name="stats_month">This month: %1$d pages, %2$d comics finished</string>
+    <string name="stats_top_series">Most read series</string>
+    <string name="stats_n_read">%1$d read</string>
+    <string name="stats_complete_series">Series read to the end (%1$d)</string>
+    <string name="stats_no_complete">None yet. Finish every issue of a series to see it here.</string>
+    <string name="stats_note">Time counts only while you turn pages. Pages and time are kept on each device; finished comics come from your progress, which syncs.</string>
+    <string name="stats_minutes">%1$d min</string>
+    <string name="stats_hours">%1$d h %2$d min</string>
 </resources>

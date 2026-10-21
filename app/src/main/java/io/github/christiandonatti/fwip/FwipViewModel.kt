@@ -118,6 +118,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     val repository = LibraryRepository(app)
     private val serverStore = io.github.christiandonatti.fwip.remote.ServerStore(app)
     private val sync = io.github.christiandonatti.fwip.data.SyncManager(app, repository)
+    val stats = io.github.christiandonatti.fwip.data.ReadingStats(app.filesDir)
 
     private val _state = MutableStateFlow(LibraryState())
     val state: StateFlow<LibraryState> = _state.asStateFlow()
@@ -218,7 +219,11 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         }
         scheduleSync(0)
         refreshHomeScreen()
+        stats.stop()
     }
+
+    /** The app went to the background: reading time stops counting. */
+    fun onPause() = stats.stop()
 
     // ---------- Sync & backup ----------
 
@@ -478,6 +483,9 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun saveProgress(comic: Comic, page: Int, pageCount: Int) {
+        val before = repository.progressFor(comic.id)
+        val justFinished = pageCount > 0 && page >= pageCount - 1 && before?.finished != true
+        stats.turned(comic.id, page, justFinished)
         repository.setProgress(comic.id, page, pageCount)
         scheduleSync(8000)
         comic.remote?.let { book ->
