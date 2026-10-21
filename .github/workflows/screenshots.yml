@@ -33,6 +33,7 @@ jobs:
           mkdir -p comics
           python3 scripts/sample_comics.py comics
           ls -la comics
+          echo "::notice::$(ls comics | wc -l) sample comics: $(ls comics | head -3 | tr '\n' ',')"
 
       - name: Enable KVM
         run: |
@@ -59,6 +60,7 @@ jobs:
           cp shots/*.png docs/screenshots/
           for l in en-US pt-BR; do
             d=fastlane/metadata/android/$l/images
+            mkdir -p $d/phoneScreenshots $d/tenInchScreenshots
             rm -f $d/phoneScreenshots/*.png $d/tenInchScreenshots/*.png
             cp shots/phone-*.png $d/phoneScreenshots/ 2>/dev/null || true
             cp shots/tablet-*.png $d/tenInchScreenshots/ 2>/dev/null || true

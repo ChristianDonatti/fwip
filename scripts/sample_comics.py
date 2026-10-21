@@ -47,7 +47,8 @@ for n, ep in enumerate(episodes, 1):
   <Web>https://www.peppercarrot.com</Web>
   <LanguageISO>{LANG}</LanguageISO>
 </ComicInfo>'''
-    path = f'{OUT}/Pepper&Carrot {int(ep[2:4]):02d} - {title}.cbz'
+    # Plain file names: the series, number and title come from ComicInfo.xml.
+    path = f'{OUT}/PepperCarrot_{int(ep[2:4]):02d}.cbz'
     with zipfile.ZipFile(path, 'w', zipfile.ZIP_STORED) as z:
         z.writestr('ComicInfo.xml', info)
         for name, data in pages:

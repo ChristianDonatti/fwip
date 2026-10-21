@@ -9,8 +9,13 @@ ui() { python3 scripts/ui.py "$1"; }
 center_tap() { adb shell input tap $(( $1 / 2 )) $(( $2 / 2 )); }
 
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb push comics /data/local/tmp/comics
-adb shell run-as $APP sh -c 'mkdir -p files/Baixadas && cp /data/local/tmp/comics/*.cbz files/Baixadas/'
+# Straight into the app's own downloads folder, which the library always scans.
+adb shell "run-as $APP mkdir -p files/Baixadas"
+for f in comics/*.cbz; do
+  b=$(basename "$f")
+  adb exec-in "run-as $APP sh -c 'cat > files/Baixadas/$b'" < "$f"
+done
+echo "::notice::in app storage: $(adb shell "run-as $APP ls files/Baixadas" | wc -l) comics"
 adb shell settings put system screen_off_timeout 1800000
 adb shell svc power stayon true
 
@@ -45,7 +50,7 @@ run_device() {
   sleep 2
 }
 
-run_device tablet 2560 1600 320
+run_device tablet 1920 1200 240
 run_device phone 1080 2400 420
 adb shell wm size reset
 adb shell wm density reset
