@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="fwip_ink">#0B0C10</color>
+    <color name="fwip_amber">#F2B544</color>
 
     <style name="Theme.Fwip" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/fwip_ink</item>

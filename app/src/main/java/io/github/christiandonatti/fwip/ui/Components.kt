@@ -195,15 +195,11 @@ fun ProgressBar(fraction: Float, color: Color, modifier: Modifier = Modifier) {
 @Composable
 fun FwipLogo(modifier: Modifier = Modifier, size: Int = 22) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Canvas(Modifier.size((size * 1.3f).dp)) {
-            val u = this.size.width / 24f
-            val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f * u)
-            val c = FwipColors.Text
-            val cr = androidx.compose.ui.geometry.CornerRadius(2f * u)
-            drawRoundRect(c, Offset(3 * u, 3 * u), androidx.compose.ui.geometry.Size(8 * u, 18 * u), cr, style = stroke)
-            drawRoundRect(c, Offset(13 * u, 3 * u), androidx.compose.ui.geometry.Size(8 * u, 8 * u), cr, style = stroke)
-            drawRoundRect(c, Offset(13 * u, 13 * u), androidx.compose.ui.geometry.Size(8 * u, 8 * u), cr, style = stroke)
-        }
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(io.github.christiandonatti.fwip.R.drawable.fwip_mark),
+            contentDescription = null,
+            modifier = Modifier.size(width = (size * 1.45f).dp, height = (size * 1.3f).dp),
+        )
         Text("fwip", fontFamily = Unbounded, fontWeight = FontWeight(700), fontSize = size.sp, letterSpacing = (-0.4).sp, color = FwipColors.Text)
     }
 }
