@@ -2,6 +2,7 @@
 # Walks through the library look on an emulator: welcome, light theme, accents, cover sizes,
 # series backdrop, the cover growing into the reader. Screenshots go to repro/.
 set -x
+echo "::notice::ui_check start in $(pwd)"
 APP=io.github.christiandonatti.fwip
 OUT=repro
 mkdir -p $OUT
@@ -11,6 +12,7 @@ shot() {
   sleep "${2:-2}"
   timeout 40 adb shell screencap -p /sdcard/shot.png
   timeout 40 adb pull /sdcard/shot.png "$OUT/$1.png" > /dev/null
+  echo "::notice::$1: $(stat -c %s "$OUT/$1.png" 2>/dev/null) bytes"
 }
 # No pause: for catching an animation half way.
 quick() {
