@@ -96,7 +96,22 @@ class LibraryRepository(private val context: Context) {
     /** Walks every chosen folder (and its subfolders) looking for comic files. */
     suspend fun scan(): List<Comic> = withContext(Dispatchers.IO) {
         val found = LinkedHashMap<String, Comic>()
+        val cached by lazy { cachedComics() }
         for (tree in folders()) {
+            if (io.github.christiandonatti.fwip.remote.NetUris.isNet(tree)) {
+                try {
+                    val client = io.github.christiandonatti.fwip.remote.NetClients.forUri(context, tree)
+                    val path = io.github.christiandonatti.fwip.remote.NetUris.path(tree)
+                    io.github.christiandonatti.fwip.remote.NetComics.walk(
+                        client, io.github.christiandonatti.fwip.remote.NetUris.serverId(tree), path, path.substringAfterLast('/'), 0, found,
+                    )
+                } catch (e: Exception) {
+                    // Away from home or the NAS is asleep: keep what was found last time.
+                    val prefix = tree.toString().trimEnd('/') + "/"
+                    cached.filter { it.id.startsWith(prefix) }.forEach { found[it.id] = it }
+                }
+                continue
+            }
             runCatching {
                 val rootId = DocumentsContract.getTreeDocumentId(tree)
                 walk(tree, rootId, folderName = "", depth = 0, out = found)

@@ -12,7 +12,12 @@ import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
 
-enum class ServerKind(val label: String) { Komga("Komga"), Kavita("Kavita"), Opds("OPDS") }
+enum class ServerKind(val label: String) {
+    Komga("Komga"), Kavita("Kavita"), Opds("OPDS"), Smb("SMB"), WebDav("WebDAV");
+
+    /** A plain network folder of comic files rather than a catalog server. */
+    val isFolder: Boolean get() = this == Smb || this == WebDav
+}
 
 /** A comic server the user added. Credentials stay in the app's private storage. */
 data class Server(

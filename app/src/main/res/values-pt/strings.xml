@@ -227,4 +227,19 @@
     <string name="zone_next">Avança</string>
     <string name="zone_back">Volta</string>
     <string name="zone_menu">Menu</string>
+    <string name="server_hint_smb">Uma pasta compartilhada do seu NAS ou computador (Windows, Samba). Digite o endereço e o nome do compartilhamento, como 192.168.0.10/Comics.</string>
+    <string name="server_hint_webdav">Uma pasta WebDAV, como o Nextcloud ou as pastas web de um NAS.</string>
+    <string name="smb_address">Endereço e pasta compartilhada</string>
+    <string name="webdav_address">Endereço WebDAV</string>
+    <string name="network_folder">Pasta de rede</string>
+    <string name="error_smb_address">Digite o endereço do NAS, como 192.168.0.10/Comics</string>
+    <string name="error_smb_share">Pasta compartilhada não encontrada. Confira o nome depois do endereço, como 192.168.0.10/Comics</string>
+    <string name="error_net_missing">Este arquivo ou pasta não existe mais</string>
+    <string name="error_net_server_missing">A pasta de rede desta HQ foi removida</string>
+    <string name="folder_in_library">Na biblioteca</string>
+    <string name="add_folder_to_library">Adicionar esta pasta à biblioteca</string>
+    <string name="net_browser_hint">Toque numa HQ para ler na hora; segure para copiar para este aparelho.</string>
+    <string name="add_network_folder">Adicionar pasta de rede</string>
+    <string name="error_login">Usuário ou senha incorretos</string>
+    <string name="read_now">Ler agora</string>
 </resources>

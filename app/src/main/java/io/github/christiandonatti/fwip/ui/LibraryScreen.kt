@@ -187,6 +187,8 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
 
             if (showAbout) {
                 AboutScreen(gutter, onBack = { showAbout = false })
+            } else if (browsingServer != null && browsingServer.kind.isFolder) {
+                NetBrowser(browsingServer, state.folders, serverActions, wide, gutter, onClose = { browsing = null })
             } else if (browsingServer != null) {
                 ServerBrowser(browsingServer, serverActions, wide, gutter, onClose = { browsing = null })
             } else AnimatedContent(
@@ -262,7 +264,9 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: S
         FoldersDialog(
             onAbout = { showFolders = false; showAbout = true },
             folders = state.folders,
+            servers = state.servers,
             onAdd = { showFolders = false; actions.addFolder() },
+            onAddNet = { showFolders = false; tab = Tab.Servers },
             onRemove = actions.removeFolder,
             onDismiss = { showFolders = false },
         )
@@ -1215,7 +1219,15 @@ private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit,
 }
 
 @Composable
-private fun FoldersDialog(folders: List<Uri>, onAdd: () -> Unit, onRemove: (Uri) -> Unit, onDismiss: () -> Unit, onAbout: () -> Unit) {
+private fun FoldersDialog(
+    folders: List<Uri>,
+    servers: List<io.github.christiandonatti.fwip.remote.Server>,
+    onAdd: () -> Unit,
+    onAddNet: () -> Unit,
+    onRemove: (Uri) -> Unit,
+    onDismiss: () -> Unit,
+    onAbout: () -> Unit,
+) {
     FwipDialog(onDismiss) {
         DialogTitle(str(R.string.library_folders), onDismiss)
         if (folders.isEmpty()) {
@@ -1232,16 +1244,22 @@ private fun FoldersDialog(folders: List<Uri>, onAdd: () -> Unit, onRemove: (Uri)
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 FolderIcon(FwipColors.TextSoft)
-                Text(readableFolder(uri), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(readableFolder(uri, servers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
                 CircleIconButton(Icons.Filled.Delete, str(R.string.remove_folder), { onRemove(uri) }, size = 40.dp)
             }
         }
         PillButton(str(R.string.add_folder), onAdd, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
+        PillButton(str(R.string.add_network_folder), onAddNet, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
         SheetButton(str(R.string.about), onAbout)
     }
 }
 
-private fun readableFolder(uri: Uri): String {
+private fun readableFolder(uri: Uri, servers: List<io.github.christiandonatti.fwip.remote.Server>): String {
+    if (io.github.christiandonatti.fwip.remote.NetUris.isNet(uri)) {
+        val name = servers.firstOrNull { it.id == io.github.christiandonatti.fwip.remote.NetUris.serverId(uri) }?.name ?: str(R.string.network_folder)
+        val path = io.github.christiandonatti.fwip.remote.NetUris.path(uri)
+        return if (path.isEmpty()) name else "$name / ${path.replace("/", " / ")}"
+    }
     val raw = Uri.decode(uri.lastPathSegment ?: uri.toString())
     val (volume, path) = raw.split(':', limit = 2).let { it[0] to it.getOrElse(1) { "" } }
     val vol = if (volume == "primary") str(R.string.internal_storage) else str(R.string.sd_card, volume)

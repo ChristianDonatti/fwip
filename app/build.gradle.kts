@@ -100,4 +100,9 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.27.1")
     implementation("org.tukaani:xz:1.10")
     implementation("com.github.junrar:junrar:7.5.5")
+
+    // Network folders: SMB shares (smbj, with Bouncy Castle for NTLM) and WebDAV (OkHttp)
+    implementation("com.hierynomus:smbj:0.13.0")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }

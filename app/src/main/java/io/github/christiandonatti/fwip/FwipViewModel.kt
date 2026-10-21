@@ -188,6 +188,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- Servers ----------
 
     fun saveServer(server: io.github.christiandonatti.fwip.remote.Server) {
+        io.github.christiandonatti.fwip.remote.NetClients.forget(server.id)
         val list = _state.value.servers.filterNot { it.id == server.id } + server
         serverStore.save(list)
         _state.update { it.copy(servers = list) }
@@ -196,7 +197,18 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteServer(id: String) {
         val list = _state.value.servers.filterNot { it.id == id }
         serverStore.save(list)
-        _state.update { it.copy(servers = list) }
+        io.github.christiandonatti.fwip.remote.NetClients.forget(id)
+        // Its network folders go too, or the library would keep looking for them.
+        val gone = repository.folders().filter {
+            io.github.christiandonatti.fwip.remote.NetUris.isNet(it) && io.github.christiandonatti.fwip.remote.NetUris.serverId(it) == id
+        }
+        gone.forEach(repository::removeFolder)
+        _state.update { it.copy(servers = list, folders = repository.folders()) }
+        if (gone.isNotEmpty()) refresh()
+    }
+
+    fun addNetFolder(server: io.github.christiandonatti.fwip.remote.Server, path: String) {
+        addFolder(io.github.christiandonatti.fwip.remote.NetUris.of(server.id, path))
     }
 
     /** Opens a comic that is not part of the library (streamed, or just downloaded). */

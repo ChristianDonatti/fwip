@@ -47,11 +47,41 @@ internal fun boundsOf(open: () -> InputStream): android.util.Size? {
 object ComicSources {
     fun open(context: Context, comic: Comic): ComicSource = comic.remote?.let {
         io.github.christiandonatti.fwip.remote.StreamComicSource(context, it)
-    } ?: when (comic.format) {
+    } ?: if (io.github.christiandonatti.fwip.remote.NetUris.isNet(comic.uri)) openNet(context, comic) else when (comic.format) {
         ComicFormat.ZIP -> ZipComicSource.open(context, comic)
         ComicFormat.SEVEN_ZIP -> SevenZipComicSource.open(context, comic)
         ComicFormat.RAR -> RarComicSource.open(context, comic)
         ComicFormat.PDF -> PdfComicSource.open(context, comic)
+    }
+}
+
+/**
+ * A comic in a network folder: CBZ and CB7 are read in place, a few blocks at a time; CBR headers
+ * too, with pages decompressed as they stream in; PDF needs a local copy.
+ */
+@Suppress("DEPRECATION")
+private fun openNet(context: Context, comic: Comic): ComicSource {
+    val client = io.github.christiandonatti.fwip.remote.NetClients.forUri(context, comic.uri)
+    val path = io.github.christiandonatti.fwip.remote.NetUris.path(comic.uri)
+    if (comic.format == ComicFormat.PDF) {
+        val file = ArchiveCache.fileFor(context, comic) {
+            io.github.christiandonatti.fwip.remote.BlockReader(client.open(path), blockSize = 1 shl 20, maxBlocks = 2).inputStream()
+        }
+        return PdfComicSource(ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY))
+    }
+    val reader = io.github.christiandonatti.fwip.remote.BlockReader(client.open(path))
+    try {
+        return when (comic.format) {
+            ComicFormat.ZIP -> ZipComicSource(ZipFile(io.github.christiandonatti.fwip.remote.BlockChannel(reader)), reader)
+            ComicFormat.SEVEN_ZIP -> SevenZipComicSource(SevenZFile(io.github.christiandonatti.fwip.remote.BlockChannel(reader)), reader)
+            ComicFormat.RAR -> RarComicSource.open(context, comic) {
+                Archive(io.github.christiandonatti.fwip.remote.NetRarVolumes(reader), null, null)
+            }.also { (it as? RarComicSource)?.onFinished = { runCatching { reader.close() } } }
+            ComicFormat.PDF -> error("handled above")
+        }
+    } catch (e: Exception) {
+        runCatching { reader.close() }
+        throw e
     }
 }
 
@@ -135,13 +165,17 @@ internal class SeekableHandle private constructor(
 internal object ArchiveCache {
     private const val KEEP = 4
 
-    fun fileFor(context: Context, comic: Comic): File {
+    fun fileFor(
+        context: Context,
+        comic: Comic,
+        open: () -> InputStream? = { context.contentResolver.openInputStream(comic.uri) },
+    ): File {
         val dir = File(context.cacheDir, "archives").apply { mkdirs() }
         val ext = comic.fileName.substringAfterLast('.', "bin")
         val target = File(dir, sha1(comic.id) + "." + ext)
         if (!target.exists() || target.length() == 0L || target.length() != comic.size && comic.size > 0) {
             val tmp = File(dir, target.name + ".part")
-            context.contentResolver.openInputStream(comic.uri).use { input ->
+            open().use { input ->
                 requireNotNull(input) { str(R.string.error_read_file) }
                 tmp.outputStream().use { output -> input.copyTo(output, 256 * 1024) }
             }
@@ -271,6 +305,13 @@ private class RarComicSource(
 
     @Volatile private var closed = false
     @Volatile private var finished = false
+
+    /** Called once the archive is no longer read (all pages out, or closed). */
+    @Volatile var onFinished: (() -> Unit)? = null
+        set(value) {
+            field = value
+            if (finished) value?.invoke()
+        }
     @Volatile private var failure: Throwable? = null
 
     override val pageCount: Int get() = pages.size
@@ -335,6 +376,7 @@ private class RarComicSource(
                 lock.notifyAll()
             }
             runCatching { archive.close() }
+            onFinished?.invoke()
         }
     }
 
@@ -377,7 +419,11 @@ private class RarComicSource(
     companion object {
         private const val KEEP = 5
 
-        fun open(context: Context, comic: Comic): ComicSource {
+        fun open(
+            context: Context,
+            comic: Comic,
+            archive: () -> Archive = { Archive(ArchiveCache.fileFor(context, comic)) },
+        ): ComicSource {
             val root = File(context.cacheDir, "pages").apply { mkdirs() }
             val dir = File(root, sha1(comic.id))
             dir.setLastModified(System.currentTimeMillis())
@@ -386,7 +432,7 @@ private class RarComicSource(
                 ?.sortedByDescending { it.lastModified() }
                 ?.drop(KEEP - 1)
                 ?.forEach { it.deleteRecursively() }
-            return RarComicSource(Archive(ArchiveCache.fileFor(context, comic)), dir)
+            return RarComicSource(archive(), dir)
         }
     }
 }

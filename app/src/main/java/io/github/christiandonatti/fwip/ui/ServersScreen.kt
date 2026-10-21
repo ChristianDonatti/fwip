@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package io.github.christiandonatti.fwip.ui
 
@@ -88,9 +88,19 @@ class ServerActions(
     val delete: (String) -> Unit,
     val openRemote: (RemoteBook, String) -> Unit,
     val openDownloaded: (File) -> Unit,
+    /** Adds a folder of an SMB/WebDAV server (path relative to the server's folder) to the library. */
+    val addNetFolder: (Server, String) -> Unit,
+    /** Reads a comic from a network folder without adding it to the library. */
+    val openNet: (io.github.christiandonatti.fwip.data.Comic) -> Unit,
 )
 
-private fun errorText(t: Throwable): String = when (t) {
+internal fun errorText(t: Throwable): String = when (t) {
+    is com.hierynomus.mssmb2.SMBApiException -> when (t.status) {
+        com.hierynomus.mserref.NtStatus.STATUS_LOGON_FAILURE, com.hierynomus.mserref.NtStatus.STATUS_ACCESS_DENIED -> str(R.string.error_login)
+        com.hierynomus.mserref.NtStatus.STATUS_BAD_NETWORK_NAME -> str(R.string.error_smb_share)
+        com.hierynomus.mserref.NtStatus.STATUS_OBJECT_NAME_NOT_FOUND, com.hierynomus.mserref.NtStatus.STATUS_OBJECT_PATH_NOT_FOUND -> str(R.string.error_net_missing)
+        else -> t.status.name
+    }
     is HttpException -> t.message ?: str(R.string.error_http, t.code)
     is java.net.UnknownHostException -> str(R.string.error_host)
     is java.net.ConnectException, is java.net.SocketTimeoutException ->
@@ -141,7 +151,7 @@ fun ServersTab(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(server.name, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
-                        server.kind.label + " · " + server.url.substringAfter("://").substringBefore("/api/opds"),
+                        (if (server.kind.isFolder) str(R.string.network_folder) + " " else "") + server.kind.label + " · " + server.url.substringAfter("://").substringBefore("/api/opds"),
                         style = MaterialTheme.typography.bodySmall,
                         color = FwipColors.TextMuted,
                         maxLines = 1,
@@ -222,23 +232,20 @@ private fun ServerDialog(initial: Server?, onSave: (Server) -> Unit, onDelete: (
 
     FwipDialog(onDismiss) {
         DialogTitle(if (initial == null) str(R.string.add_server) else str(R.string.edit_server), onDismiss)
-        Row(
-            Modifier
-                .clip(CircleShape)
-                .background(FwipColors.Surface)
-                .border(1.dp, FwipColors.Stroke, CircleShape)
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             ServerKind.entries.forEach { k ->
                 val on = k == kind
                 Box(
                     Modifier
-                        .weight(1f)
                         .height(40.dp)
                         .clip(CircleShape)
-                        .background(if (on) FwipColors.Text else Color.Transparent)
-                        .clickable(role = Role.RadioButton) { kind = k; error = null },
+                        .background(if (on) FwipColors.Text else FwipColors.Surface)
+                        .border(1.dp, if (on) Color.Transparent else FwipColors.Stroke, CircleShape)
+                        .clickable(role = Role.RadioButton) { kind = k; error = null }
+                        .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(k.label, style = MaterialTheme.typography.labelMedium, color = if (on) FwipColors.Ink else FwipColors.TextSoft)
@@ -250,12 +257,30 @@ private fun ServerDialog(initial: Server?, onSave: (Server) -> Unit, onDelete: (
                 ServerKind.Komga -> str(R.string.server_hint_komga)
                 ServerKind.Kavita -> str(R.string.server_hint_kavita)
                 ServerKind.Opds -> str(R.string.server_hint_opds)
+                ServerKind.Smb -> str(R.string.server_hint_smb)
+                ServerKind.WebDav -> str(R.string.server_hint_webdav)
             },
             style = MaterialTheme.typography.bodySmall,
             color = FwipColors.TextMuted,
         )
         Field(str(R.string.name), name, { name = it }, str(R.string.server_name_hint))
-        Field(if (kind == ServerKind.Komga) str(R.string.address) else "OPDS URL", url, { url = it.trim(); error = null }, if (kind == ServerKind.Komga) "http://192.168.0.10:25600" else "http://...", keyboard = KeyboardType.Uri)
+        Field(
+            when (kind) {
+                ServerKind.Komga -> str(R.string.address)
+                ServerKind.Smb -> str(R.string.smb_address)
+                ServerKind.WebDav -> str(R.string.webdav_address)
+                else -> "OPDS URL"
+            },
+            url,
+            { url = it.trim(); error = null },
+            when (kind) {
+                ServerKind.Komga -> "http://192.168.0.10:25600"
+                ServerKind.Smb -> "192.168.0.10/Comics"
+                ServerKind.WebDav -> "https://nas.local:5006/comics"
+                else -> "http://..."
+            },
+            keyboard = KeyboardType.Uri,
+        )
         if (kind != ServerKind.Kavita) {
             Field(if (kind == ServerKind.Komga) "E-mail" else str(R.string.user), user, { user = it.trim(); error = null }, if (kind == ServerKind.Komga) str(R.string.email_hint) else str(R.string.optional), keyboard = KeyboardType.Email)
             Field(str(R.string.password), password, { password = it; error = null }, if (kind == ServerKind.Komga) "" else str(R.string.optional), password = true, keyboard = KeyboardType.Password)
@@ -271,7 +296,11 @@ private fun ServerDialog(initial: Server?, onSave: (Server) -> Unit, onDelete: (
                 str(R.string.test_and_save),
                 {
                     var address = url.trim()
-                    if (address.isNotBlank() && !address.contains("://")) address = "http://$address"
+                    if (kind == ServerKind.Smb) {
+                        address = "smb://" + address.removePrefix("smb://").removePrefix("SMB://").replace('\\', '/').trim('/')
+                    } else if (address.isNotBlank() && !address.contains("://")) {
+                        address = "http://$address"
+                    }
                     val server = Server(
                         id = initial?.id ?: java.util.UUID.randomUUID().toString(),
                         name = name.trim().ifBlank { kind.label },
@@ -283,7 +312,16 @@ private fun ServerDialog(initial: Server?, onSave: (Server) -> Unit, onDelete: (
                     testing = true
                     error = null
                     scope.launch {
-                        runCatching { Opds.feed(server, server.catalogUrl) }
+                        runCatching {
+                            if (server.kind.isFolder) {
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                    io.github.christiandonatti.fwip.remote.NetClients.forget(server.id)
+                                    io.github.christiandonatti.fwip.remote.NetClients.forServer(server).list("")
+                                }
+                            } else {
+                                Opds.feed(server, server.catalogUrl)
+                            }
+                        }
                             .onSuccess { testing = false; onSave(server) }
                             .onFailure { testing = false; error = errorText(it) }
                     }

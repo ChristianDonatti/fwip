@@ -65,6 +65,8 @@ class MainActivity : ComponentActivity() {
                         delete = viewModel::deleteServer,
                         openRemote = { book, title -> viewModel.openOutside(RemoteComics.comic(book, title)) },
                         openDownloaded = viewModel::openDownloaded,
+                        addNetFolder = viewModel::addNetFolder,
+                        openNet = viewModel::openOutside,
                     )
                 }
 

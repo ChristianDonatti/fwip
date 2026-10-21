@@ -228,4 +228,19 @@
     <string name="zone_next">Next</string>
     <string name="zone_back">Back</string>
     <string name="zone_menu">Menu</string>
+    <string name="server_hint_smb">A shared folder on your NAS or computer (Windows, Samba). Type the address and the share name, like 192.168.0.10/Comics.</string>
+    <string name="server_hint_webdav">A WebDAV folder, such as Nextcloud or the web folders of a NAS.</string>
+    <string name="smb_address">Address and shared folder</string>
+    <string name="webdav_address">WebDAV address</string>
+    <string name="network_folder">Network folder</string>
+    <string name="error_smb_address">Type the NAS address, like 192.168.0.10/Comics</string>
+    <string name="error_smb_share">Shared folder not found. Check its name after the address, like 192.168.0.10/Comics</string>
+    <string name="error_net_missing">This file or folder is no longer there</string>
+    <string name="error_net_server_missing">The network folder for this comic was removed</string>
+    <string name="folder_in_library">In your library</string>
+    <string name="add_folder_to_library">Add this folder to the library</string>
+    <string name="net_browser_hint">Tap a comic to read it right away; hold it to copy it to this device.</string>
+    <string name="add_network_folder">Add network folder</string>
+    <string name="error_login">Wrong user or password</string>
+    <string name="read_now">Read now</string>
 </resources>
