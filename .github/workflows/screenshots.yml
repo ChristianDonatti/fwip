@@ -42,6 +42,8 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Take screenshots
+        timeout-minutes: 25
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -54,7 +56,10 @@ jobs:
           script: bash scripts/screenshots.sh
 
       - name: Save screenshots
+        if: always()
         run: |
+          # Keep only real pictures.
+          find shots -name '*.png' -size -10k -delete
           ls shots
           mkdir -p docs/screenshots
           cp shots/*.png docs/screenshots/

@@ -8,8 +8,8 @@ mkdir -p $OUT
 # Screenshots are taken on the device and pulled, so nothing races with input running there.
 shot() {
   sleep "${2:-2}"
-  adb shell screencap -p /sdcard/shot.png
-  adb pull /sdcard/shot.png "$OUT/$1.png" > /dev/null
+  timeout 40 adb shell screencap -p /sdcard/shot.png
+  timeout 40 adb pull /sdcard/shot.png "$OUT/$1.png" > /dev/null
   echo "::notice::$1: $(stat -c %s "$OUT/$1.png" 2>/dev/null) bytes"
 }
 ui() { python3 scripts/ui.py "$1"; }
@@ -37,10 +37,14 @@ run_device() {
   shot $name-1-home 3
   ui '^(Start|Continue|Read again)\|' || center_tap $w $h
   shot $name-2-reader 8
-  # Turn a page half way: the curl follows the finger.
-  adb shell "input swipe $(( w * 95 / 100 )) $(( h * 88 / 100 )) $(( w * 40 / 100 )) $(( h * 50 / 100 )) 6000 & sleep 3; screencap -p /sdcard/curl.png; wait"
-  adb pull /sdcard/curl.png "$OUT/$name-3-curl.png" > /dev/null
-  echo "::notice::$name-3-curl: $(stat -c %s "$OUT/$name-3-curl.png" 2>/dev/null) bytes"
+  # Turn a page half way and hold it there: the curl follows the finger.
+  x0=$(( w * 96 / 100 )); y0=$(( h * 90 / 100 ))
+  timeout 20 adb shell input motionevent DOWN $x0 $y0
+  for k in 1 2 3 4 5 6; do
+    timeout 20 adb shell input motionevent MOVE $(( x0 - (w * 9 / 100) * k )) $(( y0 - (h * 6 / 100) * k ))
+  done
+  shot $name-3-curl 1
+  timeout 20 adb shell input motionevent UP $(( x0 - (w * 54 / 100) )) $(( y0 - (h * 36 / 100) ))
   sleep 3
   center_tap $w $h
   sleep 1.5
@@ -57,8 +61,9 @@ run_device() {
 }
 
 run_device tablet 1920 1200 240
+echo "::notice::device after tablet: $(timeout 20 adb get-state)"
 run_device phone 1080 2400 420
 adb shell wm size reset
 adb shell wm density reset
-echo "::notice::crashes: $(adb logcat -d -b crash | head -30 | tr '\n' ' ' | cut -c1-900)"
+echo "::notice::crashes: $(timeout 30 adb logcat -d -b crash | head -30 | tr '\n' ' ' | cut -c1-900)"
 ls -la $OUT

@@ -3,7 +3,11 @@ import re, subprocess, sys, time, xml.etree.ElementTree as ET
 
 
 def adb(*args):
-    return subprocess.run(['adb', *args], capture_output=True).stdout
+    try:
+        return subprocess.run(['adb', *args], capture_output=True, timeout=30).stdout
+    except subprocess.TimeoutExpired:
+        return b''
+
 
 
 def nodes():
