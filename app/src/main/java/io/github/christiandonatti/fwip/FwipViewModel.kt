@@ -77,11 +77,16 @@ data class LibraryState(
         return folder.getOrNull(folder.indexOfFirst { it.comic.id == item.comic.id } + 1)
     }
 
-    /** Series with at least two issues, biggest first. */
+    /** Every series, even with a single issue so far, in alphabetical order. */
     val series: List<Pair<Shelf.Series, List<LibraryItem>>>
         get() = items.groupBy { seriesKey(it.series.name) }
-            .filter { it.value.size >= 2 }
             .map { (key, list) -> Shelf.Series(key, list.first().series.name) to list.sortedFor(SortOrder.Title) }
+            .sortedWith(compareBy(io.github.christiandonatti.fwip.data.NaturalOrder) { it.first.title })
+
+    /** Series for the home screen: the ones with several issues or being read, most recent first. */
+    val homeSeries: List<Pair<Shelf.Series, List<LibraryItem>>>
+        get() = series
+            .filter { (_, list) -> list.size >= 2 || list.any { it.progress?.started == true } }
             .sortedByDescending { (_, list) -> list.maxOf { it.progress?.lastRead ?: 0L } }
 
     val folderShelves: List<Pair<Shelf.Folder, List<LibraryItem>>>

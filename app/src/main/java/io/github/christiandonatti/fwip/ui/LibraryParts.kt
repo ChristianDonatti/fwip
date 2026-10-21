@@ -344,7 +344,7 @@ fun ComicActionsDialog(
             SheetButton(str(R.string.cover_change), onCover, leading = { CoverIcon(LocalContentColor.current) })
         }
         SheetButton(str(R.string.select_several), onSelect, leading = { SelectIcon(LocalContentColor.current) })
-        if (seriesSize >= 2) {
+        if (seriesSize >= 1) {
             SheetButton(
                 str(R.string.see_series, item.series.name),
                 onSeries,

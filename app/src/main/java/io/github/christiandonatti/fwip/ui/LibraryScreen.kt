@@ -485,7 +485,7 @@ private fun homeShelves(state: LibraryState): List<Pair<Shelf, List<LibraryItem>
     state.collections.filter { it.comicIds.isNotEmpty() }.forEach { c ->
         out += Shelf.Custom(c.id, c.name) to state.itemsOf(Shelf.Custom(c.id, c.name))
     }
-    out += state.series
+    out += state.homeSeries
     if (state.folderShelves.size > 1) out += state.folderShelves
     return out
 }
@@ -663,7 +663,7 @@ private fun PhoneHome(
 ) {
     val hero = state.homeRow.first()
     val reading = state.continueReading.filter { it.comic.id != hero.comic.id }
-    val series = state.series
+    val series = state.homeSeries
     val shelves = homeShelves(state).filter { it.first !is Shelf.Series && it.first !is Shelf.Smart }
     val recent = state.items.sortedFor(SortOrder.Added).filter { it.comic.id != hero.comic.id }.take(12)
 
@@ -823,6 +823,24 @@ private fun LibraryTab(
         }
         val results = if (query.isBlank()) null else search(state.items, query)
         if (results != null) {
+            // Series whose name matches come first, single-issue ones too.
+            val words = normalize(query).split(Regex("\\s+")).filter { it.isNotBlank() }
+            val matchingSeries = state.series.filter { (shelf, _) -> words.all { it in normalize(shelf.title) } }
+            if (matchingSeries.isNotEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(str(R.string.filter_series), style = MaterialTheme.typography.labelLarge)
+                        Row(
+                            Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            matchingSeries.take(20).forEach { (shelf, list) ->
+                                ShelfCard(shelf.title, list, onClick = { openShelf(shelf) }, modifier = Modifier.width(if (wide) 280.dp else 220.dp), subtitle = seriesSubtitle(list))
+                            }
+                        }
+                    }
+                }
+            }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
                     when (results.size) { 0 -> str(R.string.search_none, query); 1 -> str(R.string.search_one); else -> str(R.string.search_n, results.size) },
