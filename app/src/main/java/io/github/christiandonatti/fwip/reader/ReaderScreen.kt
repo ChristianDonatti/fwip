@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package io.github.christiandonatti.fwip.reader
 
 import android.app.Activity
@@ -22,6 +24,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
+import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -416,11 +426,24 @@ private fun Spread(pages: List<Int>, cache: PageCache, rtl: Boolean, maxW: Int, 
 
 @Composable
 private fun PageImage(index: Int, cache: PageCache, maxW: Int, maxH: Int) {
-    val bitmap by produceState(cache.peek(index, maxW, maxH), index, maxW, maxH) {
-        if (value == null) value = cache.get(index, maxW, maxH)
+    var bitmap by remember(index, maxW, maxH) { mutableStateOf(cache.peek(index, maxW, maxH)) }
+    var failed by remember(index, maxW, maxH) { mutableStateOf(false) }
+    LaunchedEffect(index, maxW, maxH) {
+        if (bitmap == null) {
+            val b = cache.get(index, maxW, maxH)
+            if (b == null) failed = true else bitmap = b
+        }
     }
     val b = bitmap
-    if (b == null) {
+    if (b == null && failed) {
+        Text(
+            "Não foi possível carregar a página ${index + 1}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = FwipColors.TextMuted,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(24.dp),
+        )
+    } else if (b == null) {
         CircularProgressIndicator(Modifier.size(28.dp), color = FwipColors.TextMuted, strokeWidth = 2.dp)
     } else {
         val image = remember(b) { b.asImageBitmap() }
@@ -454,7 +477,7 @@ private fun ReaderChrome(
         ) {
             Row(
                 Modifier
-                    .statusBarsPadding()
+                    .windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .fillMaxWidth()
                     .height(60.dp)
@@ -478,38 +501,106 @@ private fun ReaderChrome(
             exit = fadeOut() + slideOutVertically { it / 2 },
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            var dragging by remember { mutableStateOf<Float?>(null) }
-            val shown = dragging ?: spreadIndex.toFloat()
+            var preview by remember { mutableStateOf<Int?>(null) }
             Row(
                 Modifier
-                    .navigationBarsPadding()
+                    .windowInsetsPadding(WindowInsets.navigationBarsIgnoringVisibility)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .widthIn(max = 900.dp)
                     .fillMaxWidth()
                     .height(64.dp)
                     .clip(CircleShape)
-                    .background(Color(0xD9121318))
+                    .background(Color(0xE6121318))
                     .border(1.dp, FwipColors.Stroke, CircleShape)
-                    .padding(horizontal = 24.dp),
+                    .padding(start = 24.dp, end = 22.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Slider(
-                    value = if (rtl) (spreadCount - 1) - shown else shown,
-                    onValueChange = { dragging = if (rtl) (spreadCount - 1) - it else it },
-                    onValueChangeFinished = {
-                        dragging?.let { onSeek(it.roundToInt()) }
-                        dragging = null
-                    },
-                    valueRange = 0f..(spreadCount - 1).toFloat(),
-                    colors = SliderDefaults.colors(
-                        thumbColor = FwipColors.Amber,
-                        activeTrackColor = FwipColors.Amber,
-                        inactiveTrackColor = Color.White.copy(alpha = 0.15f),
-                    ),
+                PageScrubber(
+                    value = spreadIndex,
+                    count = spreadCount,
+                    rtl = rtl,
+                    onPreview = { preview = it },
+                    onSeek = onSeek,
                     modifier = Modifier.weight(1f),
+                )
+                Text(
+                    "${(preview ?: spreadIndex) + 1} / $spreadCount",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = FwipColors.TextSoft,
                 )
             }
         }
+    }
+}
+
+/** Slim page scrubber: tap or drag anywhere on the track to jump. */
+@Composable
+private fun PageScrubber(
+    value: Int,
+    count: Int,
+    rtl: Boolean,
+    onPreview: (Int?) -> Unit,
+    onSeek: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val last = (count - 1).coerceAtLeast(1)
+    fun toIndex(f: Float) = ((if (rtl) 1f - f else f) * last).roundToInt().coerceIn(0, last)
+    fun toFraction(i: Int) = (i.toFloat() / last).let { if (rtl) 1f - it else it }
+
+    var drag by remember { mutableStateOf<Float?>(null) }
+    val fraction = drag ?: toFraction(value)
+
+    BoxWithConstraints(
+        modifier
+            .height(44.dp)
+            .pointerInput(count, rtl) {
+                detectTapGestures { pos -> onSeek(toIndex((pos.x / size.width).coerceIn(0f, 1f))) }
+            }
+            .pointerInput(count, rtl) {
+                detectHorizontalDragGestures(
+                    onDragStart = { pos -> drag = (pos.x / size.width).coerceIn(0f, 1f) },
+                    onHorizontalDrag = { change, _ ->
+                        val f = (change.position.x / size.width).coerceIn(0f, 1f)
+                        drag = f
+                        onPreview(toIndex(f))
+                    },
+                    onDragEnd = {
+                        drag?.let { onSeek(toIndex(it)) }
+                        drag = null
+                        onPreview(null)
+                    },
+                    onDragCancel = {
+                        drag = null
+                        onPreview(null)
+                    },
+                )
+            },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        val thumb = if (drag != null) 22.dp else 16.dp
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.16f))
+        )
+        Box(
+            Modifier
+                .align(if (rtl) Alignment.CenterEnd else Alignment.CenterStart)
+                .fillMaxWidth(if (rtl) 1f - fraction else fraction)
+                .height(4.dp)
+                .clip(CircleShape)
+                .background(FwipColors.Amber)
+        )
+        Box(
+            Modifier
+                .offset(x = (maxWidth - thumb) * fraction)
+                .size(thumb)
+                .clip(CircleShape)
+                .background(FwipColors.Amber)
+        )
     }
 }
 

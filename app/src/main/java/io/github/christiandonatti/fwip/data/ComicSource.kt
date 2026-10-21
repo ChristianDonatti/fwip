@@ -13,6 +13,7 @@ import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
 import org.apache.commons.compress.archivers.zip.ZipFile
+import java.io.ByteArrayOutputStream
 import java.io.Closeable
 import java.io.File
 import java.io.FileInputStream
@@ -55,9 +56,16 @@ internal fun sha1(text: String): String =
 internal object ImageDecoding {
     private const val MAX_BYTES = 64L * 1024 * 1024
 
+    /** Reads the whole entry once and decodes from memory (archives are read a single time per page). */
     fun decode(open: () -> InputStream, maxWidth: Int, maxHeight: Int): Bitmap? {
+        val bytes = open().use { it.readBytes() }
+        return decodeBytes(bytes, maxWidth, maxHeight)
+    }
+
+    fun decodeBytes(bytes: ByteArray, maxWidth: Int, maxHeight: Int): Bitmap? {
+        if (bytes.isEmpty()) return null
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        open().use { BitmapFactory.decodeStream(it.buffered(), null, bounds) }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         val w = bounds.outWidth
         val h = bounds.outHeight
         if (w <= 0 || h <= 0) return null
@@ -74,7 +82,7 @@ internal object ImageDecoding {
             inSampleSize = sample
             inPreferredConfig = Bitmap.Config.ARGB_8888
         }
-        return open().use { BitmapFactory.decodeStream(it.buffered(), null, options) }
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
     }
 }
 
@@ -210,9 +218,15 @@ private class RarComicSource(private val archive: Archive) : ComicSource {
 
     override val pageCount: Int get() = pages.size
 
+    // junrar's getInputStream extracts on a background thread through a pipe; reading two pages
+    // that way at once corrupts the shared archive state. Extract synchronously into memory instead.
     @Synchronized
-    override fun decodePage(index: Int, maxWidth: Int, maxHeight: Int): Bitmap? =
-        ImageDecoding.decode({ archive.getInputStream(pages[index]) }, maxWidth, maxHeight)
+    override fun decodePage(index: Int, maxWidth: Int, maxHeight: Int): Bitmap? {
+        val header = pages[index]
+        val out = ByteArrayOutputStream(header.fullUnpackSize.coerceIn(0L, 64L * 1024 * 1024).toInt())
+        archive.extractFile(header, out)
+        return ImageDecoding.decodeBytes(out.toByteArray(), maxWidth, maxHeight)
+    }
 
     override fun close() {
         runCatching { archive.close() }

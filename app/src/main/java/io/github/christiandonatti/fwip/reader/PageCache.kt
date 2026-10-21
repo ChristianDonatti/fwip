@@ -29,7 +29,9 @@ class PageCache(private val source: ComicSource) {
         cache.get(k)?.let { return it }
         return withContext(Dispatchers.IO) {
             mutex.withLock {
-                cache.get(k) ?: runCatching { source.decodePage(index, w, h) }.getOrNull()?.also { cache.put(k, it) }
+                cache.get(k) ?: runCatching { source.decodePage(index, w, h) }
+                    .onFailure { android.util.Log.w("Fwip", "Failed to decode page $index", it) }
+                    .getOrNull()?.also { cache.put(k, it) }
             }
         }
     }
