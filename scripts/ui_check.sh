@@ -79,6 +79,9 @@ if [ -n "$xy" ]; then
   set -- $xy
   adb shell input swipe $1 $(( $2 - 150 )) $1 $(( $2 - 150 )) 900
   shot l3-options 2
+  # The sheet scrolls: bring its last rows up, then open the series.
+  adb shell input swipe $(( W / 2 )) $(( H * 3 / 4 )) $(( W / 2 )) $(( H / 5 )) 400
+  sleep 1
   ui '^See series' ; shot l4-series 3
   # Tap a cover and catch it growing.
   xy2=$(find_xy '^Pepper&Carrot #2')
@@ -93,7 +96,6 @@ if [ -n "$xy" ]; then
   ui '\|Reading settings' ; sleep 1
   adb shell input swipe $(( W / 2 )) $(( H * 3 / 4 )) $(( W / 2 )) $(( H / 4 )) 400
   shot r1-settings 2
-  adb shell input keyevent KEYCODE_BACK; sleep 1
   adb shell input keyevent KEYCODE_BACK; sleep 1.5
   adb shell input keyevent KEYCODE_BACK
   sleep 0.08; quick z3-closing-a
