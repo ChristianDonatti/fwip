@@ -13,7 +13,12 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = (System.getenv("FWIP_VERSION_CODE") ?: "1").toInt()
-        versionName = "0.1.0"
+        versionName = "0.2.0"
+
+        ndk {
+            // Phones and tablets; keeps the ML runtime from bloating the APK with emulator builds.
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     signingConfigs {
@@ -44,6 +49,11 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    androidResources {
+        // The balloon model is memory-mapped straight from the APK.
+        noCompress += "tflite"
     }
 
     packaging {
@@ -82,6 +92,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // On-device speech balloon detection
+    implementation("com.google.ai.edge.litert:litert:1.2.0")
 
     // Comic archives: CBZ/ZIP and CB7/7z via Commons Compress (+ XZ for LZMA), CBR/RAR via junrar
     implementation("org.apache.commons:commons-compress:1.27.1")

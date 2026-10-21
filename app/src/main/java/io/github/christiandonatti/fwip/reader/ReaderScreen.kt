@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-
 package io.github.christiandonatti.fwip.reader
 
 import android.app.Activity
@@ -8,111 +6,87 @@ import android.content.ContextWrapper
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
-import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import io.github.christiandonatti.fwip.balloons.BalloonStore
+import io.github.christiandonatti.fwip.balloons.readingOrder
 import io.github.christiandonatti.fwip.data.Comic
 import io.github.christiandonatti.fwip.data.ComicSource
 import io.github.christiandonatti.fwip.data.ComicSources
-import io.github.christiandonatti.fwip.ui.CircleIconButton
 import io.github.christiandonatti.fwip.ui.PillButton
-import io.github.christiandonatti.fwip.ui.PillStyle
 import io.github.christiandonatti.fwip.ui.theme.FwipColors
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.abs
 import kotlin.math.roundToInt
+
+/** Everything the page views need to draw a comic, fixed for a given layout. */
+@Stable
+class ReaderHost(
+    val spreads: List<List<Int>>,
+    val double: Boolean,
+    val rtl: Boolean,
+    val cache: PageCache,
+    /** Size pages are decoded at: half the screen width per page in double mode. */
+    val decodeW: Int,
+    val decodeH: Int,
+)
+
+sealed interface NavCommand {
+    data class Go(val delta: Int) : NavCommand
+    data class Seek(val spread: Int) : NavCommand
+}
 
 private sealed interface Loaded {
     data object Loading : Loaded
     data class Ready(val source: ComicSource) : Loaded
     data class Failed(val message: String) : Loaded
 }
+
+private enum class PendingBalloon { First, Last }
 
 @Composable
 fun ReaderScreen(
@@ -133,7 +107,7 @@ fun ReaderScreen(
         }
     }
     // Capture the value: reading `loaded` inside onDispose would see the newer state and close
-    // the source that was just opened (this is what broke every page after the first).
+    // the source that was just opened.
     val current = loaded
     DisposableEffect(current) {
         onDispose { (current as? Loaded.Ready)?.source?.close() }
@@ -159,18 +133,6 @@ fun ReaderScreen(
     }
 }
 
-/** Groups page indices into what is shown at once: single pages, or a cover and then pairs. */
-private fun buildSpreads(pageCount: Int, double: Boolean): List<List<Int>> {
-    if (!double) return (0 until pageCount).map { listOf(it) }
-    val out = mutableListOf(listOf(0))
-    var i = 1
-    while (i < pageCount) {
-        out += if (i + 1 < pageCount) listOf(i, i + 1) else listOf(i)
-        i += 2
-    }
-    return out
-}
-
 @Composable
 private fun Reader(
     comic: Comic,
@@ -180,6 +142,7 @@ private fun Reader(
     onClose: () -> Unit,
     onProgress: (Int, Int) -> Unit,
 ) {
+    val context = LocalContext.current
     val cache = remember(source) { PageCache(source) }
     DisposableEffect(cache) { onDispose { cache.clear() } }
 
@@ -190,507 +153,258 @@ private fun Reader(
         SpreadMode.Double -> true
         SpreadMode.Auto -> landscape && config.smallestScreenWidthDp >= 600
     }
-    val spreads = remember(source.pageCount, double) { buildSpreads(source.pageCount, double) }
     val rtl = settings.mangaMode
+    val spreads = remember(source.pageCount, double) { buildSpreads(source.pageCount, double) }
 
-    val startSpread = remember(spreads) {
-        spreads.indexOfFirst { startPage in it }.coerceAtLeast(0)
-    }
-    // Keep the same page in view when the layout switches between single and double.
-    var lastPage by remember { mutableStateOf(startPage.coerceIn(0, source.pageCount - 1)) }
-    val pagerState = rememberPagerState(initialPage = startSpread) { spreads.size }
-    LaunchedEffect(spreads) {
-        val target = spreads.indexOfFirst { lastPage in it }.coerceAtLeast(0)
-        if (pagerState.currentPage != target) pagerState.scrollToPage(target)
-    }
-
-    LaunchedEffect(pagerState, spreads) {
-        snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { s ->
-            val pages = spreads.getOrNull(s) ?: return@collect
-            lastPage = pages.first()
-            onProgress(pages.last(), source.pageCount)
-        }
-    }
+    // The first page in view, kept across layout changes (rotation, single/double).
+    var lastPage by rememberSaveable { mutableIntStateOf(startPage.coerceIn(0, source.pageCount - 1)) }
 
     var chrome by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     ImmersiveMode(visibleBars = chrome || showSettings)
 
     val scope = rememberCoroutineScope()
-    fun go(delta: Int) {
-        val target = (pagerState.currentPage + delta).coerceIn(0, spreads.lastIndex)
-        if (target != pagerState.currentPage) scope.launch { pagerState.animateScrollToPage(target) }
-    }
-
-    // Volume keys: down = next page, up = previous.
-    DisposableEffect(settings.volumeKeys) {
-        ReaderKeys.active = settings.volumeKeys
-        onDispose { ReaderKeys.active = false }
-    }
-    LaunchedEffect(pagerState, spreads) {
-        ReaderKeys.events.collect { go(it) }
-    }
-
-    var currentZoomed by remember { mutableStateOf(false) }
+    val commands = remember { MutableSharedFlow<NavCommand>(extraBufferCapacity = 8) }
+    val store = remember { BalloonStore.get(context) }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
-        val wPx = with(density) { maxWidth.toPx() }.roundToInt()
-        val hPx = with(density) { maxHeight.toPx() }.roundToInt()
+        val wPx = with(density) { maxWidth.toPx() }.roundToInt().coerceAtLeast(1)
+        val hPx = with(density) { maxHeight.toPx() }.roundToInt().coerceAtLeast(1)
+        val host = remember(spreads, double, rtl, cache, wPx, hPx) {
+            ReaderHost(spreads, double, rtl, cache, if (double) wPx / 2 else wPx, hPx)
+        }
+        val startSpread = remember(host) { spreads.indexOfFirst { lastPage in it }.coerceAtLeast(0) }
+        var spread by remember(host) { mutableIntStateOf(startSpread) }
+        var zoom by remember(host) { mutableStateOf<ZoomState?>(null) }
 
-        HorizontalPager(
-            state = pagerState,
-            reverseLayout = rtl,
-            beyondViewportPageCount = 1,
-            userScrollEnabled = !currentZoomed,
-            key = { spreads[it].first() * 2 + if (double) 1 else 0 },
-            modifier = Modifier.fillMaxSize(),
-        ) { index ->
-            val zoom = rememberZoomState(index to double)
-            val isCurrent = pagerState.currentPage == index
-            LaunchedEffect(zoom.isZoomed, isCurrent) { if (isCurrent) currentZoomed = zoom.isZoomed }
-            LaunchedEffect(pagerState.settledPage) { if (pagerState.settledPage != index) zoom.snapReset() }
+        // ---------- Bubble zoom ----------
+        var balloonMode by rememberSaveable { mutableStateOf(false) }
+        var balloonIndex by remember { mutableIntStateOf(-1) }
+        var pending by remember { mutableStateOf<PendingBalloon?>(null) }
 
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .turnEffect(pagerState, index, settings.turnStyle, rtl, double)
-                    // Opaque like paper, so the page underneath never shows through the margins.
-                    .background(FwipColors.ReaderBg)
-            ) {
-                Zoomable(
-                    state = zoom,
-                    onTap = { pos, size ->
-                        val x = pos.x / size.width.coerceAtLeast(1)
-                        when {
-                            x < 0.28f -> go(if (rtl) 1 else -1)
-                            x > 0.72f -> go(if (rtl) -1 else 1)
-                            else -> chrome = !chrome
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    Spread(
-                        pages = spreads[index],
-                        cache = cache,
-                        rtl = rtl,
-                        maxW = if (spreads[index].size == 2) wPx / 2 else wPx,
-                        maxH = hPx,
+        /** Balloons of the current spread in reading order, in reader coordinates; null while detecting. */
+        val balloons by produceState<List<Rect>?>(null, host, spread) {
+            value = null
+            val pages = spreads[spread]
+            val found = store.detectionsFor(comic.id, pages) { p -> cache.get(p, host.decodeW, host.decodeH) }
+            val placed = SpreadLayout.place(pages, double, rtl, wPx.toFloat(), hPx.toFloat()) { p ->
+                cache.peek(p, host.decodeW, host.decodeH)?.let { IntSize(it.width, it.height) }
+            }
+            value = placed.flatMap { pp ->
+                readingOrder(found[pp.page].orEmpty(), rtl).map { r ->
+                    Rect(
+                        pp.rect.left + r.left * pp.rect.width,
+                        pp.rect.top + r.top * pp.rect.height,
+                        pp.rect.left + r.right * pp.rect.width,
+                        pp.rect.top + r.bottom * pp.rect.height,
                     )
                 }
             }
         }
 
-        // Pre-decode the next and previous spreads so turning never shows a spinner.
-        LaunchedEffect(pagerState.settledPage, spreads, wPx, hPx) {
-            val s = pagerState.settledPage
-            for (n in listOf(s + 1, s - 1, s + 2)) {
-                val pages = spreads.getOrNull(n) ?: continue
-                val w = if (pages.size == 2) wPx / 2 else wPx
-                pages.forEach { cache.get(it, w, hPx) }
+        // While reading balloon by balloon, look ahead so the next page is ready instantly.
+        LaunchedEffect(balloonMode, spread, host) {
+            if (!balloonMode) return@LaunchedEffect
+            spreads.getOrNull(spread + 1)?.let { next ->
+                store.detectionsFor(comic.id, next) { p -> cache.get(p, host.decodeW, host.decodeH) }
             }
+        }
+
+        fun zoomToBalloon(i: Int) {
+            val list = balloons ?: return
+            val z = zoom ?: return
+            if (i !in list.indices) return
+            balloonIndex = i
+            scope.launch { z.animateToRect(list[i]) }
+        }
+
+        fun showWholePage() {
+            balloonIndex = -1
+            zoom?.let { z -> scope.launch { z.animateTo(1f) } }
+        }
+
+        fun nextBalloon() {
+            val list = balloons ?: return
+            if (balloonIndex + 1 < list.size) {
+                zoomToBalloon(balloonIndex + 1)
+            } else if (spread < spreads.lastIndex) {
+                pending = PendingBalloon.First
+                showWholePage()
+                commands.tryEmit(NavCommand.Go(1))
+            }
+        }
+
+        fun prevBalloon() {
+            when {
+                balloonIndex > 0 -> zoomToBalloon(balloonIndex - 1)
+                balloonIndex == 0 -> showWholePage()
+                spread > 0 -> {
+                    pending = PendingBalloon.Last
+                    commands.tryEmit(NavCommand.Go(-1))
+                }
+            }
+        }
+
+        fun setBalloonMode(on: Boolean) {
+            balloonMode = on
+            chrome = false
+            if (on) {
+                if (balloons.isNullOrEmpty()) pending = PendingBalloon.First else zoomToBalloon(0)
+            } else {
+                pending = null
+                showWholePage()
+            }
+        }
+
+        // After a turn in balloon mode, jump straight to the first (or last) balloon.
+        LaunchedEffect(balloons, zoom, pending) {
+            val list = balloons ?: return@LaunchedEffect
+            val p = pending ?: return@LaunchedEffect
+            if (zoom == null) return@LaunchedEffect
+            pending = null
+            balloonIndex = -1
+            if (list.isEmpty()) return@LaunchedEffect
+            delay(120)
+            zoomToBalloon(if (p == PendingBalloon.First) 0 else list.lastIndex)
+        }
+
+        // ---------- Navigation & input ----------
+        val onSpreadChanged: (Int) -> Unit = { s ->
+            if (s != spread) {
+                balloonIndex = -1
+                if (balloonMode && pending == null) pending = PendingBalloon.First
+            }
+            spread = s
+            spreads.getOrNull(s)?.let { pages ->
+                lastPage = pages.first()
+                onProgress(pages.last(), source.pageCount)
+            }
+        }
+
+        val onTap: (Offset, IntSize, ZoomState) -> Unit = { pos, size, z ->
+            val x = pos.x / size.width.coerceAtLeast(1)
+            if (balloonMode) {
+                // Tap anywhere to move on; the edge where reading comes from goes back.
+                val back = if (rtl) x > 0.75f else x < 0.25f
+                val list = balloons
+                val layoutPos = z.toLayout(pos)
+                val hit = list?.indexOfFirst { it.inflate(12f).contains(layoutPos) } ?: -1
+                when {
+                    back -> prevBalloon()
+                    hit >= 0 && hit != balloonIndex -> zoomToBalloon(hit)
+                    else -> nextBalloon()
+                }
+            } else {
+                when {
+                    x < 0.28f -> commands.tryEmit(NavCommand.Go(if (rtl) 1 else -1))
+                    x > 0.72f -> commands.tryEmit(NavCommand.Go(if (rtl) -1 else 1))
+                    else -> chrome = !chrome
+                }
+            }
+        }
+
+        // Double tap on a balloon zooms right into it; anywhere else it is a normal zoom.
+        val onDoubleTap: (Offset, ZoomState) -> Boolean = handler@{ pos, z ->
+            if (z.isZoomed) return@handler false
+            val list = balloons ?: return@handler false
+            val layoutPos = z.toLayout(pos)
+            val hit = list.indexOfFirst { it.inflate(16f).contains(layoutPos) }
+            if (hit < 0) return@handler false
+            if (balloonMode) balloonIndex = hit
+            scope.launch { z.animateToRect(list[hit]) }
+            true
+        }
+
+        // Volume keys: down = forward, up = back. In balloon mode they step through balloons.
+        DisposableEffect(settings.volumeKeys) {
+            ReaderKeys.active = settings.volumeKeys
+            onDispose { ReaderKeys.active = false }
+        }
+        LaunchedEffect(host) {
+            ReaderKeys.events.collect { d ->
+                if (balloonMode) {
+                    if (d > 0) nextBalloon() else prevBalloon()
+                } else {
+                    commands.tryEmit(NavCommand.Go(d))
+                }
+            }
+        }
+
+        key(host, settings.turnStyle) {
+            if (settings.turnStyle == TurnStyle.Curl) {
+                CurlReader(
+                    host = host,
+                    startSpread = spread,
+                    commands = commands,
+                    onSpreadChanged = onSpreadChanged,
+                    onZoomState = { zoom = it },
+                    onTap = onTap,
+                    onDoubleTap = onDoubleTap,
+                )
+            } else {
+                PagerReader(
+                    host = host,
+                    style = settings.turnStyle,
+                    startSpread = spread,
+                    commands = commands,
+                    onSpreadChanged = onSpreadChanged,
+                    onZoomState = { zoom = it },
+                    onTap = onTap,
+                    onDoubleTap = onDoubleTap,
+                )
+            }
+        }
+
+        // Spotlight on the balloon being read.
+        val spotAlpha by animateFloatAsState(if (balloonMode && balloonIndex >= 0) 1f else 0f, label = "spot")
+        val target = balloons?.getOrNull(balloonIndex)
+        val z = zoom
+        if (target != null && z != null) {
+            BalloonSpotlight(Rect(z.toScreen(target.topLeft), z.toScreen(target.bottomRight)), spotAlpha)
         }
 
         ReaderChrome(
             visible = chrome,
             comic = comic,
-            pageLabel = spreads.getOrNull(pagerState.currentPage)?.let { p ->
+            pageLabel = spreads.getOrNull(spread)?.let { p ->
                 if (p.size == 2) "${p[0] + 1}-${p[1] + 1} de ${source.pageCount}" else "${p[0] + 1} de ${source.pageCount}"
             } ?: "",
-            spreadIndex = pagerState.currentPage,
+            spreadIndex = spread,
             spreadCount = spreads.size,
             rtl = rtl,
-            onSeek = { scope.launch { pagerState.scrollToPage(it) } },
+            balloonMode = balloonMode,
+            onSeek = { commands.tryEmit(NavCommand.Seek(it)) },
             onBack = onClose,
             onSettings = { showSettings = true },
+            onBalloons = { setBalloonMode(!balloonMode) },
         )
-    }
 
-    if (showSettings) {
-        SettingsDialog(settings, onDismiss = { showSettings = false })
-    }
-}
-
-/**
- * Page turn animation driven by the pager's scroll position.
- * Flip: the page you leave rotates over its spine like paper, revealing the next one underneath.
- * Slide: the next page slides over the current one, which sinks back slightly.
- */
-private fun Modifier.turnEffect(
-    pagerState: PagerState,
-    index: Int,
-    style: TurnStyle,
-    rtl: Boolean,
-    double: Boolean,
-): Modifier = this
-    .zIndex(
-        run {
-            // Flip: the page being turned away sits on top, then the current one, then the next.
-            // Slide: the incoming page slides over the current one, which sits over the previous.
-            val o = ((index - pagerState.currentPage) - pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
-            if (style == TurnStyle.Flip && !double) (if (o < 0f) 2f else 1f - o) else (if (o > 0f) 2f else 1f + o)
-        }
-    )
-    .graphicsLayer {
-        val o = ((index - pagerState.currentPage) - pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
-        val dir = if (rtl) -1f else 1f
-        // Undo the pager's own sliding so we control where the page sits.
-        val visual = o * size.width * dir
-        cameraDistance = 14f * density * 160f
-        if (style == TurnStyle.Flip && !double) {
-            translationX = -visual
-            if (o < 0f) {
-                transformOrigin = TransformOrigin(if (rtl) 1f else 0f, 0.5f)
-                rotationY = o * 180f * dir
-                alpha = if (abs(o) < 0.5f) 1f else 0f
-            } else {
-                rotationY = 0f
-                alpha = 1f
-            }
-        } else {
-            if (o < 0f) {
-                // Page being covered: stays put, sinks a little.
-                translationX = -visual
-                val t = abs(o)
-                scaleX = 1f - 0.06f * t
-                scaleY = 1f - 0.06f * t
-                alpha = 1f - 0.5f * t
-            } else {
-                translationX = 0f
-                scaleX = 1f
-                scaleY = 1f
-                alpha = 1f
-            }
-        }
-    }
-    .drawWithContent {
-        drawContent()
-        val o = ((index - pagerState.currentPage) - pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
-        if (o == 0f) return@drawWithContent
-        if (style == TurnStyle.Flip && !double) {
-            if (o < 0f) {
-                // Light falls off as the page lifts away.
-                val t = (abs(o) * 2f).coerceAtMost(1f)
-                drawRect(
-                    Brush.horizontalGradient(
-                        if (rtl) listOf(Color.Black.copy(alpha = 0.05f * t), Color.Black.copy(alpha = 0.45f * t))
-                        else listOf(Color.Black.copy(alpha = 0.45f * t), Color.Black.copy(alpha = 0.05f * t))
-                    )
-                )
-            } else {
-                // The page underneath is in the shadow of the one turning.
-                drawRect(Color.Black.copy(alpha = 0.4f * o))
-            }
-        } else if (o > 0f) {
-            // Shadow cast by the sliding page onto the one beneath.
-            val w = 48f
-            val left = if (rtl) size.width else -w
-            val shade = Color.Black.copy(alpha = 0.35f * (1f - o))
-            drawRect(
-                Brush.horizontalGradient(
-                    if (rtl) listOf(shade, Color.Transparent) else listOf(Color.Transparent, shade),
-                    startX = left,
-                    endX = left + w,
-                ),
-                topLeft = Offset(left, 0f),
-                size = androidx.compose.ui.geometry.Size(w, size.height),
-            )
-        }
-    }
-
-@Composable
-private fun Spread(pages: List<Int>, cache: PageCache, rtl: Boolean, maxW: Int, maxH: Int) {
-    val ordered = if (rtl) pages.reversed() else pages
-    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-        ordered.forEachIndexed { i, page ->
-            val align = when {
-                ordered.size == 1 -> Alignment.Center
-                i == 0 -> Alignment.CenterEnd
-                else -> Alignment.CenterStart
-            }
-            Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = align) {
-                PageImage(page, cache, maxW, maxH)
-                if (ordered.size == 2) {
-                    // Soft shadow along the spine of a double page.
-                    Canvas(Modifier.matchParentSize()) {
-                        val w = 36.dp.toPx()
-                        val atRight = i == 0
-                        drawRect(
-                            Brush.horizontalGradient(
-                                if (atRight) listOf(Color.Transparent, Color.Black.copy(alpha = 0.18f)) else listOf(Color.Black.copy(alpha = 0.18f), Color.Transparent),
-                                startX = if (atRight) size.width - w else 0f,
-                                endX = if (atRight) size.width else w,
-                            ),
-                            topLeft = Offset(if (atRight) size.width - w else 0f, 0f),
-                            size = androidx.compose.ui.geometry.Size(w, size.height),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PageImage(index: Int, cache: PageCache, maxW: Int, maxH: Int) {
-    var bitmap by remember(index, maxW, maxH) { mutableStateOf(cache.peek(index, maxW, maxH)) }
-    var failed by remember(index, maxW, maxH) { mutableStateOf(false) }
-    LaunchedEffect(index, maxW, maxH) {
-        if (bitmap == null) {
-            val b = cache.get(index, maxW, maxH)
-            if (b == null) failed = true else bitmap = b
-        }
-    }
-    val b = bitmap
-    if (b == null && failed) {
-        Column(
-            Modifier.padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                "Não foi possível carregar a página ${index + 1}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = FwipColors.TextSoft,
-                textAlign = TextAlign.Center,
-            )
-            cache.errorFor(index)?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, textAlign = TextAlign.Center)
-            }
-        }
-    } else if (b == null) {
-        CircularProgressIndicator(Modifier.size(28.dp), color = FwipColors.TextMuted, strokeWidth = 2.dp)
-    } else {
-        val image = remember(b) { b.asImageBitmap() }
-        Image(
-            image,
-            contentDescription = "Página ${index + 1}",
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.aspectRatio(b.width.toFloat() / b.height.coerceAtLeast(1), matchHeightConstraintsFirst = true),
-        )
-    }
-}
-
-@Composable
-private fun ReaderChrome(
-    visible: Boolean,
-    comic: Comic,
-    pageLabel: String,
-    spreadIndex: Int,
-    spreadCount: Int,
-    rtl: Boolean,
-    onSeek: (Int) -> Unit,
-    onBack: () -> Unit,
-    onSettings: () -> Unit,
-) {
-    Box(Modifier.fillMaxSize()) {
         AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn() + slideInVertically { -it / 2 },
-            exit = fadeOut() + slideOutVertically { -it / 2 },
-            modifier = Modifier.align(Alignment.TopCenter),
-        ) {
-            Row(
-                Modifier
-                    .windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xD9121318))
-                    .border(1.dp, FwipColors.Stroke, CircleShape)
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CircleIconButton(Icons.Filled.ArrowBack, "Voltar para a biblioteca", onBack, size = 44.dp)
-                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                    Text(comic.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(pageLabel, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
-                }
-                CircleIconButton(Icons.Filled.Settings, "Ajustes de leitura", onSettings, size = 44.dp)
-            }
-        }
-        AnimatedVisibility(
-            visible = visible && spreadCount > 1,
+            visible = balloonMode,
             enter = fadeIn() + slideInVertically { it / 2 },
             exit = fadeOut() + slideOutVertically { it / 2 },
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            var preview by remember { mutableStateOf<Int?>(null) }
-            Row(
-                Modifier
-                    .windowInsetsPadding(WindowInsets.navigationBarsIgnoringVisibility)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .widthIn(max = 900.dp)
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xE6121318))
-                    .border(1.dp, FwipColors.Stroke, CircleShape)
-                    .padding(start = 24.dp, end = 22.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                PageScrubber(
-                    value = spreadIndex,
-                    count = spreadCount,
-                    rtl = rtl,
-                    onPreview = { preview = it },
-                    onSeek = onSeek,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    "${(preview ?: spreadIndex) + 1} / $spreadCount",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = FwipColors.TextSoft,
-                )
-            }
+            val list = balloons
+            BalloonBar(
+                label = when {
+                    list == null -> ""
+                    list.isEmpty() -> "Nenhum balão nesta página"
+                    balloonIndex >= 0 -> "Balão ${balloonIndex + 1} de ${list.size}"
+                    else -> if (list.size == 1) "1 balão" else "${list.size} balões"
+                },
+                busy = list == null,
+                rtl = rtl,
+                onPrev = ::prevBalloon,
+                onNext = ::nextBalloon,
+                onExit = { setBalloonMode(false) },
+            )
         }
     }
-}
 
-/** Slim page scrubber: tap or drag anywhere on the track to jump. */
-@Composable
-private fun PageScrubber(
-    value: Int,
-    count: Int,
-    rtl: Boolean,
-    onPreview: (Int?) -> Unit,
-    onSeek: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val last = (count - 1).coerceAtLeast(1)
-    fun toIndex(f: Float) = ((if (rtl) 1f - f else f) * last).roundToInt().coerceIn(0, last)
-    fun toFraction(i: Int) = (i.toFloat() / last).let { if (rtl) 1f - it else it }
-
-    var drag by remember { mutableStateOf<Float?>(null) }
-    val fraction = drag ?: toFraction(value)
-
-    BoxWithConstraints(
-        modifier
-            .height(44.dp)
-            .pointerInput(count, rtl) {
-                detectTapGestures { pos -> onSeek(toIndex((pos.x / size.width).coerceIn(0f, 1f))) }
-            }
-            .pointerInput(count, rtl) {
-                detectHorizontalDragGestures(
-                    onDragStart = { pos -> drag = (pos.x / size.width).coerceIn(0f, 1f) },
-                    onHorizontalDrag = { change, _ ->
-                        val f = (change.position.x / size.width).coerceIn(0f, 1f)
-                        drag = f
-                        onPreview(toIndex(f))
-                    },
-                    onDragEnd = {
-                        drag?.let { onSeek(toIndex(it)) }
-                        drag = null
-                        onPreview(null)
-                    },
-                    onDragCancel = {
-                        drag = null
-                        onPreview(null)
-                    },
-                )
-            },
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        val thumb = if (drag != null) 22.dp else 16.dp
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.16f))
-        )
-        Box(
-            Modifier
-                .align(if (rtl) Alignment.CenterEnd else Alignment.CenterStart)
-                .fillMaxWidth(if (rtl) 1f - fraction else fraction)
-                .height(4.dp)
-                .clip(CircleShape)
-                .background(FwipColors.Amber)
-        )
-        Box(
-            Modifier
-                .offset(x = (maxWidth - thumb) * fraction)
-                .size(thumb)
-                .clip(CircleShape)
-                .background(FwipColors.Amber)
-        )
-    }
-}
-
-@Composable
-private fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        Column(
-            Modifier
-                .widthIn(max = 480.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xFF16171E))
-                .border(1.dp, FwipColors.Stroke, RoundedCornerShape(28.dp))
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Ajustes de leitura", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                CircleIconButton(Icons.Filled.Close, "Fechar", onDismiss, size = 40.dp)
-            }
-            Choice("Virada de página", TurnStyle.entries, settings.turnStyle, { it.label }, settings::updateTurn)
-            Choice("Páginas na tela", SpreadMode.entries, settings.spreadMode, { it.label }, settings::updateSpread)
-            Toggle("Modo mangá", "Lê da direita para a esquerda", settings.mangaMode, settings::updateManga)
-            Toggle("Teclas de volume", "Viram a página para frente e para trás", settings.volumeKeys, settings::updateVolume)
-        }
-    }
-}
-
-@Composable
-private fun <T> Choice(title: String, options: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(title, style = MaterialTheme.typography.labelLarge)
-        Row(
-            Modifier
-                .clip(CircleShape)
-                .background(FwipColors.Surface)
-                .border(1.dp, FwipColors.Stroke, CircleShape)
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            options.forEach { o ->
-                val on = o == selected
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(40.dp)
-                        .clip(CircleShape)
-                        .background(if (on) FwipColors.Text else Color.Transparent)
-                        .clickable(role = Role.RadioButton) { onPick(o) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(label(o), style = MaterialTheme.typography.labelMedium, color = if (on) FwipColors.Ink else FwipColors.TextSoft, maxLines = 1)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun Toggle(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable(role = Role.Switch) { onChange(!checked) },
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.labelLarge)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
-        }
-        Spacer(Modifier.size(12.dp))
-        Switch(
-            checked = checked,
-            onCheckedChange = onChange,
-            colors = SwitchDefaults.colors(checkedTrackColor = FwipColors.Amber, checkedThumbColor = FwipColors.AmberInk),
-        )
+    if (showSettings) {
+        SettingsDialog(settings, onDismiss = { showSettings = false })
     }
 }
 

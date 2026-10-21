@@ -1,0 +1,7 @@
+balloons.tflite
+
+Speech balloon and panel detection model (YOLOv4-tiny) from Seeneva Android Reader
+https://github.com/Seeneva/seeneva-reader-android (file logic/src/main/assets/yolo_seeneva.tflite)
+
+Copyright (C) 2021-2023 Sergei Solodovnikov <sergei@isolo.me>
+License: GPL-3.0-or-later

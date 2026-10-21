@@ -76,6 +76,36 @@ class ZoomState {
         }
     }
 
+    /**
+     * Zooms so that [target] (in layout coordinates, before zoom) fills a comfortable part of the
+     * screen and sits in the middle of it.
+     */
+    suspend fun animateToRect(target: androidx.compose.ui.geometry.Rect, fill: Float = 0.82f, maxScale: Float = 4f) {
+        if (size.width == 0 || target.width <= 0f || target.height <= 0f) return
+        val s = minOf(size.width * fill / target.width, size.height * fill / target.height, maxScale).coerceAtLeast(1f)
+        val c = target.center - Offset(size.width / 2f, size.height / 2f)
+        val endOffset = clamp(-c * s, s)
+        val startScale = scale
+        val startOffset = offset
+        val anim = Animatable(0f)
+        anim.animateTo(1f, spring(dampingRatio = 0.86f, stiffness = 260f)) {
+            scale = startScale + (s - startScale) * value
+            offset = startOffset + (endOffset - startOffset) * value
+        }
+    }
+
+    /** Where a point of the unzoomed layout currently appears on screen. */
+    fun toScreen(p: Offset): Offset {
+        val c = Offset(size.width / 2f, size.height / 2f)
+        return c + (p - c) * scale + offset
+    }
+
+    /** The unzoomed layout point under a screen position. */
+    fun toLayout(p: Offset): Offset {
+        val c = Offset(size.width / 2f, size.height / 2f)
+        return c + (p - c - offset) / scale
+    }
+
     fun snapReset() {
         scale = 1f
         offset = Offset.Zero
@@ -97,9 +127,14 @@ fun Zoomable(
     state: ZoomState,
     onTap: (Offset, IntSize) -> Unit,
     modifier: Modifier = Modifier,
+    /** Return true to take over a double tap (e.g. zooming into a balloon). */
+    onDoubleTap: ((Offset) -> Boolean)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    // Gesture handlers live as long as the pointer block; always call the latest callbacks.
+    val tapHandler by androidx.compose.runtime.rememberUpdatedState(onTap)
+    val doubleTapHandler by androidx.compose.runtime.rememberUpdatedState(onDoubleTap)
     Box(
         modifier
             .onSizeChanged { state.size = it }
@@ -126,9 +161,9 @@ fun Zoomable(
             .pointerInput(state) {
                 detectTapGestures(
                     onDoubleTap = { pos ->
-                        scope.launchZoomToggle(state, pos)
+                        if (doubleTapHandler?.invoke(pos) != true) scope.launchZoomToggle(state, pos)
                     },
-                    onTap = { pos -> onTap(pos, state.size) },
+                    onTap = { pos -> tapHandler(pos, state.size) },
                 )
             }
     ) {
