@@ -34,7 +34,10 @@ class LibraryRepository(private val context: Context) {
         (prefs.getStringSet(KEY_FOLDERS, emptySet()) ?: emptySet()).map(Uri::parse)
 
     fun addFolder(uri: Uri) {
+        // Write access too, so comics can be deleted or moved from the app.
         runCatching {
+            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        }.recoverCatching {
             context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         val set = (prefs.getStringSet(KEY_FOLDERS, emptySet()) ?: emptySet()).toMutableSet()
@@ -73,6 +76,23 @@ class LibraryRepository(private val context: Context) {
                 )
             }
         }.getOrDefault(emptyList())
+    }
+
+    /** Takes deleted or moved files out of the saved list right away (the next scan agrees). */
+    fun forgetComics(ids: Set<String>) = saveComics(cachedComics().filterNot { it.id in ids })
+
+    /** A moved comic keeps its progress, bookmarks, edits, list and collections under its new id. */
+    fun migrate(old: String, new: String) {
+        progressFor(old)?.let { putProgress(new, it) }
+        val marks = BookmarkStore.get(context)
+        marks.all()[old]?.let { marks.set(new, it.pages, it.updated) }
+        onlineFor(old)?.let { setOnline(new, it) }
+        wantedAt(old)?.let { setWant(new, true, it) }
+        saveCollections(collections().map { c -> if (old in c.comicIds) c.copy(comicIds = c.comicIds.map { if (it == old) new else it }) else c })
+        val oldKey = sha1(old)
+        val newKey = sha1(new)
+        File(context.filesDir, "covers_custom").listFiles { f -> f.name.startsWith("$oldKey-") }
+            ?.forEach { it.renameTo(File(it.parentFile, it.name.replaceFirst(oldKey, newKey))) }
     }
 
     private fun saveComics(comics: List<Comic>) {

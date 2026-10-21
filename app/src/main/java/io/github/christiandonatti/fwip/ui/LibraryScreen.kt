@@ -115,6 +115,10 @@ class LibraryActions(
     val openIn: (LibraryItem, String?) -> Unit,
     val reorderCollection: (String, List<String>) -> Unit,
     val stats: () -> Map<java.time.LocalDate, io.github.christiandonatti.fwip.data.DayStats>,
+    val deleteComics: (List<String>) -> Unit,
+    val moveComics: (List<String>, Uri) -> Unit,
+    val downloadsUri: () -> Uri,
+    val dismissFileMessage: () -> Unit,
 )
 
 private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
@@ -166,6 +170,9 @@ fun LibraryScreen(
     var editFor by remember { mutableStateOf<String?>(null) }
     var seriesEditFor by remember { mutableStateOf<List<String>?>(null) }
     var coverFor by remember { mutableStateOf<String?>(null) }
+    // Deleting and moving files.
+    var deleteFor by remember { mutableStateOf<List<String>?>(null) }
+    var moveFor by remember { mutableStateOf<List<String>?>(null) }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var menuFor by remember { mutableStateOf<String?>(null) }
     var pickerFor by remember { mutableStateOf<List<String>?>(null) }
@@ -272,6 +279,8 @@ fun LibraryScreen(
                     onUnread = { actions.setRead(selection.ids.toList(), false); selection.clear() },
                     onCollection = { pickerFor = selection.ids.toList() },
                     onWant = { actions.setWant(selection.ids.toList(), true); selection.clear() },
+                    onMove = { moveFor = selection.ids.toList() },
+                    onDelete = { deleteFor = selection.ids.toList() },
                     onClose = { selection.clear() },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
@@ -329,6 +338,8 @@ fun LibraryScreen(
                 },
                 onCover = { menuFor = null; coverFor = id },
                 onWant = { actions.setWant(listOf(id), !item.wanted) },
+                onMove = { menuFor = null; moveFor = listOf(id) },
+                onDelete = { menuFor = null; deleteFor = listOf(id) },
                 onEdit = { menuFor = null; editFor = id },
                 onEditSeries = {
                     menuFor = null
@@ -346,6 +357,52 @@ fun LibraryScreen(
     seriesEditFor?.let { ids ->
         val list = ids.mapNotNull(state::item)
         if (list.isEmpty()) seriesEditFor = null else SeriesEditDialog(list, metaActions, onDismiss = { seriesEditFor = null })
+    }
+
+    deleteFor?.let { ids ->
+        val list = ids.mapNotNull(state::item)
+        FwipDialog({ deleteFor = null }) {
+            DialogTitle(if (list.size == 1) str(R.string.delete_one_title) else str(R.string.delete_n_title, list.size), { deleteFor = null })
+            if (list.size == 1) Text(list[0].comic.fileName, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+            Text(str(R.string.delete_explain), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PillButton(str(R.string.cancel), { deleteFor = null }, style = PillStyle.Ghost, height = 46.dp, modifier = Modifier.weight(1f))
+                PillButton(str(R.string.delete), {
+                    actions.deleteComics(ids)
+                    deleteFor = null
+                    selection.clear()
+                }, style = PillStyle.Amber, height = 46.dp, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+
+    moveFor?.let { ids ->
+        FwipDialog({ moveFor = null }) {
+            DialogTitle(if (ids.size == 1) str(R.string.move_one_title) else str(R.string.move_n_title, ids.size), { moveFor = null })
+            Text(str(R.string.move_explain), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+            val targets = state.folders.map { it to folderLabel(it, state.servers) } + (actions.downloadsUri() to str(R.string.downloads_folder))
+            targets.forEach { (uri, label) ->
+                SheetButton(label, {
+                    actions.moveComics(ids, uri)
+                    moveFor = null
+                    selection.clear()
+                }, leading = { FolderIcon(FwipColors.Text) })
+            }
+        }
+    }
+
+    state.fileWork?.let { work ->
+        FwipDialog({}) {
+            Text(work.label, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            ProgressBar(work.progress, FwipColors.Amber, Modifier.fillMaxWidth())
+        }
+    }
+
+    state.fileMessage?.let { message ->
+        FwipDialog(actions.dismissFileMessage) {
+            Text(message, style = MaterialTheme.typography.bodyLarge)
+            PillButton(str(R.string.ok), actions.dismissFileMessage, style = PillStyle.Ghost, height = 46.dp, modifier = Modifier.fillMaxWidth())
+        }
     }
 
     coverFor?.let { id ->
@@ -979,6 +1036,8 @@ private fun SelectionBar(
     onUnread: () -> Unit,
     onCollection: () -> Unit,
     onWant: () -> Unit,
+    onMove: () -> Unit,
+    onDelete: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1009,6 +1068,8 @@ private fun SelectionBar(
             PillButton(str(R.string.smart_read), onRead, height = 44.dp, style = PillStyle.Ghost)
             PillButton(str(R.string.smart_unread), onUnread, height = 44.dp, style = PillStyle.Ghost)
             PillButton(str(R.string.smart_want), onWant, height = 44.dp, style = PillStyle.Ghost)
+            PillButton(str(R.string.move), onMove, height = 44.dp, style = PillStyle.Ghost)
+            PillButton(str(R.string.delete), onDelete, height = 44.dp, style = PillStyle.Ghost)
             PillButton(str(R.string.collection), onCollection, height = 44.dp, style = PillStyle.Amber)
         }
     }

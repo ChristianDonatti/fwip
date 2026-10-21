@@ -34,6 +34,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import io.github.christiandonatti.fwip.data.sortedFor
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -308,6 +309,8 @@ fun ComicActionsDialog(
     onSelect: () -> Unit,
     onCover: () -> Unit = {},
     onWant: () -> Unit = {},
+    onMove: () -> Unit = {},
+    onDelete: () -> Unit = {},
     onEdit: () -> Unit = {},
     onEditSeries: () -> Unit = {},
 ) {
@@ -354,6 +357,8 @@ fun ComicActionsDialog(
             SheetButton(str(R.string.edit_info), onEdit, leading = { Icon(Icons.Filled.Edit, null) })
             SheetButton(str(R.string.series_edit), onEditSeries, leading = { StackIcon(LocalContentColor.current) })
             SheetButton(str(R.string.cover_change), onCover, leading = { CoverIcon(LocalContentColor.current) })
+            SheetButton(str(R.string.move_to), onMove, leading = { FolderIcon(LocalContentColor.current) })
+            SheetButton(str(R.string.delete_file), onDelete, leading = { Icon(Icons.Filled.Delete, null) }, danger = true)
         }
         SheetButton(str(R.string.select_several), onSelect, leading = { SelectIcon(LocalContentColor.current) })
         if (seriesSize >= 1) {

@@ -309,4 +309,24 @@
     <string name="stats_note">O tempo só conta enquanto você vira as páginas. Páginas e tempo ficam em cada aparelho; as HQs terminadas vêm do progresso, que sincroniza.</string>
     <string name="stats_minutes">%1$d min</string>
     <string name="stats_hours">%1$d h %2$d min</string>
+    <string name="ok">OK</string>
+    <string name="move">Mover</string>
+    <string name="move_to">Mover para outra pasta</string>
+    <string name="delete_file">Apagar arquivo</string>
+    <string name="delete_one_title">Apagar esta HQ?</string>
+    <string name="delete_n_title">Apagar %1$d HQs?</string>
+    <string name="delete_explain">Os arquivos são apagados do aparelho ou do NAS, não só escondidos da biblioteca. Não dá para desfazer.</string>
+    <string name="move_one_title">Mover esta HQ</string>
+    <string name="move_n_title">Mover %1$d HQs</string>
+    <string name="move_explain">Para uma das pastas da biblioteca. O progresso, os marcadores e as edições vão junto.</string>
+    <string name="deleting">Apagando %1$s</string>
+    <string name="moving">Movendo %1$s</string>
+    <string name="deleted_one">HQ apagada</string>
+    <string name="deleted_n">%1$d HQs apagadas</string>
+    <string name="delete_failed">%1$d de %2$d apagadas. %3$s</string>
+    <string name="moved_one">HQ movida</string>
+    <string name="moved_n">%1$d HQs movidas</string>
+    <string name="move_failed">%1$d de %2$d movidas. %3$s</string>
+    <string name="error_delete">Não deu para apagar o arquivo</string>
+    <string name="error_delete_permission">O Fwip não tem permissão para alterar arquivos nesta pasta. Remova a pasta da biblioteca e adicione de novo para permitir.</string>
 </resources>

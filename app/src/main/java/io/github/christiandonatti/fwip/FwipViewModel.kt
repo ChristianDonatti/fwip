@@ -33,6 +33,9 @@ data class SyncInfo(
     val failed: Boolean = false,
 )
 
+/** Files being deleted or moved. */
+data class FileWork(val label: String, val progress: Float)
+
 data class LibraryState(
     val items: List<LibraryItem> = emptyList(),
     val folders: List<Uri> = emptyList(),
@@ -46,6 +49,9 @@ data class LibraryState(
     /** A book opened straight from a server or a fresh download, not (yet) in the library. */
     val outsideComic: Comic? = null,
     val sync: SyncInfo = SyncInfo(),
+    val fileWork: FileWork? = null,
+    /** Result of the last delete or move, shown once. */
+    val fileMessage: String? = null,
 ) {
     /** Started but not finished, most recent first. */
     val continueReading: List<LibraryItem>
@@ -164,6 +170,14 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         scanJob = viewModelScope.launch {
             _state.update { it.copy(scanning = true) }
             val comics = repository.scan()
+            // Moved comics: carry their reading state over to the file's new place.
+            synchronized(pendingMoves) {
+                for (m in pendingMoves) {
+                    comics.firstOrNull { it.fileName == m.newName && it.size == m.size && it.id != m.oldId && it.id.startsWith(m.targetPrefix) }
+                        ?.let { repository.migrate(m.oldId, it.id) }
+                }
+                pendingMoves.clear()
+            }
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { sync.afterScan(comics) }
             _state.update { it.copy(items = comics.map(::itemFor), collections = repository.collections()) }
             scheduleSync(0)
@@ -547,6 +561,76 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         ids.forEach { repository.setWant(it, on) }
         refreshItems(ids)
         scheduleSync()
+    }
+
+    // ---------- Deleting and moving files ----------
+
+    private data class PendingMove(val oldId: String, val newName: String, val size: Long, val targetPrefix: String)
+    private val pendingMoves = mutableListOf<PendingMove>()
+
+    fun dismissFileMessage() = _state.update { it.copy(fileMessage = null) }
+
+    /** The app's own downloads folder, a place comics can be moved to as well. */
+    val downloadsUri: Uri get() = Uri.fromFile(io.github.christiandonatti.fwip.remote.RemoteComics.downloadsDir(getApplication()))
+
+    /** Deletes the files themselves (from the device or the NAS), not just from the library. */
+    fun deleteComics(ids: List<String>) {
+        val comics = ids.mapNotNull { _state.value.item(it)?.comic }
+        if (comics.isEmpty() || _state.value.fileWork != null) return
+        viewModelScope.launch {
+            val gone = mutableSetOf<String>()
+            var error: String? = null
+            comics.forEachIndexed { i, comic ->
+                _state.update { it.copy(fileWork = FileWork(str(R.string.deleting, comic.fileName), i / comics.size.toFloat())) }
+                runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.christiandonatti.fwip.data.FileOps.delete(getApplication(), comic) } }
+                    .onSuccess { gone += comic.id }
+                    .onFailure { error = it.message ?: it.javaClass.simpleName }
+            }
+            repository.forgetComics(gone)
+            _state.update { s ->
+                s.copy(
+                    items = s.items.filterNot { it.comic.id in gone },
+                    fileWork = null,
+                    fileMessage = error?.let { str(R.string.delete_failed, gone.size, comics.size, it) }
+                        ?: if (gone.size == 1) str(R.string.deleted_one) else str(R.string.deleted_n, gone.size),
+                )
+            }
+            refreshHomeScreen()
+        }
+    }
+
+    /** Moves comics into another library folder (or the app's downloads), keeping their progress. */
+    fun moveComics(ids: List<String>, target: Uri) {
+        val comics = ids.mapNotNull { _state.value.item(it)?.comic }
+        if (comics.isEmpty() || _state.value.fileWork != null) return
+        viewModelScope.launch {
+            var moved = 0
+            var error: String? = null
+            for ((i, comic) in comics.withIndex()) {
+                val label = str(R.string.moving, comic.fileName)
+                _state.update { it.copy(fileWork = FileWork(label, i / comics.size.toFloat())) }
+                runCatching {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        io.github.christiandonatti.fwip.data.FileOps.move(getApplication(), comic, target) { p ->
+                            _state.update { it.copy(fileWork = FileWork(label, (i + p) / comics.size)) }
+                        }
+                    }
+                }.onSuccess { name ->
+                    moved++
+                    synchronized(pendingMoves) {
+                        pendingMoves += PendingMove(comic.id, name, comic.size, if (target.scheme == "file") "file:" else target.toString().trimEnd('/'))
+                    }
+                }.onFailure { error = it.message ?: it.javaClass.simpleName }
+            }
+            _state.update {
+                it.copy(
+                    fileWork = null,
+                    fileMessage = error?.let { e -> str(R.string.move_failed, moved, comics.size, e) }
+                        ?: if (moved == 1) str(R.string.moved_one) else str(R.string.moved_n, moved),
+                )
+            }
+            refresh()
+        }
     }
 
     fun setRead(ids: List<String>, read: Boolean) {

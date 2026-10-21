@@ -310,4 +310,24 @@
     <string name="stats_note">Time counts only while you turn pages. Pages and time are kept on each device; finished comics come from your progress, which syncs.</string>
     <string name="stats_minutes">%1$d min</string>
     <string name="stats_hours">%1$d h %2$d min</string>
+    <string name="ok">OK</string>
+    <string name="move">Move</string>
+    <string name="move_to">Move to another folder</string>
+    <string name="delete_file">Delete file</string>
+    <string name="delete_one_title">Delete this comic?</string>
+    <string name="delete_n_title">Delete %1$d comics?</string>
+    <string name="delete_explain">The files are deleted from the device or the NAS, not just hidden from the library. This cannot be undone.</string>
+    <string name="move_one_title">Move this comic</string>
+    <string name="move_n_title">Move %1$d comics</string>
+    <string name="move_explain">To one of your library folders. Progress, bookmarks and edits go with it.</string>
+    <string name="deleting">Deleting %1$s</string>
+    <string name="moving">Moving %1$s</string>
+    <string name="deleted_one">Comic deleted</string>
+    <string name="deleted_n">%1$d comics deleted</string>
+    <string name="delete_failed">%1$d of %2$d deleted. %3$s</string>
+    <string name="moved_one">Comic moved</string>
+    <string name="moved_n">%1$d comics moved</string>
+    <string name="move_failed">%1$d of %2$d moved. %3$s</string>
+    <string name="error_delete">Could not delete the file</string>
+    <string name="error_delete_permission">Fwip cannot change files in this folder. Remove the folder from the library and add it again to allow it.</string>
 </resources>

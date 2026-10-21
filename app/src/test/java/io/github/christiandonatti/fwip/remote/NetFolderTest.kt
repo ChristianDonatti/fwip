@@ -102,6 +102,19 @@ class NetFolderTest {
     }
 
     @Test
+    fun uploadsAndDeletes() {
+        assumeTrue(address != null)
+        val c = client()
+        val data = ByteArray(3_000_000) { (it % 251).toByte() }
+        c.upload("Moved.cbz", data.size.toLong(), data.inputStream())
+        assertEquals(data.size.toLong(), c.list("").single { it.name == "Moved.cbz" }.size)
+        val back = BlockReader(c.open("Moved.cbz")).use { it.inputStream().readBytes() }
+        assertArrayEquals(data, back)
+        c.delete("Moved.cbz")
+        assertTrue(c.list("").none { it.name == "Moved.cbz" })
+    }
+
+    @Test
     fun writesSyncFiles() {
         assumeTrue(address != null)
         val c = client()

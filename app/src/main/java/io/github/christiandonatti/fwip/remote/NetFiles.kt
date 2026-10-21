@@ -39,6 +39,9 @@ interface NetClient {
     fun open(path: String): RandomFile
     fun write(path: String, bytes: ByteArray)
     fun mkdirs(path: String)
+    /** Streams a (possibly large) file to [path], replacing what is there. */
+    fun upload(path: String, length: Long, input: java.io.InputStream)
+    fun delete(path: String)
 }
 
 /** Network folder files are referenced as fwip-net://<server id>/<path>. */
@@ -347,6 +350,22 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
         }
     }
 
+    override fun upload(path: String, length: Long, input: java.io.InputStream) {
+        // Not through withShare: a half-read stream cannot be sent again.
+        share().openFile(
+            full(path),
+            java.util.EnumSet.of(com.hierynomus.msdtyp.AccessMask.GENERIC_WRITE),
+            null,
+            com.hierynomus.mssmb2.SMB2ShareAccess.ALL,
+            com.hierynomus.mssmb2.SMB2CreateDisposition.FILE_OVERWRITE_IF,
+            null,
+        ).use { f -> f.outputStream.use { out -> input.copyTo(out, 1 shl 20) } }
+    }
+
+    override fun delete(path: String) {
+        withShare { sh -> sh.rm(full(path)) }
+    }
+
     override fun close() = reset()
 }
 
@@ -475,6 +494,26 @@ internal class WebDavNet(private val server: Server) : NetClient {
     override fun write(path: String, bytes: ByteArray) {
         val req = request(url(path)).put(bytes.toRequestBody("application/octet-stream".toMediaType())).build()
         check(http.newCall(req).execute()).close()
+    }
+
+    override fun upload(path: String, length: Long, input: java.io.InputStream) {
+        val body = object : okhttp3.RequestBody() {
+            override fun contentType() = "application/octet-stream".toMediaType()
+            override fun contentLength() = length
+            override fun writeTo(sink: okio.BufferedSink) {
+                val buf = ByteArray(1 shl 16)
+                while (true) {
+                    val n = input.read(buf)
+                    if (n <= 0) break
+                    sink.write(buf, 0, n)
+                }
+            }
+        }
+        check(http.newCall(request(url(path)).put(body).build()).execute()).close()
+    }
+
+    override fun delete(path: String) {
+        check(http.newCall(request(url(path)).delete().build()).execute()).close()
     }
 
     override fun mkdirs(path: String) {
