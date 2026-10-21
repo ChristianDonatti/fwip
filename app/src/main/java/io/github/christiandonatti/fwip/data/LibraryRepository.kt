@@ -23,6 +23,7 @@ class LibraryRepository(private val context: Context) {
     private val progressFile = File(context.filesDir, "progress.json")
     private val coversDir = File(context.filesDir, "covers").apply { mkdirs() }
     private val colorsFile = File(context.filesDir, "colors.json")
+    private val collectionsFile = File(context.filesDir, "collections.json")
 
     private val progress: MutableMap<String, ReadingProgress> = loadProgress()
     private val colors: MutableMap<String, Int> = loadColors()
@@ -211,12 +212,50 @@ class LibraryRepository(private val context: Context) {
                 pageCount = pageCount,
                 lastRead = if (touch) System.currentTimeMillis() else (old?.lastRead ?: 0L),
             )
-            val o = JSONObject()
-            progress.forEach { (k, v) ->
-                o.put(k, JSONObject().put("page", v.page).put("count", v.pageCount).put("last", v.lastRead))
-            }
-            progressFile.writeText(o.toString())
+            writeProgress()
         }
+    }
+
+    /** Marks a comic as read (last page) or unread (back to the start). */
+    fun setRead(id: String, read: Boolean) {
+        val known = progressFor(id)
+        val count = known?.pageCount ?: 0
+        if (read) {
+            setProgress(id, (count - 1).coerceAtLeast(0), count.coerceAtLeast(1))
+        } else {
+            synchronized(progress) {
+                progress.remove(id)
+                writeProgress()
+            }
+            if (count > 0) setProgress(id, 0, count, touch = false)
+        }
+    }
+
+    private fun writeProgress() {
+        val o = JSONObject()
+        progress.forEach { (k, v) ->
+            o.put(k, JSONObject().put("page", v.page).put("count", v.pageCount).put("last", v.lastRead))
+        }
+        progressFile.writeText(o.toString())
+    }
+
+    // ---------- Collections ----------
+
+    fun collections(): List<ComicCollection> = runCatching {
+        val arr = JSONArray(collectionsFile.readText())
+        (0 until arr.length()).map { i ->
+            val o = arr.getJSONObject(i)
+            val ids = o.getJSONArray("comics")
+            ComicCollection(o.getString("id"), o.getString("name"), (0 until ids.length()).map { ids.getString(it) })
+        }
+    }.getOrDefault(emptyList())
+
+    fun saveCollections(list: List<ComicCollection>) {
+        val arr = JSONArray()
+        list.forEach { c ->
+            arr.put(JSONObject().put("id", c.id).put("name", c.name).put("comics", JSONArray(c.comicIds)))
+        }
+        collectionsFile.writeText(arr.toString())
     }
 
     private fun loadProgress(): MutableMap<String, ReadingProgress> = runCatching {

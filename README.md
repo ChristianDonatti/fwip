@@ -8,20 +8,17 @@ Fluid, simple and made to feel like reading a real comic book.
 ## Features
 
 **Working now**
-- Library built from your own folders (subfolders included)
-- CBZ, CBR, CB7 and PDF
+- Library built from your own folders (subfolders included): CBZ, CBR (including solid archives), CB7 and PDF
 - Launcher-style home: cover carousel with an ambient glow that follows the selected comic
-- Double-page spreads on tablets in landscape, single pages in portrait and on phones
-- Page turn animation (flip or slide), pinch and double-tap zoom
-- Manga mode (right to left)
-- Volume keys turn pages
+- Organization: automatic series, folders, your own collections, read/unread, filters and sorting
+- Paper page curl that follows your finger, with the back of the sheet and soft shadows; in landscape on tablets the page turns over the spine of a double spread
+- Bubble zoom: speech balloons are detected on the device and read one by one in panel order, with a spotlight; double tap a balloon to zoom straight into it
+- Pinch and double-tap zoom, manga mode (right to left), volume keys
 - Reading progress saved per comic
 
 **Planned**
-- Realistic page curl rendered with shaders
-- Bubble zoom: tap a speech balloon to zoom into it and step through balloons in reading order (on-device ML)
 - Panel-by-panel guided view
-- ComicInfo.xml metadata, series and collections
+- ComicInfo.xml metadata
 - OPDS, Komga and Kavita servers
 - Wide (double) page detection
 
@@ -47,7 +44,7 @@ Test builds are signed with the development key in `keystore/`. It is public on 
 
 ## Tech
 
-Kotlin, Jetpack Compose, Apache Commons Compress, junrar, Android PdfRenderer, Coil.
+Kotlin, Jetpack Compose, LiteRT (TensorFlow Lite), Apache Commons Compress, junrar, Android PdfRenderer, Coil.
 
 ## License
 
@@ -55,5 +52,7 @@ Fwip is free software, released under the [GNU General Public License v3.0](LICE
 You can use, study, share and modify it, as long as derived versions stay under the same license.
 
 ## Credits
+
+Speech balloon detection uses the YOLOv4-tiny model trained by [Seeneva](https://github.com/Seeneva/seeneva-reader-android) (GPL-3.0-or-later, Copyright 2021-2023 Sergei Solodovnikov), see `app/src/main/assets/balloons/NOTICE.txt`.
 
 Fonts: [Unbounded](https://github.com/googlefonts/unbounded) and [Manrope](https://github.com/sharanda/manrope), both under the SIL Open Font License 1.1 (see `FONTS-OFL.txt`).

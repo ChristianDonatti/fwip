@@ -46,7 +46,9 @@ data class LibraryItem(
     val coverPath: String?,
     val color: Int?,
     val progress: ReadingProgress?,
-)
+) {
+    val series: SeriesInfo = parseSeries(comic.title)
+}
 
 /** Turns "Batman_Vol.2_#07" into "Batman Vol.2 #07". */
 fun prettyTitle(fileName: String): String =

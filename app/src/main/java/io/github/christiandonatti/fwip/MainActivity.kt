@@ -20,6 +20,8 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.christiandonatti.fwip.reader.ReaderKeys
 import io.github.christiandonatti.fwip.reader.ReaderScreen
+import androidx.compose.runtime.remember
+import io.github.christiandonatti.fwip.ui.LibraryActions
 import io.github.christiandonatti.fwip.ui.LibraryScreen
 import io.github.christiandonatti.fwip.ui.theme.FwipTheme
 
@@ -41,6 +43,20 @@ class MainActivity : ComponentActivity() {
                     if (uri != null) viewModel.addFolder(uri)
                 }
 
+                val actions = remember(viewModel) {
+                    LibraryActions(
+                        open = { viewModel.open(it.comic) },
+                        addFolder = { pickFolder.launch(null) },
+                        removeFolder = viewModel::removeFolder,
+                        refresh = viewModel::refresh,
+                        setRead = viewModel::setRead,
+                        createCollection = viewModel::createCollection,
+                        renameCollection = viewModel::renameCollection,
+                        deleteCollection = viewModel::deleteCollection,
+                        setInCollection = viewModel::setInCollection,
+                    )
+                }
+
                 AnimatedContent(
                     targetState = state.openComic,
                     transitionSpec = {
@@ -53,10 +69,7 @@ class MainActivity : ComponentActivity() {
                     if (comic == null) {
                         LibraryScreen(
                             state = state,
-                            onOpen = { viewModel.open(it.comic) },
-                            onAddFolder = { pickFolder.launch(null) },
-                            onRemoveFolder = viewModel::removeFolder,
-                            onRefresh = viewModel::refresh,
+                            actions = actions,
                         )
                     } else {
                         val progress = viewModel.repository.progressFor(comic.id)
