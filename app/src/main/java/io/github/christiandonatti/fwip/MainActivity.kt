@@ -89,6 +89,7 @@ class MainActivity : ComponentActivity() {
                         renameCollection = viewModel::renameCollection,
                         deleteCollection = viewModel::deleteCollection,
                         setInCollection = viewModel::setInCollection,
+                        setWant = viewModel::setWant,
                     )
                 }
 

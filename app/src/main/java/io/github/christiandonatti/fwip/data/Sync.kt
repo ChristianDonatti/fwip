@@ -27,10 +27,12 @@ class SyncState(
     val deleted: Map<String, Long>,
     /** Titles and series found online or typed in, so identifying once is enough for every device. */
     val meta: Map<String, OnlineMeta> = emptyMap(),
+    /** The "Want to read" list: on or off, and when. */
+    val want: Map<String, Pair<Boolean, Long>> = emptyMap(),
 ) {
     data class SharedCollection(val id: String, val name: String, val updated: Long, val keys: List<String>)
 
-    val isEmpty: Boolean get() = progress.isEmpty() && bookmarks.isEmpty() && collections.isEmpty() && deleted.isEmpty() && meta.isEmpty()
+    val isEmpty: Boolean get() = progress.isEmpty() && bookmarks.isEmpty() && collections.isEmpty() && deleted.isEmpty() && meta.isEmpty() && want.isEmpty()
 
     fun toJson(): JSONObject {
         val p = JSONObject()
@@ -45,7 +47,9 @@ class SyncState(
         deleted.forEach { (k, v) -> d.put(k, v) }
         val m = JSONObject()
         meta.forEach { (k, v) -> m.put(k, v.toJson()) }
-        return JSONObject().put("progress", p).put("bookmarks", b).put("collections", c).put("deleted", d).put("meta", m)
+        val w = JSONObject()
+        want.forEach { (k, v) -> w.put(k, JSONObject().put("on", v.first).put("t", v.second)) }
+        return JSONObject().put("progress", p).put("bookmarks", b).put("collections", c).put("deleted", d).put("meta", m).put("want", w)
     }
 
     companion object {
@@ -77,7 +81,9 @@ class SyncState(
             o.optJSONObject("deleted")?.let { d -> d.keys().forEach { k -> deleted[k] = d.getLong(k) } }
             val meta = mutableMapOf<String, OnlineMeta>()
             o.optJSONObject("meta")?.let { m -> m.keys().forEach { k -> runCatching { meta[k] = OnlineMeta.fromJson(m.getJSONObject(k)) } } }
-            return SyncState(progress, bookmarks, collections, deleted, meta)
+            val want = mutableMapOf<String, Pair<Boolean, Long>>()
+            o.optJSONObject("want")?.let { w -> w.keys().forEach { k -> w.optJSONObject(k)?.let { e -> want[k] = e.optBoolean("on") to e.optLong("t") } } }
+            return SyncState(progress, bookmarks, collections, deleted, meta, want)
         }
 
         /** This device's state, keyed for sharing. */
@@ -108,7 +114,14 @@ class SyncState(
                 val old = meta[key]
                 if (old == null || m.updated >= old.updated) meta[key] = m
             }
-            return SyncState(progress, marks, collections, repo.deletedCollections(), meta)
+            val want = mutableMapOf<String, Pair<Boolean, Long>>()
+            pending?.want?.let(want::putAll)
+            repo.allWant().forEach { (id, w) ->
+                val key = keyOf[id] ?: return@forEach
+                val old = want[key]
+                if (old == null || w.second >= old.second) want[key] = w
+            }
+            return SyncState(progress, marks, collections, repo.deletedCollections(), meta, want)
         }
     }
 }
@@ -191,7 +204,20 @@ fun SyncState.applyTo(repo: LibraryRepository, bookmarks: BookmarkStore, comics:
         }
     }
 
-    return MergeResult(changed, SyncState(leftProgress, leftMarks, emptyList(), emptyMap(), leftMeta))
+    val leftWant = mutableMapOf<String, Pair<Boolean, Long>>()
+    want.forEach { (key, w) ->
+        val ids = idsByKey[key]
+        if (ids == null) { leftWant[key] = w; return@forEach }
+        val mine = repo.allWant()
+        for (id in ids) {
+            if ((mine[id]?.second ?: -1L) < w.second) {
+                repo.setWant(id, w.first, w.second)
+                changed = true
+            }
+        }
+    }
+
+    return MergeResult(changed, SyncState(leftProgress, leftMarks, emptyList(), emptyMap(), leftMeta, leftWant))
 }
 
 /** Moves collection members found by a new scan out of [ComicCollection.foreign]. */
@@ -340,7 +366,9 @@ class SyncManager(private val context: Context, private val repo: LibraryReposit
         old?.bookmarks?.forEach { (k, v) -> if ((left.bookmarks[k]?.updated ?: -1) < v.updated) marks[k] = v }
         val meta = (old?.meta.orEmpty() + left.meta).toMutableMap()
         old?.meta?.forEach { (k, v) -> if ((left.meta[k]?.updated ?: -1) < v.updated) meta[k] = v }
-        savePending(SyncState(progress, marks, emptyList(), emptyMap(), meta))
+        val want = (old?.want.orEmpty() + left.want).toMutableMap()
+        old?.want?.forEach { (k, v) -> if ((left.want[k]?.second ?: -1) < v.second) want[k] = v }
+        savePending(SyncState(progress, marks, emptyList(), emptyMap(), meta, want))
         return result.changed
     }
 

@@ -49,7 +49,8 @@ enum class SmartKind(@androidx.annotation.StringRes private val titleRes: Int) {
     Reading(R.string.smart_reading),
     Unread(R.string.smart_unread),
     Finished(R.string.smart_read),
-    Recent(R.string.smart_recent);
+    Recent(R.string.smart_recent),
+    Want(R.string.smart_want);
 
     val title: String get() = str(titleRes)
 }
@@ -75,4 +76,5 @@ fun LibraryItem.matches(kind: SmartKind): Boolean = when (kind) {
     SmartKind.Unread -> progress?.started != true && progress?.finished != true
     SmartKind.Finished -> progress?.finished == true
     SmartKind.Recent -> true
+    SmartKind.Want -> wanted && progress?.finished != true
 }

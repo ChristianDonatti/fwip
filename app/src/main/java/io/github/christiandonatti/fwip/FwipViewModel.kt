@@ -101,6 +101,7 @@ data class LibraryState(
         is Shelf.Smart -> when (shelf.kind) {
             SmartKind.Recent -> items.sortedFor(SortOrder.Added).take(30)
             SmartKind.Reading -> continueReading
+            SmartKind.Want -> items.filter { it.matches(SmartKind.Want) }.sortedByDescending { it.wantedAt ?: 0L }
             else -> items.filter { it.matches(shelf.kind) }.sortedFor(order)
         }
     }
@@ -136,6 +137,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         color = repository.colorFor(comic),
         progress = repository.progressFor(comic.id),
         meta = repository.metaFor(comic),
+        wantedAt = repository.wantedAt(comic.id),
     )
 
     fun addFolder(uri: Uri) {
@@ -519,6 +521,13 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun refreshProgress() {
         _state.update { s -> s.copy(items = s.items.map { it.copy(progress = repository.progressFor(it.comic.id)) }) }
+    }
+
+    /** Puts comics on the "Want to read" list, or takes them off. */
+    fun setWant(ids: List<String>, on: Boolean) {
+        ids.forEach { repository.setWant(it, on) }
+        refreshItems(ids)
+        scheduleSync()
     }
 
     fun setRead(ids: List<String>, read: Boolean) {

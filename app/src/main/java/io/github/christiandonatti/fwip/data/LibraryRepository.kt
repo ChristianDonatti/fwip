@@ -410,6 +410,29 @@ class LibraryRepository(private val context: Context) {
         collectionsFile.writeText(arr.toString())
     }
 
+    // ---------- Want to read ----------
+
+    private val wantFile = File(context.filesDir, "want.json")
+
+    /** Comic id to (on the list, when it changed). Removals are kept so sync carries them too. */
+    private val want: MutableMap<String, Pair<Boolean, Long>> = runCatching {
+        val o = JSONObject(wantFile.readText())
+        o.keys().asSequence().associateWith { k -> o.getJSONObject(k).let { it.optBoolean("on") to it.optLong("t") } }.toMutableMap()
+    }.getOrDefault(mutableMapOf())
+
+    fun wantedAt(id: String): Long? = synchronized(want) { want[id]?.takeIf { it.first }?.second }
+
+    fun allWant(): Map<String, Pair<Boolean, Long>> = synchronized(want) { want.toMap() }
+
+    fun setWant(id: String, on: Boolean, time: Long = System.currentTimeMillis()) {
+        synchronized(want) {
+            want[id] = on to time
+            val o = JSONObject()
+            want.forEach { (k, v) -> o.put(k, JSONObject().put("on", v.first).put("t", v.second)) }
+            runCatching { wantFile.writeText(o.toString()) }
+        }
+    }
+
     private val deletedFile = File(context.filesDir, "collections_deleted.json")
 
     /** Collections deleted here, with when, so a sync does not bring them back. */

@@ -284,4 +284,7 @@
     <string name="cover_from_image">Usar uma imagem do aparelho</string>
     <string name="cover_reset">Voltar para a primeira página</string>
     <string name="turn_scroll">Rolagem</string>
+    <string name="smart_want">Quero ler</string>
+    <string name="want_add">Adicionar a Quero ler</string>
+    <string name="want_remove">Tirar de Quero ler</string>
 </resources>

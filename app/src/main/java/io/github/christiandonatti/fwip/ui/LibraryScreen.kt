@@ -110,6 +110,7 @@ class LibraryActions(
     val renameCollection: (String, String) -> Unit,
     val deleteCollection: (String) -> Unit,
     val setInCollection: (String, List<String>, Boolean) -> Unit,
+    val setWant: (List<String>, Boolean) -> Unit,
 )
 
 private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
@@ -119,7 +120,7 @@ private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
 }
 
 private enum class Filter(@androidx.annotation.StringRes val labelRes: Int) {
-    All(R.string.filter_all), Series(R.string.filter_series), Folders(R.string.filter_folders), Unread(R.string.smart_unread), Finished(R.string.smart_read);
+    All(R.string.filter_all), Series(R.string.filter_series), Folders(R.string.filter_folders), Want(R.string.smart_want), Unread(R.string.smart_unread), Finished(R.string.smart_read);
 
     val label: String get() = str(labelRes)
 }
@@ -263,6 +264,7 @@ fun LibraryScreen(
                     onRead = { actions.setRead(selection.ids.toList(), true); selection.clear() },
                     onUnread = { actions.setRead(selection.ids.toList(), false); selection.clear() },
                     onCollection = { pickerFor = selection.ids.toList() },
+                    onWant = { actions.setWant(selection.ids.toList(), true); selection.clear() },
                     onClose = { selection.clear() },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
@@ -318,6 +320,7 @@ fun LibraryScreen(
                     shelfToken = Shelf.Series(seriesKeyOf, item.series.name).toToken()
                 },
                 onCover = { menuFor = null; coverFor = id },
+                onWant = { actions.setWant(listOf(id), !item.wanted) },
                 onEdit = { menuFor = null; editFor = id },
                 onEditSeries = {
                     menuFor = null
@@ -482,6 +485,8 @@ private fun homeShelves(state: LibraryState): List<Pair<Shelf, List<LibraryItem>
     val out = mutableListOf<Pair<Shelf, List<LibraryItem>>>()
     val reading = state.continueReading
     if (reading.isNotEmpty()) out += Shelf.Smart(SmartKind.Reading) to reading
+    val want = state.itemsOf(Shelf.Smart(SmartKind.Want))
+    if (want.isNotEmpty()) out += Shelf.Smart(SmartKind.Want) to want
     state.collections.filter { it.comicIds.isNotEmpty() }.forEach { c ->
         out += Shelf.Custom(c.id, c.name) to state.itemsOf(Shelf.Custom(c.id, c.name))
     }
@@ -884,6 +889,7 @@ private fun LibraryTab(
             else -> {
                 val list = when (filter) {
                     Filter.Unread -> state.items.filter { it.matches(SmartKind.Unread) }
+                    Filter.Want -> state.items.filter { it.matches(SmartKind.Want) }
                     Filter.Finished -> state.items.filter { it.matches(SmartKind.Finished) }
                     else -> state.items
                 }.sortedFor(sort)
@@ -964,6 +970,7 @@ private fun SelectionBar(
     onRead: () -> Unit,
     onUnread: () -> Unit,
     onCollection: () -> Unit,
+    onWant: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -993,6 +1000,7 @@ private fun SelectionBar(
         ) {
             PillButton(str(R.string.smart_read), onRead, height = 44.dp, style = PillStyle.Ghost)
             PillButton(str(R.string.smart_unread), onUnread, height = 44.dp, style = PillStyle.Ghost)
+            PillButton(str(R.string.smart_want), onWant, height = 44.dp, style = PillStyle.Ghost)
             PillButton(str(R.string.collection), onCollection, height = 44.dp, style = PillStyle.Amber)
         }
     }
@@ -1007,7 +1015,7 @@ private fun CollectionsTab(
     gutter: Dp,
 ) {
     var creating by remember { mutableStateOf(false) }
-    val smart = listOf(SmartKind.Reading, SmartKind.Unread, SmartKind.Finished, SmartKind.Recent).map { Shelf.Smart(it) }
+    val smart = listOf(SmartKind.Reading, SmartKind.Want, SmartKind.Unread, SmartKind.Finished, SmartKind.Recent).map { Shelf.Smart(it) }
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(if (wide) 220.dp else 150.dp),

@@ -285,4 +285,7 @@
     <string name="cover_from_image">Use a picture from the device</string>
     <string name="cover_reset">Back to the first page</string>
     <string name="turn_scroll">Scroll</string>
+    <string name="smart_want">Want to read</string>
+    <string name="want_add">Add to Want to read</string>
+    <string name="want_remove">Remove from Want to read</string>
 </resources>

@@ -49,7 +49,11 @@ data class LibraryItem(
     val color: Int?,
     val progress: ReadingProgress?,
     val meta: ComicMeta? = null,
+    /** When it went on the "Want to read" list; null when it is not there. */
+    val wantedAt: Long? = null,
 ) {
+    val wanted: Boolean get() = wantedAt != null
+
     /** What the file name says, for comics without metadata. */
     val parsed: ParsedName by lazy { parseFileName(comic.fileName) }
 

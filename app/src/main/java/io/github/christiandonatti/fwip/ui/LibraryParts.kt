@@ -303,6 +303,7 @@ fun ComicActionsDialog(
     onSeries: () -> Unit,
     onSelect: () -> Unit,
     onCover: () -> Unit = {},
+    onWant: () -> Unit = {},
     onEdit: () -> Unit = {},
     onEditSeries: () -> Unit = {},
 ) {
@@ -338,6 +339,13 @@ fun ComicActionsDialog(
             leading = { Icon(Icons.Filled.Check, null) },
         )
         SheetButton(str(R.string.add_to_collection), onCollections, leading = { Icon(Icons.Filled.Add, null) })
+        if (!finished) {
+            SheetButton(
+                str(if (item.wanted) R.string.want_remove else R.string.want_add),
+                onWant,
+                leading = { BookmarkGlyph(LocalContentColor.current, filled = item.wanted) },
+            )
+        }
         if (item.comic.remote == null) {
             SheetButton(str(R.string.edit_info), onEdit, leading = { Icon(Icons.Filled.Edit, null) })
             SheetButton(str(R.string.series_edit), onEditSeries, leading = { StackIcon(LocalContentColor.current) })
@@ -563,3 +571,16 @@ fun CoverIcon(color: Color, modifier: Modifier = Modifier, size: Dp = 22.dp) {
         drawCircle(color, radius = 1.6f * u, center = Offset(14.5f * u, 8 * u))
     }
 }
+
+/** Ribbon: the "Want to read" mark. */
+@Composable
+fun BookmarkGlyph(color: Color, filled: Boolean, modifier: Modifier = Modifier, size: Dp = 22.dp) {
+    Canvas(modifier.size(size)) {
+        val u = this.size.width / 24f
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(6 * u, 3 * u); lineTo(18 * u, 3 * u); lineTo(18 * u, 21 * u); lineTo(12 * u, 16.5f * u); lineTo(6 * u, 21 * u); close()
+        }
+        if (filled) drawPath(path, color) else drawPath(path, color, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f * u))
+    }
+}
+
