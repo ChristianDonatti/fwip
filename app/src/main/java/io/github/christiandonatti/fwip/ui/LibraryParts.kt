@@ -77,18 +77,21 @@ fun CoverTile(
     onMenu: () -> Unit,
     wide: Boolean,
     modifier: Modifier = Modifier,
+    selection: Selection? = null,
 ) {
+    val selecting = selection?.active == true
+    val selected = selection?.contains(item.comic.id) == true
     Column(
         modifier.combinedClickable(
             role = Role.Button,
-            onClickLabel = item.title,
-            onLongClickLabel = "Opções",
-            onLongClick = onMenu,
-            onClick = onOpen,
+            onClickLabel = if (selecting) "Selecionar" else item.title,
+            onLongClickLabel = if (selecting) "Selecionar" else "Opções",
+            onLongClick = { if (selecting) selection?.toggle(item.comic.id) else onMenu() },
+            onClick = { if (selecting) selection?.toggle(item.comic.id) else onOpen() },
         ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box {
+        Box(Modifier.graphicsLayer { val s = if (selected) 0.93f else 1f; scaleX = s; scaleY = s }) {
             CoverImage(
                 item,
                 Modifier
@@ -111,6 +114,27 @@ fun CoverTile(
                     Icon(Icons.Filled.Check, "Lida", tint = FwipColors.AmberInk, modifier = Modifier.size(16.dp))
                 }
             }
+            if (selecting) {
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (selected) FwipColors.Amber.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.25f))
+                        .border(if (selected) 3.dp else 0.dp, if (selected) FwipColors.Amber else Color.Transparent, RoundedCornerShape(16.dp))
+                )
+                Box(
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp)
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(if (selected) FwipColors.Amber else Color.Black.copy(alpha = 0.45f))
+                        .border(2.dp, if (selected) FwipColors.Amber else Color.White, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (selected) Icon(Icons.Filled.Check, "Selecionada", tint = FwipColors.AmberInk, modifier = Modifier.size(16.dp))
+                }
+            }
         }
         Text(item.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
         val p = item.progress
@@ -118,6 +142,18 @@ fun CoverTile(
             ProgressBar(p.fraction, item.glowColor(), Modifier.fillMaxWidth())
         }
     }
+}
+
+/** Comics picked in selection mode. Empty means selection mode is off. */
+@androidx.compose.runtime.Stable
+class Selection {
+    var ids by mutableStateOf(emptySet<String>())
+        private set
+    val active: Boolean get() = ids.isNotEmpty()
+    fun contains(id: String) = id in ids
+    fun toggle(id: String) { ids = if (id in ids) ids - id else ids + id }
+    fun selectAll(all: Collection<String>) { ids = ids + all }
+    fun clear() { ids = emptySet() }
 }
 
 /** A series, folder or collection: a small fan of covers with a name and a count. */
@@ -260,6 +296,7 @@ fun ComicActionsDialog(
     onToggleRead: () -> Unit,
     onCollections: () -> Unit,
     onSeries: () -> Unit,
+    onSelect: () -> Unit,
 ) {
     FwipDialog(onDismiss) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -293,6 +330,7 @@ fun ComicActionsDialog(
             leading = { Icon(Icons.Filled.Check, null) },
         )
         SheetButton("Adicionar a uma coleção", onCollections, leading = { Icon(Icons.Filled.Add, null) })
+        SheetButton("Selecionar várias", onSelect, leading = { SelectIcon(LocalContentColor.current) })
         if (seriesSize >= 2) {
             SheetButton(
                 "Ver série ${item.series.name}",
@@ -343,7 +381,7 @@ fun MetaDetails(meta: io.github.christiandonatti.fwip.data.ComicMeta) {
 fun CollectionPickerDialog(
     title: String,
     collections: List<ComicCollection>,
-    comicId: String,
+    comicIds: List<String>,
     onToggle: (ComicCollection, Boolean) -> Unit,
     onCreate: (String) -> Unit,
     onDismiss: () -> Unit,
@@ -352,7 +390,7 @@ fun CollectionPickerDialog(
     FwipDialog(onDismiss) {
         DialogTitle(title, onDismiss)
         collections.forEach { c ->
-            val inside = comicId in c.comicIds
+            val inside = comicIds.isNotEmpty() && c.comicIds.containsAll(comicIds)
             SheetButton(
                 c.name,
                 onClick = { onToggle(c, !inside) },
@@ -442,6 +480,21 @@ fun FolderIcon(color: Color, modifier: Modifier = Modifier, size: Dp = 20.dp) {
             close()
         }
         drawPath(path, color, style = Stroke(width = 2f * u))
+    }
+}
+
+/** Rounded square with a check, for "select several". */
+@Composable
+fun SelectIcon(color: Color, modifier: Modifier = Modifier, size: Dp = 20.dp) {
+    Canvas(modifier.size(size)) {
+        val u = this.size.width / 24f
+        drawRoundRect(color, Offset(3 * u, 3 * u), Size(18 * u, 18 * u), CornerRadius(4 * u), style = Stroke(width = 2f * u))
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(7.5f * u, 12.5f * u)
+            lineTo(10.5f * u, 15.5f * u)
+            lineTo(16.5f * u, 8.5f * u)
+        }
+        drawPath(path, color, style = Stroke(width = 2f * u, cap = androidx.compose.ui.graphics.StrokeCap.Round))
     }
 }
 

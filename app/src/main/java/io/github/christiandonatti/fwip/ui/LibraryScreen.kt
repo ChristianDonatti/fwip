@@ -62,6 +62,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -78,6 +79,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
@@ -140,9 +142,14 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions) {
     var showFolders by remember { mutableStateOf(false) }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var menuFor by remember { mutableStateOf<String?>(null) }
-    var pickerFor by remember { mutableStateOf<String?>(null) }
+    var pickerFor by remember { mutableStateOf<List<String>?>(null) }
+    val selection = remember { Selection() }
+    var query by rememberSaveable { mutableStateOf("") }
+    var searching by rememberSaveable { mutableStateOf(false) }
 
-    BackHandler(enabled = shelf != null) { shelfToken = null }
+    BackHandler(enabled = selection.active) { selection.clear() }
+    BackHandler(enabled = shelf != null && !selection.active) { shelfToken = null }
+    BackHandler(enabled = shelf == null && searching && !selection.active) { searching = false; query = "" }
 
     val row = state.homeRow
     val sel = row.getOrNull(selected.coerceAtMost(row.lastIndex.coerceAtLeast(0)))
@@ -186,6 +193,7 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions) {
                         gutter = gutter,
                         onBack = { shelfToken = null },
                         onMenu = showMenu,
+                        selection = selection,
                     )
                 } else {
                     Column(Modifier.fillMaxSize()) {
@@ -197,19 +205,35 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions) {
                             onRefresh = actions.refresh,
                             onAdd = actions.addFolder,
                             onFolders = { showFolders = true },
+                            onSearch = { tab = Tab.Library; searching = true },
                             modifier = Modifier.padding(horizontal = gutter, vertical = if (wide) 24.dp else 12.dp),
                         )
                         when {
                             state.items.isEmpty() -> EmptyState(state.folders.isEmpty(), state.scanning, actions.addFolder)
                             tab == Tab.Home && wide -> WideHome(state, selected, { selected = it }, actions, openShelf, showMenu, gutter, boxHeight)
                             tab == Tab.Home -> PhoneHome(state, actions, openShelf, showMenu, gutter)
-                            tab == Tab.Library -> LibraryTab(state, actions, openShelf, showMenu, wide, gutter)
+                            tab == Tab.Library -> LibraryTab(
+                                state, actions, openShelf, showMenu, wide, gutter, selection,
+                                searching = searching,
+                                query = query,
+                                onQuery = { query = it },
+                                onCloseSearch = { searching = false; query = "" },
+                            )
                             else -> CollectionsTab(state, actions, openShelf, wide, gutter)
                         }
                     }
                 }
             }
-            if (!wide && shelf == null && state.items.isNotEmpty()) {
+            if (selection.active) {
+                SelectionBar(
+                    count = selection.ids.size,
+                    onRead = { actions.setRead(selection.ids.toList(), true); selection.clear() },
+                    onUnread = { actions.setRead(selection.ids.toList(), false); selection.clear() },
+                    onCollection = { pickerFor = selection.ids.toList() },
+                    onClose = { selection.clear() },
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+            } else if (!wide && shelf == null && state.items.isNotEmpty()) {
                 PhoneTabBar(tab, onTab = { tab = it }, Modifier.align(Alignment.BottomCenter))
             }
         }
@@ -240,7 +264,12 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions) {
                     actions.setRead(listOf(id), item.progress?.finished != true)
                     menuFor = null
                 },
-                onCollections = { menuFor = null; pickerFor = id },
+                onCollections = { menuFor = null; pickerFor = listOf(id) },
+                onSelect = {
+                    menuFor = null
+                    if (shelf == null && tab != Tab.Library) tab = Tab.Library
+                    selection.toggle(id)
+                },
                 onSeries = {
                     menuFor = null
                     shelfToken = Shelf.Series(seriesKeyOf, item.series.name).toToken()
@@ -249,14 +278,17 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions) {
         }
     }
 
-    pickerFor?.let { id ->
+    pickerFor?.let { ids ->
         CollectionPickerDialog(
-            title = "Coleções",
+            title = if (ids.size == 1) "Coleções" else "Coleções para ${ids.size} HQs",
             collections = state.collections,
-            comicId = id,
-            onToggle = { c, inside -> actions.setInCollection(c.id, listOf(id), inside) },
-            onCreate = { name -> actions.createCollection(name, listOf(id)) },
-            onDismiss = { pickerFor = null },
+            comicIds = ids,
+            onToggle = { c, inside -> actions.setInCollection(c.id, ids, inside) },
+            onCreate = { name -> actions.createCollection(name, ids) },
+            onDismiss = {
+                pickerFor = null
+                if (ids.size > 1) selection.clear()
+            },
         )
     }
 }
@@ -270,6 +302,7 @@ private fun Header(
     onRefresh: () -> Unit,
     onAdd: () -> Unit,
     onFolders: () -> Unit,
+    onSearch: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val button = if (wide) 46.dp else 44.dp
@@ -280,7 +313,8 @@ private fun Header(
             Segmented(Tab.entries, tab, { it.label }, onTab)
             Spacer(Modifier.weight(1f))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(if (wide) 10.dp else 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            CircleIconButton(Icons.Filled.Search, "Buscar", onSearch, size = button)
             if (scanning) {
                 Box(Modifier.size(button), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(Modifier.size(20.dp), color = FwipColors.TextSoft, strokeWidth = 2.dp)
@@ -694,6 +728,11 @@ private fun LibraryTab(
     onMenu: (LibraryItem) -> Unit,
     wide: Boolean,
     gutter: Dp,
+    selection: Selection,
+    searching: Boolean,
+    query: String,
+    onQuery: (String) -> Unit,
+    onCloseSearch: () -> Unit,
 ) {
     var filter by rememberSaveable { mutableStateOf(Filter.All) }
     var sort by rememberSaveable { mutableStateOf(SortOrder.Title) }
@@ -706,6 +745,25 @@ private fun LibraryTab(
         horizontalArrangement = Arrangement.spacedBy(if (wide) 22.dp else 12.dp),
         verticalArrangement = Arrangement.spacedBy(if (wide) 26.dp else 18.dp),
     ) {
+        if (searching) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                SearchField(query, onQuery, onCloseSearch)
+            }
+        }
+        val results = if (query.isBlank()) null else search(state.items, query)
+        if (results != null) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(
+                    when (results.size) { 0 -> "Nada encontrado para \"$query\""; 1 -> "1 resultado"; else -> "${results.size} resultados" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = FwipColors.TextMuted,
+                )
+            }
+            items(results, key = { it.comic.id }) { it ->
+                CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = wide, selection = selection)
+            }
+            return@LazyVerticalGrid
+        }
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
                 Modifier.horizontalScroll(rememberScrollState()),
@@ -746,9 +804,107 @@ private fun LibraryTab(
                     }
                 }
                 items(list, key = { it.comic.id }) { it ->
-                    CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = wide)
+                    CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = wide, selection = selection)
                 }
             }
+        }
+    }
+}
+
+/** Accent- and case-insensitive text for matching ("Ação" finds "acao"). */
+private fun normalize(text: String): String =
+    java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "")
+        .lowercase()
+
+/** Every word typed must appear in the title, file name, series, credits, publisher or tags. */
+private fun search(items: List<LibraryItem>, query: String): List<LibraryItem> {
+    val words = normalize(query).split(Regex("\\s+")).filter { it.isNotBlank() }
+    if (words.isEmpty()) return emptyList()
+    return items.filter { item ->
+        val m = item.meta
+        val haystack = normalize(
+            listOfNotNull(
+                item.title, item.comic.title, item.comic.fileName, item.comic.folder, item.series.name,
+                m?.title, m?.writer, m?.penciller, m?.inker, m?.colorist, m?.coverArtist, m?.publisher,
+                m?.imprint, m?.storyArc, m?.genre, m?.tags, m?.characters, m?.year?.toString(),
+            ).joinToString(" ")
+        )
+        words.all { it in haystack }
+    }.sortedFor(SortOrder.Title)
+}
+
+@Composable
+private fun SearchField(query: String, onQuery: (String) -> Unit, onClose: () -> Unit) {
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .clip(CircleShape)
+            .background(FwipColors.Surface)
+            .border(1.dp, FwipColors.Stroke, CircleShape)
+            .padding(start = 18.dp, end = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(Icons.Filled.Search, null, tint = FwipColors.TextMuted, modifier = Modifier.size(20.dp))
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            if (query.isEmpty()) {
+                Text("Título, série, autor ou editora", style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextMuted, maxLines = 1)
+            }
+            androidx.compose.foundation.text.BasicTextField(
+                value = query,
+                onValueChange = onQuery,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = FwipColors.Text),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(FwipColors.Amber),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+                modifier = Modifier.fillMaxWidth().focusRequester(focus),
+            )
+        }
+        CircleIconButton(Icons.Filled.Close, "Fechar busca", onClose, size = 42.dp)
+    }
+}
+
+/** Actions for the selected comics, floating at the bottom. */
+@Composable
+private fun SelectionBar(
+    count: Int,
+    onRead: () -> Unit,
+    onUnread: () -> Unit,
+    onCollection: () -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier
+            .padding(horizontal = 12.dp, vertical = 14.dp)
+            .widthIn(max = 720.dp)
+            .fillMaxWidth()
+            .height(64.dp)
+            .clip(CircleShape)
+            .background(Color(0xF216171E))
+            .border(1.dp, FwipColors.Stroke, CircleShape)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        CircleIconButton(Icons.Filled.Close, "Cancelar seleção", onClose, size = 46.dp)
+        Text(
+            if (count == 1) "1 selecionada" else "$count selecionadas",
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+        Row(
+            Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
+        ) {
+            PillButton("Lidas", onRead, height = 44.dp, style = PillStyle.Ghost)
+            PillButton("Não lidas", onUnread, height = 44.dp, style = PillStyle.Ghost)
+            PillButton("Coleção", onCollection, height = 44.dp, style = PillStyle.Amber)
         }
     }
 }
@@ -837,6 +993,7 @@ private fun ShelfScreen(
     gutter: Dp,
     onBack: () -> Unit,
     onMenu: (LibraryItem) -> Unit,
+    selection: Selection,
 ) {
     val custom = shelf as? Shelf.Custom
     val collection = custom?.let { c -> state.collections.firstOrNull { it.id == c.id } }
@@ -912,6 +1069,12 @@ private fun ShelfScreen(
                             height = 48.dp,
                             style = PillStyle.Ghost,
                         )
+                        PillButton(
+                            "Selecionar",
+                            onClick = { selection.selectAll(list.map { it.comic.id }) },
+                            height = 48.dp,
+                            style = PillStyle.Ghost,
+                        )
                     }
                 }
             }
@@ -925,7 +1088,7 @@ private fun ShelfScreen(
             }
         }
         items(list, key = { it.comic.id }) { it ->
-            CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = wide)
+            CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = wide, selection = selection)
         }
     }
 
