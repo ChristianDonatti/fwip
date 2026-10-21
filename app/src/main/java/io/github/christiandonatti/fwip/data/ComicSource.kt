@@ -43,7 +43,9 @@ internal fun boundsOf(open: () -> InputStream): android.util.Size? {
 }
 
 object ComicSources {
-    fun open(context: Context, comic: Comic): ComicSource = when (comic.format) {
+    fun open(context: Context, comic: Comic): ComicSource = comic.remote?.let {
+        io.github.christiandonatti.fwip.remote.StreamComicSource(context, it)
+    } ?: when (comic.format) {
         ComicFormat.ZIP -> ZipComicSource.open(context, comic)
         ComicFormat.SEVEN_ZIP -> SevenZipComicSource.open(context, comic)
         ComicFormat.RAR -> RarComicSource.open(context, comic)

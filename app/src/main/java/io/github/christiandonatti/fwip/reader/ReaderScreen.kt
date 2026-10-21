@@ -182,7 +182,8 @@ private fun Reader(
     var wide by remember(source) { mutableStateOf(wideStore.load(comic.id).first + meta?.doublePages.orEmpty()) }
     LaunchedEffect(source) {
         val (known, done) = wideStore.load(comic.id)
-        if (done) return@LaunchedEffect
+        // Measuring every page of a streamed book would download all of it up front.
+        if (done || comic.remote != null) return@LaunchedEffect
         val found = (known + meta?.doublePages.orEmpty()).toMutableSet()
         withContext(Dispatchers.IO) {
             for (i in 0 until source.pageCount) {

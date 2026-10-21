@@ -110,7 +110,7 @@ class LibraryActions(
     val setInCollection: (String, List<String>, Boolean) -> Unit,
 )
 
-private enum class Tab(val label: String) { Home("Início"), Library("Biblioteca"), Collections("Coleções") }
+private enum class Tab(val label: String) { Home("Início"), Library("Biblioteca"), Collections("Coleções"), Servers("Servidores") }
 
 private enum class Filter(val label: String) { All("Tudo"), Series("Séries"), Folders("Pastas"), Unread("Não lidas"), Finished("Lidas") }
 
@@ -135,7 +135,7 @@ private fun shelfFromToken(t: String?): Shelf? {
 }
 
 @Composable
-fun LibraryScreen(state: LibraryState, actions: LibraryActions) {
+fun LibraryScreen(state: LibraryState, actions: LibraryActions, serverActions: ServerActions) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var shelfToken by rememberSaveable { mutableStateOf<String?>(null) }
     val shelf = shelfFromToken(shelfToken)
@@ -146,6 +146,8 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions) {
     val selection = remember { Selection() }
     var query by rememberSaveable { mutableStateOf("") }
     var searching by rememberSaveable { mutableStateOf(false) }
+    var browsing by rememberSaveable { mutableStateOf<String?>(null) }
+    val browsingServer = state.servers.firstOrNull { it.id == browsing }
 
     BackHandler(enabled = selection.active) { selection.clear() }
     BackHandler(enabled = shelf != null && !selection.active) { shelfToken = null }
@@ -172,7 +174,9 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions) {
             val boxHeight = maxHeight
             val gutter = if (wide) 48.dp else 20.dp
 
-            AnimatedContent(
+            if (browsingServer != null) {
+                ServerBrowser(browsingServer, serverActions, wide, gutter, onClose = { browsing = null })
+            } else AnimatedContent(
                 targetState = shelf,
                 transitionSpec = {
                     if (targetState != null) {
@@ -209,9 +213,10 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions) {
                             modifier = Modifier.padding(horizontal = gutter, vertical = if (wide) 24.dp else 12.dp),
                         )
                         when {
-                            state.items.isEmpty() -> EmptyState(state.folders.isEmpty(), state.scanning, actions.addFolder)
+                            state.items.isEmpty() && tab != Tab.Servers -> EmptyState(state.folders.isEmpty(), state.scanning, actions.addFolder, onServers = { tab = Tab.Servers })
                             tab == Tab.Home && wide -> WideHome(state, selected, { selected = it }, actions, openShelf, showMenu, gutter, boxHeight)
                             tab == Tab.Home -> PhoneHome(state, actions, openShelf, showMenu, gutter)
+                            tab == Tab.Servers -> ServersTab(state.servers, serverActions, wide, gutter, onBrowse = { browsing = it.id })
                             tab == Tab.Library -> LibraryTab(
                                 state, actions, openShelf, showMenu, wide, gutter, selection,
                                 searching = searching,
@@ -233,7 +238,7 @@ fun LibraryScreen(state: LibraryState, actions: LibraryActions) {
                     onClose = { selection.clear() },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
-            } else if (!wide && shelf == null && state.items.isNotEmpty()) {
+            } else if (!wide && shelf == null && browsingServer == null && (state.items.isNotEmpty() || tab == Tab.Servers)) {
                 PhoneTabBar(tab, onTab = { tab = it }, Modifier.align(Alignment.BottomCenter))
             }
         }
@@ -1146,9 +1151,9 @@ private fun PhoneTabBar(tab: Tab, onTab: (Tab) -> Unit, modifier: Modifier = Mod
                     Modifier
                         .clip(CircleShape)
                         .background(if (on) FwipColors.Text else Color.Transparent)
-                        .padding(horizontal = 16.dp, vertical = 9.dp)
+                        .padding(horizontal = 10.dp, vertical = 9.dp)
                 ) {
-                    Text(t.label, style = MaterialTheme.typography.labelMedium, color = if (on) FwipColors.Ink else FwipColors.TextMuted)
+                    Text(t.label, style = MaterialTheme.typography.labelMedium, color = if (on) FwipColors.Ink else FwipColors.TextMuted, maxLines = 1)
                 }
             }
         }
@@ -1156,7 +1161,7 @@ private fun PhoneTabBar(tab: Tab, onTab: (Tab) -> Unit, modifier: Modifier = Mod
 }
 
 @Composable
-private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit) {
+private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit, onServers: () -> Unit) {
     Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
         Column(
             Modifier.widthIn(max = 460.dp),
@@ -1181,6 +1186,7 @@ private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit)
                 )
                 Spacer(Modifier.height(4.dp))
                 PillButton("Escolher pasta", onAdd, leading = { Icon(Icons.Filled.Add, null, Modifier.size(20.dp)) })
+                PillButton("Conectar a um servidor", onServers, style = PillStyle.Ghost)
             }
         }
     }

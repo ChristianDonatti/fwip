@@ -29,6 +29,8 @@ data class Comic(
     val format: ComicFormat,
     val size: Long,
     val lastModified: Long,
+    /** Set for books read straight from a server; never saved with the library. */
+    val remote: io.github.christiandonatti.fwip.remote.RemoteBook? = null,
 )
 
 data class ReadingProgress(

@@ -102,9 +102,29 @@ class LibraryRepository(private val context: Context) {
                 walk(tree, rootId, folderName = "", depth = 0, out = found)
             }
         }
+        // Books downloaded from servers live in the app's own "Baixadas" folder.
+        io.github.christiandonatti.fwip.remote.RemoteComics.downloadsDir(context).listFiles()
+            ?.filter { it.isFile && !it.name.endsWith(".part") }
+            ?.forEach { f -> localComic(f)?.let { found[it.id] = it } }
         val list = found.values.sortedWith(compareBy(NaturalOrder) { it.folder + "/" + it.fileName })
         saveComics(list)
         list
+    }
+
+    /** A comic for a file in the app's own storage (downloads). */
+    fun localComic(f: File): Comic? {
+        val format = ComicFormat.fromFileName(f.name) ?: return null
+        val uri = Uri.fromFile(f)
+        return Comic(
+            id = uri.toString(),
+            uri = uri,
+            fileName = f.name,
+            title = prettyTitle(f.name),
+            folder = "Baixadas",
+            format = format,
+            size = f.length(),
+            lastModified = f.lastModified(),
+        )
     }
 
     private fun walk(tree: Uri, docId: String, folderName: String, depth: Int, out: MutableMap<String, Comic>) {

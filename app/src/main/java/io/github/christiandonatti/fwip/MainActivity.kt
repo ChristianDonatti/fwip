@@ -21,7 +21,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.christiandonatti.fwip.reader.ReaderKeys
 import io.github.christiandonatti.fwip.reader.ReaderScreen
 import androidx.compose.runtime.remember
+import io.github.christiandonatti.fwip.remote.RemoteComics
 import io.github.christiandonatti.fwip.ui.LibraryActions
+import io.github.christiandonatti.fwip.ui.ServerActions
 import io.github.christiandonatti.fwip.ui.LibraryScreen
 import io.github.christiandonatti.fwip.ui.theme.FwipTheme
 
@@ -57,8 +59,17 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                val serverActions = remember(viewModel) {
+                    ServerActions(
+                        save = viewModel::saveServer,
+                        delete = viewModel::deleteServer,
+                        openRemote = { book, title -> viewModel.openOutside(RemoteComics.comic(book, title)) },
+                        openDownloaded = viewModel::openDownloaded,
+                    )
+                }
+
                 AnimatedContent(
-                    targetState = state.openComic,
+                    targetState = state.readerComic,
                     transitionSpec = {
                         (fadeIn(tween(260)) + scaleIn(tween(320), initialScale = 0.96f)) togetherWith
                             (fadeOut(tween(200)) + scaleOut(tween(260), targetScale = 1.02f))
@@ -70,10 +81,15 @@ class MainActivity : ComponentActivity() {
                         LibraryScreen(
                             state = state,
                             actions = actions,
+                            serverActions = serverActions,
                         )
                     } else {
                         val progress = viewModel.repository.progressFor(comic.id)
-                        val start = if (progress == null || progress.finished) 0 else progress.page
+                        val start = when {
+                            progress != null && !progress.finished -> progress.page
+                            progress == null && comic.remote != null -> comic.remote.startPage
+                            else -> 0
+                        }
                         val item = state.item(comic.id)
                         val next = item?.let(state::nextAfter)
                         ReaderScreen(

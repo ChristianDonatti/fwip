@@ -28,6 +28,9 @@ data class LibraryState(
     val loaded: Boolean = false,
     val openComicId: String? = null,
     val collections: List<ComicCollection> = emptyList(),
+    val servers: List<io.github.christiandonatti.fwip.remote.Server> = emptyList(),
+    /** A book opened straight from a server or a fresh download, not (yet) in the library. */
+    val outsideComic: Comic? = null,
 ) {
     /** Started but not finished, most recent first. */
     val continueReading: List<LibraryItem>
@@ -43,6 +46,9 @@ data class LibraryState(
         }
 
     val openComic: Comic? get() = items.firstOrNull { it.comic.id == openComicId }?.comic
+
+    /** What the reader shows: a library comic, or one from outside the library. */
+    val readerComic: Comic? get() = outsideComic ?: openComic
 
     fun item(id: String): LibraryItem? = items.firstOrNull { it.comic.id == id }
 
@@ -85,6 +91,7 @@ data class LibraryState(
 class FwipViewModel(app: Application) : AndroidViewModel(app) {
 
     val repository = LibraryRepository(app)
+    private val serverStore = io.github.christiandonatti.fwip.remote.ServerStore(app)
 
     private val _state = MutableStateFlow(LibraryState())
     val state: StateFlow<LibraryState> = _state.asStateFlow()
@@ -98,6 +105,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
             folders = repository.folders(),
             loaded = true,
             collections = repository.collections(),
+            servers = serverStore.load(),
         )
         refresh()
     }
@@ -157,6 +165,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { s ->
             s.copy(
                 openComicId = null,
+                outsideComic = null,
                 items = s.items.map { it.copy(progress = repository.progressFor(it.comic.id)) },
             )
         }
@@ -164,6 +173,42 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
 
     fun saveProgress(comic: Comic, page: Int, pageCount: Int) {
         repository.setProgress(comic.id, page, pageCount)
+        comic.remote?.let { book ->
+            syncJob?.cancel()
+            // Wait a moment so flipping quickly through pages sends a single update.
+            syncJob = viewModelScope.launch {
+                kotlinx.coroutines.delay(1500)
+                io.github.christiandonatti.fwip.remote.RemoteComics.syncProgress(book, page, pageCount)
+            }
+        }
+    }
+
+    private var syncJob: Job? = null
+
+    // ---------- Servers ----------
+
+    fun saveServer(server: io.github.christiandonatti.fwip.remote.Server) {
+        val list = _state.value.servers.filterNot { it.id == server.id } + server
+        serverStore.save(list)
+        _state.update { it.copy(servers = list) }
+    }
+
+    fun deleteServer(id: String) {
+        val list = _state.value.servers.filterNot { it.id == id }
+        serverStore.save(list)
+        _state.update { it.copy(servers = list) }
+    }
+
+    /** Opens a comic that is not part of the library (streamed, or just downloaded). */
+    fun openOutside(comic: Comic) {
+        _state.update { it.copy(outsideComic = comic, openComicId = null) }
+    }
+
+    /** After a download: show it in the library and open it. */
+    fun openDownloaded(file: java.io.File) {
+        val comic = repository.localComic(file) ?: return
+        openOutside(comic)
+        refresh()
     }
 
     private fun refreshProgress() {
