@@ -60,6 +60,8 @@ jobs:
         run: |
           # Keep only real pictures.
           find shots -name '*.png' -size -10k -delete
+          # The held page curl only shows reliably on the tablet run.
+          rm -f shots/phone-3-curl.png
           ls shots
           mkdir -p docs/screenshots
           cp shots/*.png docs/screenshots/
