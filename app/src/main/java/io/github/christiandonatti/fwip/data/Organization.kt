@@ -47,7 +47,7 @@ fun List<LibraryItem>.sortedFor(order: SortOrder): List<LibraryItem> = when (ord
     SortOrder.Title -> sortedWith(
         compareBy<LibraryItem> { seriesKey(it.series.name) }
             .thenBy { it.series.number ?: Float.MAX_VALUE }
-            .thenBy(NaturalOrder) { it.comic.title }
+            .thenBy(NaturalOrder) { it.title }
     )
     SortOrder.Recent -> sortedByDescending { it.progress?.lastRead ?: 0L }
     SortOrder.Added -> sortedByDescending { it.comic.lastModified }

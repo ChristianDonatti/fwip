@@ -28,6 +28,9 @@ interface ComicSource : Closeable {
 
     /** Decodes [index] as a bitmap big enough to fill a [maxWidth] x [maxHeight] box without upscaling. */
     fun decodePage(index: Int, maxWidth: Int, maxHeight: Int): Bitmap?
+
+    /** Raw ComicInfo.xml inside the archive, if there is one. */
+    fun readComicInfo(): ByteArray? = null
 }
 
 object ComicSources {
@@ -155,6 +158,12 @@ private class ZipComicSource(
     override fun decodePage(index: Int, maxWidth: Int, maxHeight: Int): Bitmap? =
         ImageDecoding.decode({ zip.getInputStream(pages[index]) }, maxWidth, maxHeight)
 
+    @Synchronized
+    override fun readComicInfo(): ByteArray? = zip.entries.toList()
+        .filter { !it.isDirectory && isComicInfo(it.name) }
+        .minByOrNull { it.name.count { c -> c == '/' } }
+        ?.let { entry -> zip.getInputStream(entry).use { it.readBytes() } }
+
     override fun close() {
         runCatching { zip.close() }
         runCatching { handle?.close() }
@@ -189,6 +198,12 @@ private class SevenZipComicSource(
     @Synchronized
     override fun decodePage(index: Int, maxWidth: Int, maxHeight: Int): Bitmap? =
         ImageDecoding.decode({ archive.getInputStream(pages[index]) }, maxWidth, maxHeight)
+
+    @Synchronized
+    override fun readComicInfo(): ByteArray? = archive.entries.toList()
+        .filter { !it.isDirectory && it.hasStream() && isComicInfo(it.name) }
+        .minByOrNull { it.name.count { c -> c == '/' } }
+        ?.let { entry -> archive.getInputStream(entry).use { it.readBytes() } }
 
     override fun close() {
         runCatching { archive.close() }
@@ -229,6 +244,11 @@ private class RarComicSource(
     private val ready = BooleanArray(pages.size)
     private val lock = Object()
     private val complete = File(dir, ".complete")
+    private val infoFile = File(dir, "comicinfo.xml")
+    private val infoHeader: FileHeader? = archive.fileHeaders
+        .filter { !it.isDirectory && isComicInfo(it.fileName) }
+        .minByOrNull { it.fileName.count { c -> c == '/' || c == '\\' } }
+    @Volatile private var comicInfo: ByteArray? = null
 
     @Volatile private var closed = false
     @Volatile private var finished = false
@@ -240,6 +260,7 @@ private class RarComicSource(
         dir.mkdirs()
         if (complete.exists() && pages.indices.all { pageFile(it).length() > 0 }) {
             ready.fill(true)
+            if (infoFile.exists()) comicInfo = runCatching { infoFile.readBytes() }.getOrNull()
             finished = true
             runCatching { archive.close() }
         } else {
@@ -249,15 +270,33 @@ private class RarComicSource(
 
     private fun pageFile(i: Int) = File(dir, "p$i")
 
+    private fun extractInfo(header: FileHeader) {
+        val out = ByteArrayOutputStream()
+        archive.extractFile(header, out)
+        val bytes = out.toByteArray()
+        runCatching { infoFile.writeBytes(bytes) }
+        synchronized(lock) {
+            comicInfo = bytes
+            lock.notifyAll()
+        }
+    }
+
     private fun extractAll() {
         try {
+            // Outside solid archives any file can be read on its own, so grab the metadata first.
+            val solid = runCatching { archive.mainHeader.isSolid }.getOrDefault(true)
+            if (!solid) infoHeader?.let { runCatching { extractInfo(it) } }
             for (header in archive.fileHeaders) {
                 if (closed) break
                 if (header.isDirectory) continue
                 val i = indexOf[header]
                 if (i == null) {
-                    // Not a page, but solid archives still need it decompressed to keep going.
-                    archive.extractFile(header, NullSink)
+                    if (header === infoHeader && comicInfo == null) {
+                        extractInfo(header)
+                    } else if (solid) {
+                        // Not a page, but solid archives still need it decompressed to keep going.
+                        archive.extractFile(header, NullSink)
+                    }
                     continue
                 }
                 val tmp = File(dir, "p$i.${System.nanoTime()}.part")
@@ -288,6 +327,14 @@ private class RarComicSource(
             throw failure ?: java.io.IOException("Página não encontrada no arquivo")
         }
         return ImageDecoding.decodeBytes(pageFile(index).readBytes(), maxWidth, maxHeight)
+    }
+
+    override fun readComicInfo(): ByteArray? {
+        if (infoHeader == null) return null
+        synchronized(lock) {
+            while (comicInfo == null && !finished && !closed) lock.wait(250)
+        }
+        return comicInfo
     }
 
     override fun close() {

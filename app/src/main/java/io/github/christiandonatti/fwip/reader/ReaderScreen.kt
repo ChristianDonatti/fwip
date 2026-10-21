@@ -50,8 +50,11 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import io.github.christiandonatti.fwip.balloons.BalloonStore
+import io.github.christiandonatti.fwip.balloons.Detection
+import io.github.christiandonatti.fwip.balloons.panelOrder
 import io.github.christiandonatti.fwip.balloons.readingOrder
 import io.github.christiandonatti.fwip.data.Comic
+import io.github.christiandonatti.fwip.data.ComicMeta
 import io.github.christiandonatti.fwip.data.ComicSource
 import io.github.christiandonatti.fwip.data.ComicSources
 import io.github.christiandonatti.fwip.ui.PillButton
@@ -86,11 +89,15 @@ private sealed interface Loaded {
     data class Failed(val message: String) : Loaded
 }
 
-private enum class PendingBalloon { First, Last }
+private enum class PendingStop { First, Last }
+
+enum class GuideKind { Panels, Balloons }
 
 @Composable
 fun ReaderScreen(
     comic: Comic,
+    title: String,
+    meta: ComicMeta?,
     startPage: Int,
     onClose: () -> Unit,
     onProgress: (page: Int, pageCount: Int) -> Unit,
@@ -124,11 +131,11 @@ fun ReaderScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Text(comic.title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
                 Text(l.message, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted, textAlign = TextAlign.Center)
                 PillButton("Voltar", onClose)
             }
-            is Loaded.Ready -> Reader(comic, l.source, startPage, settings, onClose, onProgress)
+            is Loaded.Ready -> Reader(comic, title, meta, l.source, startPage, settings, onClose, onProgress)
         }
     }
 }
@@ -136,6 +143,8 @@ fun ReaderScreen(
 @Composable
 private fun Reader(
     comic: Comic,
+    title: String,
+    meta: ComicMeta?,
     source: ComicSource,
     startPage: Int,
     settings: ReaderSettings,
@@ -153,7 +162,8 @@ private fun Reader(
         SpreadMode.Double -> true
         SpreadMode.Auto -> landscape && config.smallestScreenWidthDp >= 600
     }
-    val rtl = settings.mangaMode
+    // Manga flagged in ComicInfo.xml reads right to left whatever the global setting says.
+    val rtl = settings.mangaMode || meta?.rightToLeft == true
     val spreads = remember(source.pageCount, double) { buildSpreads(source.pageCount, double) }
 
     // The first page in view, kept across layout changes (rotation, single/double).
@@ -178,104 +188,119 @@ private fun Reader(
         var spread by remember(host) { mutableIntStateOf(startSpread) }
         var zoom by remember(host) { mutableStateOf<ZoomState?>(null) }
 
-        // ---------- Bubble zoom ----------
-        var balloonMode by rememberSaveable { mutableStateOf(false) }
-        var balloonIndex by remember { mutableIntStateOf(-1) }
-        var pending by remember { mutableStateOf<PendingBalloon?>(null) }
+        // ---------- Guided reading: panel by panel, or balloon by balloon ----------
+        var guide by rememberSaveable { mutableStateOf<GuideKind?>(null) }
+        var stop by remember { mutableIntStateOf(-1) }
+        var pending by remember { mutableStateOf<PendingStop?>(null) }
 
-        /** Balloons of the current spread in reading order, in reader coordinates; null while detecting. */
-        val balloons by produceState<List<Rect>?>(null, host, spread) {
+        /** What the model and the gutter cutter found on each page of the current spread; null while working. */
+        val analysis by produceState<List<Pair<PlacedPage, List<Detection>>>?>(null, host, spread) {
             value = null
             val pages = spreads[spread]
-            // Outside balloon mode this only serves double taps, so let page turns finish first.
-            if (!balloonMode) delay(700)
+            // Outside guided reading this only serves double taps, so let page turns finish first.
+            if (guide == null) delay(700)
             val found = store.detectionsFor(comic.id, pages) { p -> cache.get(p, host.decodeW, host.decodeH) }
             val placed = SpreadLayout.place(pages, double, rtl, wPx.toFloat(), hPx.toFloat()) { p ->
                 cache.peek(p, host.decodeW, host.decodeH)?.let { IntSize(it.width, it.height) }
             }
-            value = placed.flatMap { pp ->
-                readingOrder(found[pp.page].orEmpty(), rtl).map { r ->
-                    Rect(
-                        pp.rect.left + r.left * pp.rect.width,
-                        pp.rect.top + r.top * pp.rect.height,
-                        pp.rect.left + r.right * pp.rect.width,
-                        pp.rect.top + r.bottom * pp.rect.height,
-                    )
-                }
-            }
+            value = placed.map { it to found[it.page].orEmpty() }
         }
 
-        // While reading balloon by balloon, look ahead so the next page is ready instantly.
-        LaunchedEffect(balloonMode, spread, host) {
-            if (!balloonMode) return@LaunchedEffect
+        fun toReader(pp: PlacedPage, r: android.graphics.RectF) = Rect(
+            pp.rect.left + r.left * pp.rect.width,
+            pp.rect.top + r.top * pp.rect.height,
+            pp.rect.left + r.right * pp.rect.width,
+            pp.rect.top + r.bottom * pp.rect.height,
+        )
+
+        val balloons = remember(analysis, rtl) {
+            analysis?.flatMap { (pp, d) -> readingOrder(d, rtl).map { toReader(pp, it) } }
+        }
+        // A page without detectable panels is a single stop showing the whole page.
+        val panels = remember(analysis, rtl) {
+            analysis?.flatMap { (pp, d) -> panelOrder(d, rtl).map { toReader(pp, it) }.ifEmpty { listOf(pp.rect) } }
+        }
+        val stops: List<Rect>? = when (guide) {
+            GuideKind.Panels -> panels
+            GuideKind.Balloons -> balloons
+            null -> null
+        }
+
+        // While reading guided, look ahead so the next page is ready instantly.
+        LaunchedEffect(guide, spread, host) {
+            if (guide == null) return@LaunchedEffect
             spreads.getOrNull(spread + 1)?.let { next ->
                 store.detectionsFor(comic.id, next) { p -> cache.get(p, host.decodeW, host.decodeH) }
             }
         }
 
-        fun zoomToBalloon(i: Int) {
-            val list = balloons ?: return
+        fun zoomToStop(i: Int) {
+            val list = stops ?: return
             val z = zoom ?: return
             if (i !in list.indices) return
-            balloonIndex = i
-            scope.launch { z.animateToRect(list[i]) }
+            stop = i
+            scope.launch {
+                if (guide == GuideKind.Panels) z.animateToRect(list[i], fill = 0.97f, maxScale = 3.5f)
+                else z.animateToRect(list[i])
+            }
         }
 
         fun showWholePage() {
-            balloonIndex = -1
+            stop = -1
             zoom?.let { z -> scope.launch { z.animateTo(1f) } }
         }
 
-        fun nextBalloon() {
-            val list = balloons ?: return
-            if (balloonIndex + 1 < list.size) {
-                zoomToBalloon(balloonIndex + 1)
+        fun nextStop() {
+            val list = stops ?: return
+            if (stop + 1 < list.size) {
+                zoomToStop(stop + 1)
             } else if (spread < spreads.lastIndex) {
-                pending = PendingBalloon.First
+                pending = PendingStop.First
                 showWholePage()
                 commands.tryEmit(NavCommand.Go(1))
             }
         }
 
-        fun prevBalloon() {
+        fun prevStop() {
             when {
-                balloonIndex > 0 -> zoomToBalloon(balloonIndex - 1)
-                balloonIndex == 0 -> showWholePage()
+                stop > 0 -> zoomToStop(stop - 1)
+                stop == 0 -> showWholePage()
                 spread > 0 -> {
-                    pending = PendingBalloon.Last
+                    pending = PendingStop.Last
                     commands.tryEmit(NavCommand.Go(-1))
                 }
             }
         }
 
-        fun setBalloonMode(on: Boolean) {
-            balloonMode = on
+        fun setGuide(kind: GuideKind?) {
+            guide = kind
             chrome = false
-            if (on) {
-                if (balloons.isNullOrEmpty()) pending = PendingBalloon.First else zoomToBalloon(0)
+            stop = -1
+            if (kind != null) {
+                pending = PendingStop.First
             } else {
                 pending = null
                 showWholePage()
             }
         }
 
-        // After a turn in balloon mode, jump straight to the first (or last) balloon.
-        LaunchedEffect(balloons, zoom, pending) {
-            val list = balloons ?: return@LaunchedEffect
+        // After a turn (or when guided reading starts), go straight to the first or last stop.
+        LaunchedEffect(stops, zoom, pending) {
+            val list = stops ?: return@LaunchedEffect
             val p = pending ?: return@LaunchedEffect
             if (zoom == null) return@LaunchedEffect
             pending = null
-            balloonIndex = -1
+            stop = -1
             if (list.isEmpty()) return@LaunchedEffect
             delay(120)
-            zoomToBalloon(if (p == PendingBalloon.First) 0 else list.lastIndex)
+            zoomToStop(if (p == PendingStop.First) 0 else list.lastIndex)
         }
 
         // ---------- Navigation & input ----------
         val onSpreadChanged: (Int) -> Unit = { s ->
             if (s != spread) {
-                balloonIndex = -1
-                if (balloonMode && pending == null) pending = PendingBalloon.First
+                stop = -1
+                if (guide != null && pending == null) pending = PendingStop.First
             }
             spread = s
             spreads.getOrNull(s)?.let { pages ->
@@ -286,16 +311,16 @@ private fun Reader(
 
         val onTap: (Offset, IntSize, ZoomState) -> Unit = { pos, size, z ->
             val x = pos.x / size.width.coerceAtLeast(1)
-            if (balloonMode) {
+            if (guide != null) {
                 // Tap anywhere to move on; the edge where reading comes from goes back.
                 val back = if (rtl) x > 0.75f else x < 0.25f
-                val list = balloons
+                val list = stops
                 val layoutPos = z.toLayout(pos)
-                val hit = list?.indexOfFirst { it.inflate(12f).contains(layoutPos) } ?: -1
+                val hit = if (guide == GuideKind.Balloons) list?.indexOfFirst { it.inflate(12f).contains(layoutPos) } ?: -1 else -1
                 when {
-                    back -> prevBalloon()
-                    hit >= 0 && hit != balloonIndex -> zoomToBalloon(hit)
-                    else -> nextBalloon()
+                    back -> prevStop()
+                    hit >= 0 && hit != stop -> zoomToStop(hit)
+                    else -> nextStop()
                 }
             } else {
                 when {
@@ -313,7 +338,7 @@ private fun Reader(
             val layoutPos = z.toLayout(pos)
             val hit = list.indexOfFirst { it.inflate(16f).contains(layoutPos) }
             if (hit < 0) return@handler false
-            if (balloonMode) balloonIndex = hit
+            if (guide == GuideKind.Balloons) stop = hit
             scope.launch { z.animateToRect(list[hit]) }
             true
         }
@@ -325,8 +350,8 @@ private fun Reader(
         }
         LaunchedEffect(host) {
             ReaderKeys.events.collect { d ->
-                if (balloonMode) {
-                    if (d > 0) nextBalloon() else prevBalloon()
+                if (guide != null) {
+                    if (d > 0) nextStop() else prevStop()
                 } else {
                     commands.tryEmit(NavCommand.Go(d))
                 }
@@ -358,49 +383,56 @@ private fun Reader(
             }
         }
 
-        // Spotlight on the balloon being read.
-        val spotAlpha by animateFloatAsState(if (balloonMode && balloonIndex >= 0) 1f else 0f, label = "spot")
-        val target = balloons?.getOrNull(balloonIndex)
+        // Spotlight on the panel or balloon being read.
+        val spotAlpha by animateFloatAsState(if (guide != null && stop >= 0) 1f else 0f, label = "spot")
+        val target = stops?.getOrNull(stop)
         val z = zoom
         if (target != null && z != null) {
-            BalloonSpotlight(Rect(z.toScreen(target.topLeft), z.toScreen(target.bottomRight)), spotAlpha)
+            GuideSpotlight(
+                Rect(z.toScreen(target.topLeft), z.toScreen(target.bottomRight)),
+                spotAlpha,
+                panel = guide == GuideKind.Panels,
+            )
         }
 
         ReaderChrome(
             visible = chrome,
-            comic = comic,
+            title = title,
             pageLabel = spreads.getOrNull(spread)?.let { p ->
                 if (p.size == 2) "${p[0] + 1}-${p[1] + 1} de ${source.pageCount}" else "${p[0] + 1} de ${source.pageCount}"
             } ?: "",
             spreadIndex = spread,
             spreadCount = spreads.size,
             rtl = rtl,
-            balloonMode = balloonMode,
+            guide = guide,
             onSeek = { commands.tryEmit(NavCommand.Seek(it)) },
             onBack = onClose,
             onSettings = { showSettings = true },
-            onBalloons = { setBalloonMode(!balloonMode) },
+            onGuide = { kind -> setGuide(if (guide == kind) null else kind) },
         )
 
         AnimatedVisibility(
-            visible = balloonMode,
+            visible = guide != null,
             enter = fadeIn() + slideInVertically { it / 2 },
             exit = fadeOut() + slideOutVertically { it / 2 },
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            val list = balloons
-            BalloonBar(
+            val list = stops
+            val panelsMode = guide == GuideKind.Panels
+            GuideBar(
                 label = when {
                     list == null -> ""
-                    list.isEmpty() -> "Nenhum balão nesta página"
-                    balloonIndex >= 0 -> "Balão ${balloonIndex + 1} de ${list.size}"
+                    list.isEmpty() -> if (panelsMode) "Página inteira" else "Nenhum balão nesta página"
+                    stop >= 0 -> (if (panelsMode) "Quadro" else "Balão") + " ${stop + 1} de ${list.size}"
+                    panelsMode -> if (list.size == 1) "Página inteira" else "${list.size} quadros"
                     else -> if (list.size == 1) "1 balão" else "${list.size} balões"
                 },
                 busy = list == null,
+                busyLabel = if (panelsMode) "Procurando quadros" else "Procurando balões",
                 rtl = rtl,
-                onPrev = ::prevBalloon,
-                onNext = ::nextBalloon,
-                onExit = { setBalloonMode(false) },
+                onPrev = ::prevStop,
+                onNext = ::nextStop,
+                onExit = { setGuide(null) },
             )
         }
     }

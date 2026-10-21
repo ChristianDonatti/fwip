@@ -46,8 +46,15 @@ data class LibraryItem(
     val coverPath: String?,
     val color: Int?,
     val progress: ReadingProgress?,
+    val meta: ComicMeta? = null,
 ) {
-    val series: SeriesInfo = parseSeries(comic.title)
+    /** "Series #Number" from ComicInfo.xml when present, otherwise the cleaned-up file name. */
+    val title: String = meta?.displayTitle ?: comic.title
+
+    /** Series from ComicInfo.xml when present, otherwise guessed from the file name. */
+    val series: SeriesInfo = meta?.series?.takeIf { it.isNotBlank() }
+        ?.let { SeriesInfo(it, meta.numberValue) }
+        ?: parseSeries(comic.title)
 }
 
 /** Turns "Batman_Vol.2_#07" into "Batman Vol.2 #07". */

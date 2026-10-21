@@ -158,7 +158,7 @@ fun CoverImage(item: LibraryItem, modifier: Modifier = Modifier, corner: Dp = 18
                 drawRect(base.darken(0.7f), topLeft = Offset(0f, size.height * 0.74f))
             }
             Text(
-                item.comic.title.uppercase(),
+                item.title.uppercase(),
                 fontFamily = FontFamily.Default,
                 fontWeight = FontWeight.Black,
                 fontSize = titleSize.sp,

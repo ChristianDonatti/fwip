@@ -153,12 +153,21 @@ class LibraryRepository(private val context: Context) {
     fun colorFor(comic: Comic): Int? = colors[comic.id]
 
     /** Renders the first page as a small cover and remembers its ambient color. */
-    suspend fun ensureCover(comic: Comic): Pair<String?, Int?> = withContext(Dispatchers.IO) {
+    fun isAnalyzed(comic: Comic): Boolean =
+        coverFile(comic).exists() && colors.containsKey(comic.id) && synchronized(metas) { metas.containsKey(comic.id) }
+
+    /**
+     * Opens a comic once to render its cover, pick its ambient colour and read its
+     * ComicInfo.xml, skipping whatever is already known.
+     */
+    suspend fun analyze(comic: Comic): Unit = withContext(Dispatchers.IO) {
         val file = coverFile(comic)
-        if (file.exists() && colors.containsKey(comic.id)) return@withContext file.absolutePath to colors[comic.id]
+        val needCover = !(file.exists() && colors.containsKey(comic.id))
+        val needMeta = synchronized(metas) { !metas.containsKey(comic.id) }
+        if (!needCover && !needMeta) return@withContext
         try {
             ComicSources.open(context, comic).use { source ->
-                if (source.pageCount > 0) {
+                if (needCover && source.pageCount > 0) {
                     val bitmap = source.decodePage(0, COVER_W, COVER_H)
                     if (bitmap != null) {
                         file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 88, it) }
@@ -168,17 +177,50 @@ class LibraryRepository(private val context: Context) {
                             colors[comic.id] = color
                             saveColors()
                         }
-                        val known = progress[comic.id]
-                        if (known == null || known.pageCount != source.pageCount) {
-                            setProgress(comic.id, known?.page ?: 0, source.pageCount, touch = false)
-                        }
+                    }
+                }
+                val known = progress[comic.id]
+                if (source.pageCount > 0 && (known == null || known.pageCount != source.pageCount)) {
+                    setProgress(comic.id, known?.page ?: 0, source.pageCount, touch = false)
+                }
+                if (needMeta) {
+                    val meta = runCatching { source.readComicInfo() }.getOrNull()?.let(ComicMeta::parse)
+                    synchronized(metas) {
+                        metas[comic.id] = meta
+                        saveMetas()
                     }
                 }
             }
         } catch (e: Exception) {
-            // Unreadable file: keep the placeholder cover.
+            // Unreadable file: keep the placeholder cover and try the metadata again next time.
         }
-        (file.takeIf { it.exists() }?.absolutePath) to colors[comic.id]
+    }
+
+    // ---------- Metadata ----------
+
+    private val metasFile = File(context.filesDir, "metadata.json")
+
+    /** ComicInfo per comic; a null value means "looked, there is none". */
+    private val metas: MutableMap<String, ComicMeta?> = loadMetas()
+
+    fun metaFor(comic: Comic): ComicMeta? = synchronized(metas) { metas[comic.id] }
+
+    private fun loadMetas(): MutableMap<String, ComicMeta?> = runCatching {
+        val root = JSONObject(metasFile.readText())
+        if (root.optInt("v") != META_VERSION) return@runCatching mutableMapOf<String, ComicMeta?>()
+        val items = root.getJSONObject("items")
+        val out = mutableMapOf<String, ComicMeta?>()
+        items.keys().forEach { k ->
+            val o = items.optJSONObject(k)
+            out[k] = if (o == null || o.length() == 0) null else ComicMeta.fromJson(o)
+        }
+        out
+    }.getOrDefault(mutableMapOf())
+
+    private fun saveMetas() {
+        val items = JSONObject()
+        metas.forEach { (k, v) -> items.put(k, v?.toJson() ?: JSONObject()) }
+        metasFile.writeText(JSONObject().put("v", META_VERSION).put("items", items).toString())
     }
 
     private fun ambientColor(bitmap: Bitmap): Int {
@@ -271,5 +313,6 @@ class LibraryRepository(private val context: Context) {
         const val COVER_W = 480
         const val COVER_H = 720
         const val DEFAULT_COLOR = 0xFF2E6BB0.toInt()
+        private const val META_VERSION = 1
     }
 }

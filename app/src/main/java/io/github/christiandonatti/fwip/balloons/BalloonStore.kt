@@ -43,7 +43,13 @@ class BalloonStore private constructor(private val context: Context) {
                     val detector = detector()
                     if (detector != null) {
                         val keys = todo.keys.toList()
-                        runCatching { detector.detect(keys.map { todo.getValue(it) }) }
+                        runCatching {
+                            val bitmaps = keys.map { todo.getValue(it) }
+                            detector.detect(bitmaps).mapIndexed { i, found ->
+                                val cuts = runCatching { PanelCutter.cut(bitmaps[i]) }.getOrDefault(emptyList())
+                                found + cuts.map { Detection(it, DetectionKind.Cut, 1f) }
+                            }
+                        }
                             .onFailure { Log.w("Fwip", "Balloon detection failed", it) }
                             .getOrNull()
                             ?.let { results ->
@@ -81,7 +87,7 @@ class BalloonStore private constructor(private val context: Context) {
                 val d = arr.getJSONArray(i)
                 Detection(
                     RectF(d.getDouble(0).toFloat(), d.getDouble(1).toFloat(), d.getDouble(2).toFloat(), d.getDouble(3).toFloat()),
-                    if (d.getInt(4) == 0) DetectionKind.Balloon else DetectionKind.Panel,
+                    DetectionKind.of(d.getInt(4)),
                     d.getDouble(5).toFloat(),
                 )
             }
@@ -97,7 +103,7 @@ class BalloonStore private constructor(private val context: Context) {
                     JSONArray()
                         .put(d.rect.left.toDouble()).put(d.rect.top.toDouble())
                         .put(d.rect.right.toDouble()).put(d.rect.bottom.toDouble())
-                        .put(if (d.kind == DetectionKind.Balloon) 0 else 1)
+                        .put(d.kind.code)
                         .put(d.score.toDouble())
                 )
             }
@@ -110,7 +116,7 @@ class BalloonStore private constructor(private val context: Context) {
         MessageDigest.getInstance("SHA-1").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
 
     companion object {
-        private const val VERSION = 1
+        private const val VERSION = 2
 
         @Volatile private var instance: BalloonStore? = null
 
@@ -128,7 +134,7 @@ class BalloonStore private constructor(private val context: Context) {
  */
 fun readingOrder(detections: List<Detection>, rtl: Boolean): List<RectF> {
     val balloons = detections.filter { it.kind == DetectionKind.Balloon }.map { it.rect }
-    val panels = detections.filter { it.kind == DetectionKind.Panel }.map { it.rect }
+    val panels = bestPanels(detections)
 
     class Unit(val rect: RectF, val members: MutableList<RectF> = mutableListOf())
 
@@ -145,6 +151,26 @@ fun readingOrder(detections: List<Detection>, rtl: Boolean): List<RectF> {
     }
     return rows(units.filter { it.members.isNotEmpty() }, { it.rect }, rtl)
         .flatMap { unit -> rows(unit.members, { it }, rtl) }
+}
+
+/** Panels of a page in reading order; empty when the page is a single image. */
+fun panelOrder(detections: List<Detection>, rtl: Boolean): List<RectF> {
+    val panels = bestPanels(detections)
+    return if (panels.size >= 2) rows(panels, { it }, rtl) else emptyList()
+}
+
+/**
+ * Gutter cuts are exact when the page has gutters; otherwise the model's panels, minus boxes
+ * that sit inside another one.
+ */
+private fun bestPanels(detections: List<Detection>): List<RectF> {
+    val cuts = detections.filter { it.kind == DetectionKind.Cut }.map { it.rect }
+    if (cuts.size >= 2) return cuts
+    val ml = detections.filter { it.kind == DetectionKind.Panel }.map { it.rect }
+    return ml.filter { p ->
+        val area = p.width() * p.height()
+        ml.none { o -> o !== p && o.width() * o.height() > area && overlap(o, p) > 0.85f * area }
+    }
 }
 
 private fun overlap(a: RectF, b: RectF): Float {

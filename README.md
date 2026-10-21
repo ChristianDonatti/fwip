@@ -12,13 +12,12 @@ Fluid, simple and made to feel like reading a real comic book.
 - Launcher-style home: cover carousel with an ambient glow that follows the selected comic
 - Organization: automatic series, folders, your own collections, read/unread, filters and sorting
 - Paper page curl that follows your finger, with the back of the sheet and soft shadows; in landscape on tablets the page turns over the spine of a double spread
-- Bubble zoom: speech balloons are detected on the device and read one by one in panel order, with a spotlight; double tap a balloon to zoom straight into it
+- Guided reading, panel by panel or balloon by balloon: panels are found from the page gutters (with the ML model as a fallback) and speech balloons by an on-device model, both in reading order with a spotlight; double tap a balloon to zoom straight into it
+- ComicInfo.xml metadata: series and issue numbers, credits, publisher, date, synopsis; manga flagged as right to left opens in manga mode
 - Pinch and double-tap zoom, manga mode (right to left), volume keys
 - Reading progress saved per comic
 
 **Planned**
-- Panel-by-panel guided view
-- ComicInfo.xml metadata
 - OPDS, Komga and Kavita servers
 - Wide (double) page detection
 

@@ -91,30 +91,45 @@ internal fun BalloonIcon(color: Color, modifier: Modifier = Modifier) {
     }
 }
 
+/** Comic page with three panels, for the panel-by-panel mode. */
 @Composable
-private fun BalloonToggle(on: Boolean, onClick: () -> Unit) {
+internal fun PanelsIcon(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(18.dp)) {
+        val u = size.width / 24f
+        val s = Stroke(width = 2f * u)
+        val r = CornerRadius(1.5f * u)
+        drawRoundRect(color, Offset(3 * u, 3 * u), Size(8 * u, 9 * u), r, style = s)
+        drawRoundRect(color, Offset(13 * u, 3 * u), Size(8 * u, 9 * u), r, style = s)
+        drawRoundRect(color, Offset(3 * u, 14 * u), Size(18 * u, 7 * u), r, style = s)
+    }
+}
+
+/** Toggle for a guided mode; shows its label when there is room. */
+@Composable
+private fun GuideToggle(on: Boolean, label: String, showLabel: Boolean, onClick: () -> Unit, icon: @Composable (Color) -> Unit) {
     Row(
         Modifier
             .height(44.dp)
             .clip(CircleShape)
             .background(if (on) FwipColors.Amber else FwipColors.Surface)
             .border(1.dp, if (on) Color.Transparent else FwipColors.Stroke, CircleShape)
-            .clickable(role = Role.Switch, onClickLabel = "Bubble zoom", onClick = onClick)
-            .padding(horizontal = 14.dp),
+            .clickable(role = Role.Switch, onClickLabel = label, onClick = onClick)
+            .padding(horizontal = if (showLabel) 14.dp else 13.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         val c = if (on) FwipColors.AmberInk else FwipColors.Text
-        BalloonIcon(c)
-        Text("Balões", style = MaterialTheme.typography.labelMedium, color = c)
+        icon(c)
+        if (showLabel) Text(label, style = MaterialTheme.typography.labelMedium, color = c)
     }
 }
 
-/** Floating controls while reading balloon by balloon. */
+/** Floating controls while reading panel by panel or balloon by balloon. */
 @Composable
-internal fun BalloonBar(
+internal fun GuideBar(
     label: String,
     busy: Boolean,
+    busyLabel: String,
     rtl: Boolean,
     onPrev: () -> Unit,
     onNext: () -> Unit,
@@ -135,12 +150,12 @@ internal fun BalloonBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        CircleIconButton(Icons.Filled.Close, "Sair do modo balões", onExit, size = 48.dp)
+        CircleIconButton(Icons.Filled.Close, "Sair da leitura guiada", onExit, size = 48.dp)
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             if (busy) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     CircularProgressIndicator(Modifier.size(16.dp), color = FwipColors.TextSoft, strokeWidth = 2.dp)
-                    Text("Procurando balões", style = MaterialTheme.typography.labelMedium, color = FwipColors.TextSoft)
+                    Text(busyLabel, style = MaterialTheme.typography.labelMedium, color = FwipColors.TextSoft)
                 }
             } else {
                 Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -148,24 +163,28 @@ internal fun BalloonBar(
         }
         // In manga mode "next" sits on the left, where the reading goes.
         if (rtl) {
-            CircleIconButton(Icons.Filled.KeyboardArrowLeft, "Próximo balão", onNext, size = 48.dp, filled = true)
-            CircleIconButton(Icons.Filled.KeyboardArrowRight, "Balão anterior", onPrev, size = 48.dp)
+            CircleIconButton(Icons.Filled.KeyboardArrowLeft, "Próximo", onNext, size = 48.dp, filled = true)
+            CircleIconButton(Icons.Filled.KeyboardArrowRight, "Anterior", onPrev, size = 48.dp)
         } else {
-            CircleIconButton(Icons.Filled.KeyboardArrowLeft, "Balão anterior", onPrev, size = 48.dp)
-            CircleIconButton(Icons.Filled.KeyboardArrowRight, "Próximo balão", onNext, size = 48.dp, filled = true)
+            CircleIconButton(Icons.Filled.KeyboardArrowLeft, "Anterior", onPrev, size = 48.dp)
+            CircleIconButton(Icons.Filled.KeyboardArrowRight, "Próximo", onNext, size = 48.dp, filled = true)
         }
     }
 }
 
-/** Darkens the page around the balloon being read. */
+/**
+ * Darkens the page around what is being read: softly around a balloon (with an amber outline),
+ * almost black around a panel so the neighbours do not distract.
+ */
 @Composable
-internal fun BalloonSpotlight(target: androidx.compose.ui.geometry.Rect?, alpha: Float) {
+internal fun GuideSpotlight(target: androidx.compose.ui.geometry.Rect?, alpha: Float, panel: Boolean) {
     if (target == null || alpha <= 0f) return
     Canvas(Modifier.fillMaxSize()) {
-        val pad = 10.dp.toPx()
+        val pad = if (panel) 2.dp.toPx() else 10.dp.toPx()
         val r = target.inflate(pad)
+        val corner = if (panel) 4.dp.toPx() else 22.dp.toPx()
         val hole = androidx.compose.ui.graphics.Path().apply {
-            addRoundRect(androidx.compose.ui.geometry.RoundRect(r, CornerRadius(22.dp.toPx())))
+            addRoundRect(androidx.compose.ui.geometry.RoundRect(r, CornerRadius(corner)))
         }
         val full = androidx.compose.ui.graphics.Path().apply {
             addRect(androidx.compose.ui.geometry.Rect(Offset.Zero, size))
@@ -173,32 +192,35 @@ internal fun BalloonSpotlight(target: androidx.compose.ui.geometry.Rect?, alpha:
         val mask = androidx.compose.ui.graphics.Path().apply {
             op(full, hole, androidx.compose.ui.graphics.PathOperation.Difference)
         }
-        drawPath(mask, Color(0xFF0B0C10).copy(alpha = 0.62f * alpha))
-        drawRoundRect(
-            FwipColors.Amber.copy(alpha = 0.9f * alpha),
-            topLeft = r.topLeft,
-            size = Size(r.width, r.height),
-            cornerRadius = CornerRadius(22.dp.toPx()),
-            style = Stroke(width = 2.dp.toPx()),
-        )
+        drawPath(mask, Color(0xFF0B0C10).copy(alpha = (if (panel) 0.9f else 0.62f) * alpha))
+        if (!panel) {
+            drawRoundRect(
+                FwipColors.Amber.copy(alpha = 0.9f * alpha),
+                topLeft = r.topLeft,
+                size = Size(r.width, r.height),
+                cornerRadius = CornerRadius(corner),
+                style = Stroke(width = 2.dp.toPx()),
+            )
+        }
     }
 }
 
 @Composable
 internal fun ReaderChrome(
     visible: Boolean,
-    comic: Comic,
+    title: String,
     pageLabel: String,
     spreadIndex: Int,
     spreadCount: Int,
     rtl: Boolean,
-    balloonMode: Boolean,
+    guide: GuideKind?,
     onSeek: (Int) -> Unit,
     onBack: () -> Unit,
     onSettings: () -> Unit,
-    onBalloons: () -> Unit,
+    onGuide: (GuideKind) -> Unit,
 ) {
-    Box(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val roomy = maxWidth >= 600.dp
         AnimatedVisibility(
             visible = visible,
             enter = fadeIn() + slideInVertically { -it / 2 },
@@ -219,16 +241,18 @@ internal fun ReaderChrome(
             ) {
                 CircleIconButton(Icons.Filled.ArrowBack, "Voltar para a biblioteca", onBack, size = 44.dp)
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                    Text(comic.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(pageLabel, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
                 }
-                BalloonToggle(balloonMode, onBalloons)
+                GuideToggle(guide == GuideKind.Panels, "Quadros", roomy, { onGuide(GuideKind.Panels) }) { PanelsIcon(it) }
+                Spacer(Modifier.width(8.dp))
+                GuideToggle(guide == GuideKind.Balloons, "Balões", roomy, { onGuide(GuideKind.Balloons) }) { BalloonIcon(it) }
                 Spacer(Modifier.width(8.dp))
                 CircleIconButton(Icons.Filled.Settings, "Ajustes de leitura", onSettings, size = 44.dp)
             }
         }
         AnimatedVisibility(
-            visible = visible && spreadCount > 1 && !balloonMode,
+            visible = visible && spreadCount > 1 && guide == null,
             enter = fadeIn() + slideInVertically { it / 2 },
             exit = fadeOut() + slideOutVertically { it / 2 },
             modifier = Modifier.align(Alignment.BottomCenter),

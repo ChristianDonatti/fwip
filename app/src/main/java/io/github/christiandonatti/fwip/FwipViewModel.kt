@@ -95,6 +95,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         coverPath = repository.coverPathIfReady(comic),
         color = repository.colorFor(comic),
         progress = repository.progressFor(comic.id),
+        meta = repository.metaFor(comic),
     )
 
     fun addFolder(uri: Uri) {
@@ -115,15 +116,12 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(scanning = true) }
             val comics = repository.scan()
             _state.update { it.copy(items = comics.map(::itemFor)) }
-            // Covers are generated one by one so the carousel fills in while you watch.
+            // Covers and metadata are read one comic at a time so the shelves fill in while you watch.
             for (comic in comics) {
-                if (repository.coverPathIfReady(comic) != null && repository.colorFor(comic) != null) continue
-                val (path, color) = repository.ensureCover(comic)
-                _state.update { s ->
-                    s.copy(items = s.items.map {
-                        if (it.comic.id == comic.id) it.copy(coverPath = path, color = color, progress = repository.progressFor(comic.id)) else it
-                    })
-                }
+                if (repository.isAnalyzed(comic)) continue
+                repository.analyze(comic)
+                val fresh = itemFor(comic)
+                _state.update { s -> s.copy(items = s.items.map { if (it.comic.id == comic.id) fresh else it }) }
             }
             _state.update { it.copy(scanning = false) }
         }

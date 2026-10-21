@@ -12,7 +12,17 @@ import kotlin.math.ceil
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-enum class DetectionKind { Balloon, Panel }
+enum class DetectionKind(val code: Int) {
+    Balloon(0),
+    /** Panel found by the ML model. */
+    Panel(1),
+    /** Panel found by cutting along the gutters. */
+    Cut(2);
+
+    companion object {
+        fun of(code: Int) = entries.firstOrNull { it.code == code } ?: Panel
+    }
+}
 
 /** A detected box in page-relative coordinates (0..1). */
 data class Detection(val rect: RectF, val kind: DetectionKind, val score: Float)

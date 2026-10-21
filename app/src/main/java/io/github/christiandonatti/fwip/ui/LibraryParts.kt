@@ -81,7 +81,7 @@ fun CoverTile(
     Column(
         modifier.combinedClickable(
             role = Role.Button,
-            onClickLabel = item.comic.title,
+            onClickLabel = item.title,
             onLongClickLabel = "Opções",
             onLongClick = onMenu,
             onClick = onOpen,
@@ -112,7 +112,7 @@ fun CoverTile(
                 }
             }
         }
-        Text(item.comic.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(item.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
         val p = item.progress
         if (p != null && p.started && !p.finished) {
             ProgressBar(p.fraction, item.glowColor(), Modifier.fillMaxWidth())
@@ -265,7 +265,7 @@ fun ComicActionsDialog(
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             CoverImage(item, Modifier.size(72.dp, 108.dp), corner = 10.dp, titleSize = 10)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(item.comic.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 val p = item.progress
                 val pages = p?.pageCount?.takeIf { it > 0 }?.let { "$it páginas" }
                 Text(
@@ -279,6 +279,7 @@ fun ComicActionsDialog(
             }
             CircleIconButton(Icons.Filled.Close, "Fechar", onDismiss, size = 40.dp)
         }
+        item.meta?.let { MetaDetails(it) }
         val finished = item.progress?.finished == true
         val started = item.progress?.started == true
         SheetButton(
@@ -298,6 +299,40 @@ fun ComicActionsDialog(
                 onSeries,
                 leading = { StackIcon(LocalContentColor.current) },
                 trailing = { Text(countLabel(seriesSize), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted) },
+            )
+        }
+    }
+}
+
+/** Credits, publication and synopsis from ComicInfo.xml. */
+@Composable
+fun MetaDetails(meta: io.github.christiandonatti.fwip.data.ComicMeta) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        val facts = listOfNotNull(
+            meta.writer?.let { "Roteiro" to it },
+            meta.artists?.let { "Arte" to it },
+            meta.publisher?.let { p -> "Editora" to listOfNotNull(p, meta.imprint).distinct().joinToString(" / ") },
+            meta.date?.let { "Publicação" to it },
+            meta.storyArc?.let { "Arco" to it },
+            meta.genre?.let { "Gênero" to it },
+        )
+        facts.forEach { (label, value) ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(label, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, modifier = Modifier.width(84.dp))
+                Text(value, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextSoft, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        meta.summary?.let { summary ->
+            var expanded by remember { mutableStateOf(false) }
+            Text(
+                summary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = FwipColors.TextSoft,
+                maxLines = if (expanded) Int.MAX_VALUE else 5,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClickLabel = if (expanded) "Mostrar menos" else "Mostrar mais") { expanded = !expanded },
             )
         }
     }

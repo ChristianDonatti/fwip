@@ -360,8 +360,17 @@ private fun progressLine(item: LibraryItem): String {
     }
 }
 
-private fun subtitle(item: LibraryItem): String =
-    listOfNotNull(item.comic.folder.takeIf { it.isNotBlank() }, item.comic.format.label).joinToString(" · ")
+private fun subtitle(item: LibraryItem): String {
+    val m = item.meta
+    val credits = listOfNotNull(m?.writer, m?.artists).flatMap { it.split(',') }.map { it.trim() }.distinct().take(2)
+    return listOfNotNull(
+        credits.joinToString(", ").ifBlank { null },
+        m?.publisher,
+        m?.year?.toString(),
+    ).ifEmpty {
+        listOfNotNull(item.comic.folder.takeIf { it.isNotBlank() }, item.comic.format.label)
+    }.joinToString(" · ")
+}
 
 /** Shelves worth surfacing on the home screen: what you are reading, series, your collections. */
 private fun homeShelves(state: LibraryState): List<Pair<Shelf, List<LibraryItem>>> {
@@ -414,8 +423,11 @@ private fun WideHome(
             ) { hero ->
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(kicker(hero), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
-                    Text(hero.comic.title, style = MaterialTheme.typography.displaySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    Text(hero.title, style = MaterialTheme.typography.displaySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
                     Text(subtitle(hero), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
+                    hero.meta?.summary?.let {
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         ProgressBar(hero.progress?.fraction ?: 0f, hero.glowColor(), Modifier.width(320.dp))
                         Text(progressLine(hero), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
@@ -478,7 +490,7 @@ private fun CarouselCard(item: LibraryItem, selected: Boolean, width: Dp, height
             .graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha }
             .shadow(if (selected) 24.dp else 10.dp, RoundedCornerShape(22.dp))
             .then(if (selected) Modifier.border(3.dp, FwipColors.Text, RoundedCornerShape(22.dp)) else Modifier)
-            .combinedClickable(role = Role.Button, onClickLabel = item.comic.title, onLongClick = onLongClick, onClick = onClick)
+            .combinedClickable(role = Role.Button, onClickLabel = item.title, onLongClick = onLongClick, onClick = onClick)
     ) {
         CoverImage(item, Modifier.fillMaxSize(), corner = 22.dp)
     }
@@ -569,7 +581,7 @@ private fun PhoneHome(
                 CoverImage(hero, Modifier.size(120.dp, 180.dp).shadow(12.dp, RoundedCornerShape(14.dp)), corner = 14.dp, titleSize = 16)
                 Column(Modifier.weight(1f).height(180.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(kicker(hero), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
-                    Text(hero.comic.title, style = MaterialTheme.typography.titleLarge, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    Text(hero.title, style = MaterialTheme.typography.titleLarge, maxLines = 3, overflow = TextOverflow.Ellipsis)
                     Text(progressLine(hero), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     ProgressBar(hero.progress?.fraction ?: 0f, hero.glowColor(), Modifier.fillMaxWidth())
                     Spacer(Modifier.weight(1f))
@@ -662,7 +674,7 @@ private fun CoverRow(title: String, list: List<LibraryItem>, actions: LibraryAct
                         Modifier
                             .size(112.dp, 168.dp)
                             .shadow(10.dp, RoundedCornerShape(14.dp))
-                            .combinedClickable(role = Role.Button, onClickLabel = it.comic.title, onLongClick = { onMenu(it) }) { actions.open(it) },
+                            .combinedClickable(role = Role.Button, onClickLabel = it.title, onLongClick = { onMenu(it) }) { actions.open(it) },
                         corner = 14.dp,
                         titleSize = 16,
                     )
@@ -867,8 +879,14 @@ private fun ShelfScreen(
                             color = FwipColors.TextSoft,
                         )
                         Text(title, style = if (wide) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        val years = list.mapNotNull { it.meta?.year }
+                        val publisher = list.firstNotNullOfOrNull { it.meta?.publisher }
                         Text(
-                            if (read > 0) "${countLabel(list.size)} · $read lidas" else countLabel(list.size),
+                            listOfNotNull(
+                                if (read > 0) "${countLabel(list.size)} · $read lidas" else countLabel(list.size),
+                                publisher,
+                                years.takeIf { it.isNotEmpty() }?.let { y -> if (y.min() == y.max()) "${y.min()}" else "${y.min()}-${y.max()}" },
+                            ).joinToString(" · "),
                             style = MaterialTheme.typography.bodyMedium,
                             color = FwipColors.TextMuted,
                         )
