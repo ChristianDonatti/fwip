@@ -19,8 +19,17 @@ fun parseSeries(title: String): SeriesInfo {
 
 fun seriesKey(name: String) = name.lowercase().replace(Regex("[^\\p{L}\\p{N}]+"), " ").trim()
 
-/** A user-made collection. */
-data class ComicCollection(val id: String, val name: String, val comicIds: List<String>)
+/**
+ * A user-made collection. [updated] lets synced devices keep the newest version, and [foreign]
+ * holds comics (by sync key) that are in the collection on another device but not on this one.
+ */
+data class ComicCollection(
+    val id: String,
+    val name: String,
+    val comicIds: List<String>,
+    val updated: Long = 0L,
+    val foreign: List<String> = emptyList(),
+)
 
 /** Groups the library can be browsed by. */
 sealed interface Shelf {

@@ -44,6 +44,28 @@ class MainActivity : ComponentActivity() {
                 val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
                     if (uri != null) viewModel.addFolder(uri)
                 }
+                val pickSyncFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+                    if (uri != null) viewModel.setSyncPlace(uri)
+                }
+                val saveBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+                    if (uri != null) viewModel.exportBackup(uri)
+                }
+                val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                    if (uri != null) viewModel.importBackup(uri)
+                }
+                val syncActions = remember(viewModel) {
+                    io.github.christiandonatti.fwip.ui.SyncActions(
+                        pickLocal = { pickSyncFolder.launch(null) },
+                        useNetwork = { viewModel.setSyncPlace(it) },
+                        stop = { viewModel.setSyncPlace(null) },
+                        syncNow = { viewModel.syncNow(manual = true) },
+                        saveBackup = {
+                            val day = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                            saveBackup.launch("fwip-backup-$day.json")
+                        },
+                        restoreBackup = { openBackup.launch(arrayOf("application/json", "application/octet-stream", "text/plain")) },
+                    )
+                }
 
                 val actions = remember(viewModel) {
                     LibraryActions(
@@ -84,6 +106,7 @@ class MainActivity : ComponentActivity() {
                             state = state,
                             actions = actions,
                             serverActions = serverActions,
+                            syncActions = syncActions,
                         )
                     } else {
                         val progress = viewModel.repository.progressFor(comic.id)
@@ -108,6 +131,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.onResume()
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {

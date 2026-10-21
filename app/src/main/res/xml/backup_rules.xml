@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Server passwords never leave the device in backups. -->
+<!-- Server passwords never leave the device in backups; the sync identity belongs to this device only. -->
 <full-backup-content>
     <exclude domain="file" path="servers.json" />
+    <exclude domain="sharedpref" path="fwip_sync.xml" />
 </full-backup-content>

@@ -4,6 +4,7 @@ package io.github.christiandonatti.fwip.ui
 
 import io.github.christiandonatti.fwip.R
 import io.github.christiandonatti.fwip.str
+import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -523,4 +524,17 @@ fun CircleButton(contentDescription: String, onClick: () -> Unit, size: Dp = 46.
             .clickable(role = Role.Button, onClickLabel = contentDescription, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) { content() }
+}
+
+/** Human name of a library folder: "Internal storage / Comics" or "NAS / Comics". */
+internal fun folderLabel(uri: Uri, servers: List<io.github.christiandonatti.fwip.remote.Server>): String {
+    if (io.github.christiandonatti.fwip.remote.NetUris.isNet(uri)) {
+        val name = servers.firstOrNull { it.id == io.github.christiandonatti.fwip.remote.NetUris.serverId(uri) }?.name ?: str(R.string.network_folder)
+        val path = io.github.christiandonatti.fwip.remote.NetUris.path(uri)
+        return if (path.isEmpty()) name else "$name / ${path.replace("/", " / ")}"
+    }
+    val raw = Uri.decode(uri.lastPathSegment ?: uri.toString())
+    val (volume, path) = raw.split(':', limit = 2).let { it[0] to it.getOrElse(1) { "" } }
+    val vol = if (volume == "primary") str(R.string.internal_storage) else str(R.string.sd_card, volume)
+    return if (path.isBlank()) vol else "$vol / $path"
 }

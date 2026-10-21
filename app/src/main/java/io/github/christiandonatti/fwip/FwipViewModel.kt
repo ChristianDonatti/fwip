@@ -20,6 +20,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
+
+/** What the sync screen shows. */
+data class SyncInfo(
+    val place: Uri? = null,
+    val lastSync: Long = 0L,
+    val devices: List<io.github.christiandonatti.fwip.data.SyncDevice> = emptyList(),
+    val busy: Boolean = false,
+    /** Last result or problem, shown once under the buttons. */
+    val message: String? = null,
+    val failed: Boolean = false,
+)
 
 data class LibraryState(
     val items: List<LibraryItem> = emptyList(),
@@ -31,6 +43,7 @@ data class LibraryState(
     val servers: List<io.github.christiandonatti.fwip.remote.Server> = emptyList(),
     /** A book opened straight from a server or a fresh download, not (yet) in the library. */
     val outsideComic: Comic? = null,
+    val sync: SyncInfo = SyncInfo(),
 ) {
     /** Started but not finished, most recent first. */
     val continueReading: List<LibraryItem>
@@ -92,6 +105,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
 
     val repository = LibraryRepository(app)
     private val serverStore = io.github.christiandonatti.fwip.remote.ServerStore(app)
+    private val sync = io.github.christiandonatti.fwip.data.SyncManager(app, repository)
 
     private val _state = MutableStateFlow(LibraryState())
     val state: StateFlow<LibraryState> = _state.asStateFlow()
@@ -106,6 +120,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
             loaded = true,
             collections = repository.collections(),
             servers = serverStore.load(),
+            sync = SyncInfo(sync.place?.uri, sync.lastSync, sync.devices),
         )
         refresh()
     }
@@ -135,7 +150,9 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         scanJob = viewModelScope.launch {
             _state.update { it.copy(scanning = true) }
             val comics = repository.scan()
-            _state.update { it.copy(items = comics.map(::itemFor)) }
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { sync.afterScan(comics) }
+            _state.update { it.copy(items = comics.map(::itemFor), collections = repository.collections()) }
+            scheduleSync(0)
             // Covers and metadata are read one comic at a time so the shelves fill in while you watch.
             for (comic in comics) {
                 if (repository.isAnalyzed(comic)) continue
@@ -169,10 +186,174 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                 items = s.items.map { it.copy(progress = repository.progressFor(it.comic.id)) },
             )
         }
+        scheduleSync(0)
+    }
+
+    // ---------- Sync & backup ----------
+
+    private var syncTimer: Job? = null
+    private val syncLock = kotlinx.coroutines.sync.Mutex()
+
+    /** Syncs after [delayMs]; a newer call replaces a waiting one, so bursts of changes sync once. */
+    fun scheduleSync(delayMs: Long = 6000) {
+        if (sync.place == null) return
+        syncTimer?.cancel()
+        syncTimer = viewModelScope.launch {
+            kotlinx.coroutines.delay(delayMs)
+            syncNow()
+        }
+    }
+
+    /** Coming back to the app: pick up what the other device read meanwhile. */
+    fun onResume() {
+        if (System.currentTimeMillis() - sync.lastSync > 20_000) scheduleSync(0)
+    }
+
+    fun syncNow(manual: Boolean = false) {
+        if (sync.place == null) return
+        viewModelScope.launch {
+            syncLock.withLock {
+                _state.update { it.copy(sync = it.sync.copy(busy = true, message = null, failed = false)) }
+                val comics = _state.value.items.map { it.comic }
+                val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { sync.syncNow(comics) } }
+                result.onSuccess { changed -> if (changed) reloadReadingState() }
+                _state.update {
+                    it.copy(
+                        sync = SyncInfo(
+                            place = sync.place?.uri,
+                            lastSync = sync.lastSync,
+                            devices = sync.devices,
+                            busy = false,
+                            message = result.exceptionOrNull()?.let { e -> str(R.string.sync_failed, io.github.christiandonatti.fwip.ui.errorText(e)) }
+                                ?: if (manual) str(R.string.sync_done) else null,
+                            failed = result.isFailure,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    /** Progress, collections and bookmarks may have changed underneath (sync, restore). */
+    private fun reloadReadingState() {
+        _state.update { s ->
+            s.copy(
+                items = s.items.map { it.copy(progress = repository.progressFor(it.comic.id)) },
+                collections = repository.collections(),
+            )
+        }
+    }
+
+    fun setSyncPlace(uri: Uri?) {
+        if (uri != null && !io.github.christiandonatti.fwip.remote.NetUris.isNet(uri)) {
+            runCatching {
+                getApplication<Application>().contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            }
+        }
+        val old = sync.place?.uri
+        if (old != null && old != uri && !io.github.christiandonatti.fwip.remote.NetUris.isNet(old) && old !in repository.folders()) {
+            runCatching {
+                getApplication<Application>().contentResolver.releasePersistableUriPermission(
+                    old,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            }
+        }
+        sync.place = uri?.let(io.github.christiandonatti.fwip.data.SyncPlace::of)
+        _state.update { it.copy(sync = it.sync.copy(place = uri, message = null, failed = false)) }
+        if (uri != null) syncNow(manual = true)
+    }
+
+    fun exportBackup(target: Uri) {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val comics = _state.value.items.map { it.comic }
+                    val servers = org.json.JSONArray()
+                    // Passwords stay out of backup files.
+                    _state.value.servers.forEach { s ->
+                        servers.put(org.json.JSONObject().put("id", s.id).put("name", s.name).put("kind", s.kind.name).put("url", s.url).put("user", s.user))
+                    }
+                    val net = org.json.JSONArray()
+                    repository.folders().filter(io.github.christiandonatti.fwip.remote.NetUris::isNet).forEach { net.put(it.toString()) }
+                    val o = org.json.JSONObject()
+                        .put("app", "fwip").put("kind", "backup").put("v", 1)
+                        .put("created", System.currentTimeMillis())
+                        .put("device", sync.deviceName)
+                        .put("state", sync.localState(comics).toJson())
+                        .put("settings", io.github.christiandonatti.fwip.reader.ReaderSettings(app).toJson())
+                        .put("servers", servers)
+                        .put("netFolders", net)
+                    app.contentResolver.openOutputStream(target, "wt")!!.use { it.write(o.toString(2).toByteArray()) }
+                }
+            }
+            _state.update {
+                it.copy(sync = it.sync.copy(message = result.fold({ str(R.string.backup_saved) }, { e -> str(R.string.backup_failed, e.message ?: e.javaClass.simpleName) }), failed = result.isFailure))
+            }
+        }
+    }
+
+    fun importBackup(source: Uri) {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val o = org.json.JSONObject(app.contentResolver.openInputStream(source)!!.use { it.readBytes().decodeToString() })
+                    require(o.optString("app") == "fwip") { str(R.string.backup_not_fwip) }
+                    o.optJSONObject("settings")?.let { io.github.christiandonatti.fwip.reader.ReaderSettings(app).fromJson(it) }
+                    val known = _state.value.servers.map { it.id }.toSet()
+                    val added = mutableListOf<io.github.christiandonatti.fwip.remote.Server>()
+                    o.optJSONArray("servers")?.let { arr ->
+                        for (i in 0 until arr.length()) {
+                            val s = arr.getJSONObject(i)
+                            if (s.getString("id") in known) continue
+                            added += io.github.christiandonatti.fwip.remote.Server(
+                                id = s.getString("id"),
+                                name = s.optString("name"),
+                                kind = runCatching { io.github.christiandonatti.fwip.remote.ServerKind.valueOf(s.getString("kind")) }
+                                    .getOrDefault(io.github.christiandonatti.fwip.remote.ServerKind.Opds),
+                                url = s.getString("url"),
+                                user = s.optString("user"),
+                            )
+                        }
+                    }
+                    val servers = _state.value.servers + added
+                    if (added.isNotEmpty()) serverStore.save(servers)
+                    val ids = servers.map { it.id }.toSet()
+                    o.optJSONArray("netFolders")?.let { arr ->
+                        for (i in 0 until arr.length()) {
+                            val uri = Uri.parse(arr.getString(i))
+                            if (io.github.christiandonatti.fwip.remote.NetUris.serverId(uri) in ids) repository.addFolder(uri)
+                        }
+                    }
+                    val state = io.github.christiandonatti.fwip.data.SyncState.fromJson(o.getJSONObject("state"))
+                    sync.merge(state, _state.value.items.map { it.comic })
+                    servers to added.any { it.password.isEmpty() && it.user.isNotEmpty() }
+                }
+            }
+            result.onSuccess { (servers, needPasswords) ->
+                _state.update {
+                    it.copy(
+                        servers = servers,
+                        folders = repository.folders(),
+                        sync = it.sync.copy(message = str(if (needPasswords) R.string.backup_restored_passwords else R.string.backup_restored), failed = false),
+                    )
+                }
+                reloadReadingState()
+                refresh()
+            }.onFailure { e ->
+                _state.update { it.copy(sync = it.sync.copy(message = str(R.string.backup_failed, e.message ?: e.javaClass.simpleName), failed = true)) }
+            }
+        }
     }
 
     fun saveProgress(comic: Comic, page: Int, pageCount: Int) {
         repository.setProgress(comic.id, page, pageCount)
+        scheduleSync(8000)
         comic.remote?.let { book ->
             syncJob?.cancel()
             // Wait a moment so flipping quickly through pages sends a single update.
@@ -230,12 +411,19 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     fun setRead(ids: List<String>, read: Boolean) {
         ids.forEach { repository.setRead(it, read) }
         refreshProgress()
+        scheduleSync()
     }
 
     private fun updateCollections(change: (List<ComicCollection>) -> List<ComicCollection>) {
-        val next = change(_state.value.collections)
+        val before = _state.value.collections
+        val now = System.currentTimeMillis()
+        val old = before.associateBy { it.id }
+        val next = change(before).map { c -> if (old[c.id] == c) c else c.copy(updated = now) }
+        val kept = next.map { it.id }.toSet()
+        repository.markCollectionsDeleted(before.filter { it.id !in kept }.associate { it.id to now })
         repository.saveCollections(next)
         _state.update { it.copy(collections = next) }
+        scheduleSync()
     }
 
     fun createCollection(name: String, comicIds: List<String> = emptyList()): String {

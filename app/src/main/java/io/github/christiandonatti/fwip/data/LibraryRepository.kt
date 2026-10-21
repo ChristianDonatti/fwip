@@ -300,11 +300,8 @@ class LibraryRepository(private val context: Context) {
         if (read) {
             setProgress(id, (count - 1).coerceAtLeast(0), count.coerceAtLeast(1))
         } else {
-            synchronized(progress) {
-                progress.remove(id)
-                writeProgress()
-            }
-            if (count > 0) setProgress(id, 0, count, touch = false)
+            // Kept as "page 0, now" rather than removed, so the change also reaches synced devices.
+            setProgress(id, 0, count)
         }
     }
 
@@ -323,16 +320,53 @@ class LibraryRepository(private val context: Context) {
         (0 until arr.length()).map { i ->
             val o = arr.getJSONObject(i)
             val ids = o.getJSONArray("comics")
-            ComicCollection(o.getString("id"), o.getString("name"), (0 until ids.length()).map { ids.getString(it) })
+            val foreign = o.optJSONArray("foreign")
+            ComicCollection(
+                o.getString("id"),
+                o.getString("name"),
+                (0 until ids.length()).map { ids.getString(it) },
+                updated = o.optLong("t"),
+                foreign = foreign?.let { f -> (0 until f.length()).map { f.getString(it) } }.orEmpty(),
+            )
         }
     }.getOrDefault(emptyList())
 
     fun saveCollections(list: List<ComicCollection>) {
         val arr = JSONArray()
         list.forEach { c ->
-            arr.put(JSONObject().put("id", c.id).put("name", c.name).put("comics", JSONArray(c.comicIds)))
+            arr.put(
+                JSONObject().put("id", c.id).put("name", c.name).put("comics", JSONArray(c.comicIds))
+                    .put("t", c.updated).put("foreign", JSONArray(c.foreign))
+            )
         }
         collectionsFile.writeText(arr.toString())
+    }
+
+    private val deletedFile = File(context.filesDir, "collections_deleted.json")
+
+    /** Collections deleted here, with when, so a sync does not bring them back. */
+    fun deletedCollections(): Map<String, Long> = runCatching {
+        val o = JSONObject(deletedFile.readText())
+        o.keys().asSequence().associateWith { o.getLong(it) }
+    }.getOrDefault(emptyMap())
+
+    fun markCollectionsDeleted(ids: Map<String, Long>) {
+        if (ids.isEmpty()) return
+        val all = deletedCollections() + ids
+        val o = JSONObject()
+        all.forEach { (k, v) -> o.put(k, v) }
+        runCatching { deletedFile.writeText(o.toString()) }
+    }
+
+    /** Every comic's progress (for sync and backups). */
+    fun allProgress(): Map<String, ReadingProgress> = synchronized(progress) { progress.toMap() }
+
+    /** Progress from another device or a backup, with its original time. */
+    fun putProgress(id: String, value: ReadingProgress) {
+        synchronized(progress) {
+            progress[id] = value
+            writeProgress()
+        }
     }
 
     private fun loadProgress(): MutableMap<String, ReadingProgress> = runCatching {
