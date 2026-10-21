@@ -24,7 +24,7 @@ class TurnFeedback(context: Context, private val view: View) {
                 .build()
         )
         .build()
-    private val sound = pool.load(context, R.raw.page_turn, 1)
+    private val soundId = pool.load(context, R.raw.page_turn, 1)
     private var lastSound = 0L
 
     fun turn(haptic: Boolean, sound: Boolean) {
@@ -43,7 +43,7 @@ class TurnFeedback(context: Context, private val view: View) {
                 lastSound = now
                 // Slightly different each time, like real paper.
                 val rate = 0.92f + (now % 17) / 100f
-                pool.play(sound, 0.55f, 0.55f, 1, 0, rate)
+                pool.play(soundId, 0.55f, 0.55f, 1, 0, rate)
             }
         }
     }
