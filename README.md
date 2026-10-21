@@ -5,6 +5,21 @@ Fluid, simple and made to feel like reading a real comic book.
 
 > Early development. Expect rough edges and frequent changes.
 
+<p>
+  <img src="docs/screenshots/tablet-1-home.png" width="49%" alt="Home on a tablet: cover carousel with ambient glow">
+  <img src="docs/screenshots/tablet-3-curl.png" width="49%" alt="A page curling over the spine of a two-page spread">
+</p>
+<p>
+  <img src="docs/screenshots/tablet-4-balloons.png" width="49%" alt="Balloon by balloon reading">
+  <img src="docs/screenshots/tablet-5-pages.png" width="49%" alt="Page overview with thumbnails">
+</p>
+<p>
+  <img src="docs/screenshots/phone-1-home.png" width="24%" alt="Home on a phone">
+  <img src="docs/screenshots/phone-2-reader.png" width="24%" alt="Reading on a phone">
+</p>
+
+<sub>Sample pages: <a href="https://www.peppercarrot.com">Pepper&amp;Carrot</a> by David Revoy, CC BY 4.0.</sub>
+
 ## Features
 
 **Reading**
@@ -65,6 +80,8 @@ Fwip is free software, released under the [GNU General Public License v3.0](LICE
 You can use, study, share and modify it, as long as derived versions stay under the same license.
 
 ## Credits
+
+Screenshots show [Pepper&Carrot](https://www.peppercarrot.com) by David Revoy (CC BY 4.0), built into sample comics by `scripts/sample_comics.py`; the Screenshots workflow takes them on an emulator when a commit message contains `[screenshots]`.
 
 Speech balloon detection uses the YOLOv4-tiny model trained by [Seeneva](https://github.com/Seeneva/seeneva-reader-android) (GPL-3.0-or-later, Copyright 2021-2023 Sergei Solodovnikov), see `app/src/main/assets/balloons/NOTICE.txt`.
 

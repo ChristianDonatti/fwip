@@ -334,11 +334,16 @@ private fun Reader(
             val list = stops ?: return@LaunchedEffect
             val p = pending ?: return@LaunchedEffect
             if (zoom == null) return@LaunchedEffect
-            pending = null
             stop = -1
-            if (list.isEmpty()) return@LaunchedEffect
+            if (list.isEmpty()) {
+                pending = null
+                return@LaunchedEffect
+            }
             delay(120)
+            // Zoom first, then clear: clearing restarts this effect (pending is one of its keys),
+            // which would cancel it before the zoom if done earlier.
             zoomToStop(if (p == PendingStop.First) 0 else list.lastIndex)
+            pending = null
         }
 
         // ---------- Navigation & input ----------
