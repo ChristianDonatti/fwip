@@ -26,12 +26,18 @@ Fluid, simple and made to feel like reading a real comic book.
 - Paper page curl that follows your finger, with the back of the sheet and soft shadows; in landscape on tablets the page turns over the spine of a double spread
 - Guided reading, panel by panel or balloon by balloon: panels are found from the page gutters (with the ML model as a fallback) and speech balloons by an on-device model, both in reading order with a spotlight; double tap a balloon to zoom straight into it
 - Page overview with thumbnails, bookmarks, manga mode (right to left), automatic margin cropping, wide double pages shown whole
-- Comfort: brightness just for reading, warm night light, keep the screen on, rotation lock, configurable tap zones, volume keys
+- Vertical scrolling for webtoons and long strips (picked automatically for very tall pages)
+- Comfort: brightness just for reading, warm night light, keep the screen on, rotation lock, configurable tap zones, volume keys, a light tick and an optional paper sound on each turn
 
 **Library**
 - Your own folders (subfolders included): CBZ, CBR (RAR4 and RAR5, solid archives too), CB7 and PDF
-- Launcher-style home: cover carousel with an ambient glow that follows the selected comic
-- Series, folders, your own collections, read/unread, filters, sorting and search
+- Launcher-style home: cover carousel with an ambient glow that follows the selected comic, a swipeable shelf of series, collections and folders, and a roomier layout for tablets held upright
+- The cover you tap grows into the reader, and shrinks back into its place when you close it
+- Dark or light look with six highlight colours; pinch to make covers bigger or smaller; a short welcome on first launch
+- Series (even with a single issue), folders, your own collections with a reading order for events, a "Want to read" list, read/unread, filters, sorting and search
+- Fix names, series and covers by hand: edit an issue, rename a whole series, or pick a cover from any page or image
+- Delete comics or move them between folders, the app's downloads and your NAS, keeping progress and collections
+- Reading statistics: pages, time, finished comics, streaks and completed series
 - ComicInfo.xml metadata: series and issue numbers, credits, publisher, date, synopsis; manga flagged as right to left opens in manga mode
 - Next issue card at the end of a comic, a "Continue reading" home screen widget and icon shortcuts
 
