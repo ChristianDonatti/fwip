@@ -54,6 +54,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.christiandonatti.fwip.ui.CircleIconButton
@@ -104,7 +106,8 @@ internal fun DrawnIconButton(
             .clip(CircleShape)
             .background(if (on) FwipColors.Amber else FwipColors.Surface)
             .border(1.dp, if (on) Color.Transparent else FwipColors.Stroke, CircleShape)
-            .clickable(role = Role.Button, onClickLabel = label, onClick = onClick),
+            .clickable(role = Role.Button, onClickLabel = label, onClick = onClick)
+            .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
         icon(if (on) FwipColors.AmberInk else FwipColors.Text)

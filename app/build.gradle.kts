@@ -18,7 +18,8 @@ android {
 
         ndk {
             // Phones and tablets; keeps the ML runtime from bloating the APK with emulator builds.
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            // Screenshot runs on the x86_64 emulator pass -Pfwip.abis=x86_64.
+            abiFilters += (project.findProperty("fwip.abis") as String?)?.split(',') ?: listOf("arm64-v8a", "armeabi-v7a")
         }
     }
 

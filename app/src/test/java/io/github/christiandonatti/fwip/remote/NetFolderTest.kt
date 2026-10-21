@@ -58,16 +58,25 @@ class NetFolderTest {
         }
     }
 
+    /** Everything in a RAR, read straight from disk with junrar: the reference. */
+    private fun extractLocal(path: String): Map<String, ByteArray> {
+        val archive = Archive(File(System.getenv("FWIP_SHARE"), path))
+        return archive.fileHeaders.filter { !it.isDirectory }.associate { h ->
+            h.fileName to ByteArrayOutputStream().also { archive.extractFile(h, it) }.toByteArray()
+        }.also { archive.close() }
+    }
+
     private fun checkRar(path: String) {
+        val reference = extractLocal(path)
+        assertTrue(reference.size >= 2)
         BlockReader(client().open(path), blockSize = 4096, maxBlocks = 4).use { reader ->
             val archive = Archive(NetRarVolumes(reader), null, null)
             val headers = archive.fileHeaders.filter { !it.isDirectory }
-            assertEquals(3, headers.size)
+            assertEquals(reference.keys, headers.map { it.fileName }.toSet())
             for (h in headers) {
                 val out = ByteArrayOutputStream()
                 archive.extractFile(h, out)
-                val name = h.fileName.substringAfterLast('/').substringAfterLast('\\')
-                assertArrayEquals(name, expected(name), out.toByteArray())
+                assertArrayEquals(h.fileName, reference.getValue(h.fileName), out.toByteArray())
             }
             archive.close()
         }
