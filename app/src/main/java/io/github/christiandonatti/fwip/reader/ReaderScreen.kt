@@ -134,7 +134,8 @@ fun ReaderScreen(
     }
 
     BackHandler(onBack = onClose)
-    KeepScreenOn()
+    KeepScreenOn(settings.keepScreenOn)
+    ReaderComfort(settings)
 
     Box(Modifier.fillMaxSize().background(FwipColors.ReaderBg)) {
         when (val l = loaded) {
@@ -206,6 +207,9 @@ private fun Reader(
 
     var chrome by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showPages by remember { mutableStateOf(false) }
+    val bookmarkStore = remember { io.github.christiandonatti.fwip.data.BookmarkStore.get(context) }
+    var marks by remember(comic.id) { mutableStateOf(bookmarkStore.pages(comic.id)) }
     ImmersiveMode(visibleBars = chrome || showSettings)
 
     val scope = rememberCoroutineScope()
@@ -364,10 +368,14 @@ private fun Reader(
                     else -> nextStop()
                 }
             } else {
-                when {
-                    x < 0.28f -> commands.tryEmit(NavCommand.Go(if (rtl) 1 else -1))
-                    x > 0.72f -> commands.tryEmit(NavCommand.Go(if (rtl) -1 else 1))
-                    else -> chrome = !chrome
+                val side = when {
+                    x < 0.28f -> -1
+                    x > 0.72f -> 1
+                    else -> 0
+                }
+                when (val move = settings.tapZones.move(side, rtl)) {
+                    0 -> chrome = !chrome
+                    else -> commands.tryEmit(NavCommand.Go(move))
                 }
             }
         }
@@ -426,6 +434,16 @@ private fun Reader(
             }
         }
 
+        // Warm night filter over the pages (the controls stay true to colour).
+        if (settings.warmth > 0f) {
+            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                drawRect(
+                    androidx.compose.ui.graphics.Color(0xFFFFA24A).copy(alpha = 0.45f * settings.warmth),
+                    blendMode = androidx.compose.ui.graphics.BlendMode.Multiply,
+                )
+            }
+        }
+
         // Spotlight on the panel or balloon being read.
         val spotAlpha by animateFloatAsState(if (guide != null && stop >= 0) 1f else 0f, label = "spot")
         val target = stops?.getOrNull(stop)
@@ -452,6 +470,13 @@ private fun Reader(
             onBack = onClose,
             onSettings = { showSettings = true },
             onGuide = { kind -> setGuide(if (guide == kind) null else kind) },
+            bookmarked = spreads.getOrNull(spread)?.any { it in marks } == true,
+            onBookmark = {
+                val pages = spreads.getOrNull(spread).orEmpty()
+                marks = if (pages.any { it in marks }) marks - pages.toSet() else marks + pages.first()
+                bookmarkStore.set(comic.id, marks)
+            },
+            onPages = { showPages = true },
         )
 
         AnimatedVisibility(
@@ -476,6 +501,23 @@ private fun Reader(
                 onPrev = ::prevStop,
                 onNext = ::nextStop,
                 onExit = { setGuide(null) },
+            )
+        }
+
+        if (showPages) {
+            PageGrid(
+                pageCount = source.pageCount,
+                cache = cache,
+                current = spreads.getOrNull(spread)?.first() ?: 0,
+                bookmarks = marks,
+                rtl = rtl,
+                onPick = { page ->
+                    showPages = false
+                    chrome = false
+                    val target = spreads.indexOfFirst { page in it }
+                    if (target >= 0) commands.tryEmit(NavCommand.Seek(target))
+                },
+                onDismiss = { showPages = false },
             )
         }
 
@@ -521,11 +563,40 @@ private fun ImmersiveMode(visibleBars: Boolean) {
 }
 
 @Composable
-private fun KeepScreenOn() {
+private fun KeepScreenOn(enabled: Boolean) {
     val view = LocalView.current
-    DisposableEffect(view) {
-        view.keepScreenOn = true
+    DisposableEffect(view, enabled) {
+        view.keepScreenOn = enabled
         onDispose { view.keepScreenOn = false }
+    }
+}
+
+/** Brightness and rotation lock apply only while the reader is open. */
+@Composable
+private fun ReaderComfort(settings: ReaderSettings) {
+    val view = LocalView.current
+    val activity = view.context.findActivity() ?: return
+    DisposableEffect(settings.brightness) {
+        val attrs = activity.window.attributes
+        attrs.screenBrightness = if (settings.brightness < 0f) {
+            android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        } else {
+            settings.brightness.coerceIn(0.01f, 1f)
+        }
+        activity.window.attributes = attrs
+        onDispose {
+            val a = activity.window.attributes
+            a.screenBrightness = android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            activity.window.attributes = a
+        }
+    }
+    DisposableEffect(settings.rotation) {
+        activity.requestedOrientation = when (settings.rotation) {
+            ScreenRotation.Auto -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            ScreenRotation.Portrait -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            ScreenRotation.Landscape -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        }
+        onDispose { activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
     }
 }
 

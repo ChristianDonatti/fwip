@@ -4,6 +4,7 @@ import io.github.christiandonatti.fwip.R
 import io.github.christiandonatti.fwip.str
 import android.content.Context
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -18,6 +19,32 @@ enum class SpreadMode(@androidx.annotation.StringRes private val labelRes: Int) 
     Auto(R.string.spread_auto), Single(R.string.spread_single), Double(R.string.spread_double);
 
     val label: String get() = str(labelRes)
+}
+
+enum class ScreenRotation(@androidx.annotation.StringRes private val labelRes: Int) {
+    Auto(R.string.rotation_auto), Portrait(R.string.rotation_portrait), Landscape(R.string.rotation_landscape);
+
+    val label: String get() = str(labelRes)
+}
+
+/** What a tap on the left or right side of the page does (the middle always shows the controls). */
+enum class TapZones(@androidx.annotation.StringRes private val labelRes: Int) {
+    Sides(R.string.tap_sides), Reversed(R.string.tap_reversed), Forward(R.string.tap_forward), Off(R.string.tap_off);
+
+    val label: String get() = str(labelRes)
+
+    /** Pages to move for a tap on the left (-1) or right (+1) third, in reading direction. 0 = show controls. */
+    fun move(side: Int, rtl: Boolean): Int {
+        if (side == 0) return 0
+        // Physical side to "back"/"forward": in manga the left side is forward.
+        val forward = if (rtl) side < 0 else side > 0
+        return when (this) {
+            Sides -> if (forward) 1 else -1
+            Reversed -> if (forward) -1 else 1
+            Forward -> 1
+            Off -> 0
+        }
+    }
 }
 
 /** Reader preferences, kept as Compose state so the screen updates the moment one changes. */
@@ -36,11 +63,48 @@ class ReaderSettings(context: Context) {
     var cropMargins by mutableStateOf(prefs.getBoolean("crop", true))
         private set
 
+    /** Screen brightness while reading, 0..1; below zero follows the system. */
+    var brightness by mutableFloatStateOf(prefs.getFloat("brightness", -1f))
+        private set
+    /** Warm night filter strength, 0 (off) to 1. */
+    var warmth by mutableFloatStateOf(prefs.getFloat("warmth", 0f))
+        private set
+    var keepScreenOn by mutableStateOf(prefs.getBoolean("awake", true))
+        private set
+    var rotation by mutableStateOf(runCatching { ScreenRotation.valueOf(prefs.getString("rotation", null) ?: "") }.getOrDefault(ScreenRotation.Auto))
+        private set
+    var tapZones by mutableStateOf(runCatching { TapZones.valueOf(prefs.getString("taps", null) ?: "") }.getOrDefault(TapZones.Sides))
+        private set
+
     fun updateManga(value: Boolean) { mangaMode = value; prefs.edit().putBoolean("manga", value).apply() }
     fun updateTurn(value: TurnStyle) { turnStyle = value; prefs.edit().putString("turn2", value.name).apply() }
     fun updateSpread(value: SpreadMode) { spreadMode = value; prefs.edit().putString("spread", value.name).apply() }
     fun updateVolume(value: Boolean) { volumeKeys = value; prefs.edit().putBoolean("volume", value).apply() }
     fun updateCrop(value: Boolean) { cropMargins = value; prefs.edit().putBoolean("crop", value).apply() }
+    fun updateBrightness(value: Float) { brightness = value; prefs.edit().putFloat("brightness", value).apply() }
+    fun updateWarmth(value: Float) { warmth = value; prefs.edit().putFloat("warmth", value).apply() }
+    fun updateKeepScreenOn(value: Boolean) { keepScreenOn = value; prefs.edit().putBoolean("awake", value).apply() }
+    fun updateRotation(value: ScreenRotation) { rotation = value; prefs.edit().putString("rotation", value.name).apply() }
+    fun updateTapZones(value: TapZones) { tapZones = value; prefs.edit().putString("taps", value.name).apply() }
+
+    /** Everything worth carrying to another device in a backup. */
+    fun toJson(): org.json.JSONObject = org.json.JSONObject()
+        .put("manga", mangaMode).put("turn", turnStyle.name).put("spread", spreadMode.name)
+        .put("volume", volumeKeys).put("crop", cropMargins).put("brightness", brightness.toDouble())
+        .put("warmth", warmth.toDouble()).put("awake", keepScreenOn).put("rotation", rotation.name).put("taps", tapZones.name)
+
+    fun fromJson(o: org.json.JSONObject) {
+        if (o.has("manga")) updateManga(o.getBoolean("manga"))
+        runCatching { updateTurn(TurnStyle.valueOf(o.getString("turn"))) }
+        runCatching { updateSpread(SpreadMode.valueOf(o.getString("spread"))) }
+        if (o.has("volume")) updateVolume(o.getBoolean("volume"))
+        if (o.has("crop")) updateCrop(o.getBoolean("crop"))
+        if (o.has("brightness")) updateBrightness(o.getDouble("brightness").toFloat())
+        if (o.has("warmth")) updateWarmth(o.getDouble("warmth").toFloat())
+        if (o.has("awake")) updateKeepScreenOn(o.getBoolean("awake"))
+        runCatching { updateRotation(ScreenRotation.valueOf(o.getString("rotation"))) }
+        runCatching { updateTapZones(TapZones.valueOf(o.getString("taps"))) }
+    }
 }
 
 /** Volume key presses forwarded from the activity while the reader is open. +1 = next, -1 = previous. */

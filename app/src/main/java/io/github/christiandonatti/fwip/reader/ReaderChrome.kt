@@ -25,6 +25,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -220,6 +223,9 @@ internal fun ReaderChrome(
     onBack: () -> Unit,
     onSettings: () -> Unit,
     onGuide: (GuideKind) -> Unit,
+    bookmarked: Boolean,
+    onBookmark: () -> Unit,
+    onPages: () -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val roomy = maxWidth >= 600.dp
@@ -246,6 +252,10 @@ internal fun ReaderChrome(
                     Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(pageLabel, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
                 }
+                DrawnIconButton(str(if (bookmarked) R.string.remove_bookmark else R.string.add_bookmark), onBookmark, on = bookmarked) {
+                    BookmarkIcon(it, filled = bookmarked)
+                }
+                Spacer(Modifier.width(8.dp))
                 GuideToggle(guide == GuideKind.Panels, str(R.string.panels), roomy, { onGuide(GuideKind.Panels) }) { PanelsIcon(it) }
                 Spacer(Modifier.width(8.dp))
                 GuideToggle(guide == GuideKind.Balloons, str(R.string.balloons), roomy, { onGuide(GuideKind.Balloons) }) { BalloonIcon(it) }
@@ -270,10 +280,11 @@ internal fun ReaderChrome(
                     .clip(CircleShape)
                     .background(Color(0xE6121318))
                     .border(1.dp, FwipColors.Stroke, CircleShape)
-                    .padding(start = 24.dp, end = 22.dp),
+                    .padding(start = 8.dp, end = 22.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                DrawnIconButton(str(R.string.pages_title), onPages, size = 48.dp) { GridIcon(it) }
                 PageScrubber(
                     value = spreadIndex,
                     count = spreadCount,
@@ -367,22 +378,113 @@ internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Column(
             Modifier
-                .widthIn(max = 480.dp)
+                .widthIn(max = 520.dp)
+                .heightIn(max = 720.dp)
                 .clip(RoundedCornerShape(28.dp))
                 .background(Color(0xFF16171E))
-                .border(1.dp, FwipColors.Stroke, RoundedCornerShape(28.dp))
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+                .border(1.dp, FwipColors.Stroke, RoundedCornerShape(28.dp)),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.padding(start = 24.dp, end = 16.dp, top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(str(R.string.reading_settings), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                 CircleIconButton(Icons.Filled.Close, str(R.string.close), onDismiss, size = 40.dp)
             }
-            Choice(str(R.string.page_turn), TurnStyle.entries, settings.turnStyle, { it.label }, settings::updateTurn)
-            Choice(str(R.string.pages_on_screen), SpreadMode.entries, settings.spreadMode, { it.label }, settings::updateSpread)
-            Toggle(str(R.string.manga_mode), str(R.string.manga_mode_hint), settings.mangaMode, settings::updateManga)
-            Toggle(str(R.string.crop_margins), str(R.string.crop_margins_hint), settings.cropMargins, settings::updateCrop)
-            Toggle(str(R.string.volume_keys), str(R.string.volume_keys_hint), settings.volumeKeys, settings::updateVolume)
+            Column(
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
+                Section(str(R.string.section_pages))
+                Choice(str(R.string.page_turn), TurnStyle.entries, settings.turnStyle, { it.label }, settings::updateTurn)
+                Choice(str(R.string.pages_on_screen), SpreadMode.entries, settings.spreadMode, { it.label }, settings::updateSpread)
+                Toggle(str(R.string.manga_mode), str(R.string.manga_mode_hint), settings.mangaMode, settings::updateManga)
+                Toggle(str(R.string.crop_margins), str(R.string.crop_margins_hint), settings.cropMargins, settings::updateCrop)
+
+                Section(str(R.string.section_touch))
+                Choice(str(R.string.tap_zones), TapZones.entries, settings.tapZones, { it.label }, settings::updateTapZones)
+                TapZonePreview(settings.tapZones, settings.mangaMode)
+                Toggle(str(R.string.volume_keys), str(R.string.volume_keys_hint), settings.volumeKeys, settings::updateVolume)
+
+                Section(str(R.string.section_comfort))
+                Toggle(
+                    str(R.string.system_brightness),
+                    str(R.string.system_brightness_hint),
+                    settings.brightness < 0f,
+                ) { system -> settings.updateBrightness(if (system) -1f else 0.6f) }
+                if (settings.brightness >= 0f) {
+                    LevelSlider(str(R.string.brightness), settings.brightness, 0.02f..1f, settings::updateBrightness)
+                }
+                LevelSlider(str(R.string.warm_light), settings.warmth, 0f..1f, settings::updateWarmth, hint = str(R.string.warm_light_hint))
+                Toggle(str(R.string.keep_screen_on), str(R.string.keep_screen_on_hint), settings.keepScreenOn, settings::updateKeepScreenOn)
+                Choice(str(R.string.rotation), ScreenRotation.entries, settings.rotation, { it.label }, settings::updateRotation)
+            }
+        }
+    }
+}
+
+@Composable
+private fun Section(title: String) {
+    Text(
+        title.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        color = FwipColors.Amber,
+        modifier = Modifier.padding(top = 6.dp),
+    )
+}
+
+@Composable
+private fun LevelSlider(title: String, value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit, hint: String? = null) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+            Text("${(value * 100).roundToInt()}%", style = MaterialTheme.typography.labelMedium, color = FwipColors.TextSoft)
+        }
+        if (hint != null) Text(hint, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+        androidx.compose.material3.Slider(
+            value = value,
+            onValueChange = onChange,
+            valueRange = range,
+            colors = androidx.compose.material3.SliderDefaults.colors(
+                thumbColor = FwipColors.Amber,
+                activeTrackColor = FwipColors.Amber,
+                inactiveTrackColor = Color.White.copy(alpha = 0.16f),
+            ),
+        )
+    }
+}
+
+/** Little page showing what each third of the screen does with the chosen tap zones. */
+@Composable
+private fun TapZonePreview(zones: TapZones, rtl: Boolean) {
+    fun label(side: Int): String = when (zones.move(side, rtl)) {
+        1 -> str(R.string.zone_next)
+        -1 -> str(R.string.zone_back)
+        else -> str(R.string.zone_menu)
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .border(1.dp, FwipColors.Stroke, RoundedCornerShape(14.dp)),
+    ) {
+        listOf(-1 to 0.28f, 0 to 0.44f, 1 to 0.28f).forEach { (side, w) ->
+            val move = zones.move(side, rtl)
+            Box(
+                Modifier
+                    .weight(w)
+                    .fillMaxSize()
+                    .background(
+                        when (move) {
+                            1 -> FwipColors.Amber.copy(alpha = 0.22f)
+                            -1 -> Color.White.copy(alpha = 0.08f)
+                            else -> Color.Transparent
+                        }
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label(side), style = MaterialTheme.typography.labelMedium, color = if (move == 1) FwipColors.Amber else FwipColors.TextSoft)
+            }
         }
     }
 }
