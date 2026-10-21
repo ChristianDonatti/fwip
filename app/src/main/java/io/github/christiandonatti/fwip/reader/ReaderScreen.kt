@@ -132,8 +132,11 @@ fun ReaderScreen(
             )
         }
     }
-    DisposableEffect(loaded) {
-        onDispose { (loaded as? Loaded.Ready)?.source?.close() }
+    // Capture the value: reading `loaded` inside onDispose would see the newer state and close
+    // the source that was just opened (this is what broke every page after the first).
+    val current = loaded
+    DisposableEffect(current) {
+        onDispose { (current as? Loaded.Ready)?.source?.close() }
     }
 
     BackHandler(onBack = onClose)
