@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
@@ -57,10 +55,8 @@ fun SyncDialog(
 ) {
     FwipDialog(onDismiss) {
         DialogTitle(str(R.string.sync_title), onDismiss)
-        Column(
-            Modifier.verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+        // FwipDialog already scrolls.
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(str(R.string.sync_explain), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
 
             val place = info.place
