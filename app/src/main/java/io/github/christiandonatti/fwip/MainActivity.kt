@@ -81,6 +81,8 @@ class MainActivity : ComponentActivity() {
                 val actions = remember(viewModel) {
                     LibraryActions(
                         open = { viewModel.open(it.comic) },
+                        openIn = { item, context -> viewModel.open(item.comic, context) },
+                        reorderCollection = viewModel::reorderCollection,
                         addFolder = { pickFolder.launch(null) },
                         removeFolder = viewModel::removeFolder,
                         refresh = viewModel::refresh,
@@ -129,7 +131,7 @@ class MainActivity : ComponentActivity() {
                             else -> 0
                         }
                         val item = state.item(comic.id)
-                        val next = item?.let(state::nextAfter)
+                        val next = item?.let { state.nextAfter(it, state.openContext) }
                         ReaderScreen(
                             comic = comic,
                             title = item?.title ?: comic.title,

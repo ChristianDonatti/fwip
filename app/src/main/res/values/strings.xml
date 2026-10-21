@@ -288,4 +288,10 @@
     <string name="smart_want">Want to read</string>
     <string name="want_add">Add to Want to read</string>
     <string name="want_remove">Remove from Want to read</string>
+    <string name="reading_order">Reading order</string>
+    <string name="reading_order_hint">Comics opened from this collection continue in this order, across series.</string>
+    <string name="order_by_date">By publication date</string>
+    <string name="order_by_series">By series and number</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
 </resources>

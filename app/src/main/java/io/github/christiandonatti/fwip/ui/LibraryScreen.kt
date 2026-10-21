@@ -111,6 +111,9 @@ class LibraryActions(
     val deleteCollection: (String) -> Unit,
     val setInCollection: (String, List<String>, Boolean) -> Unit,
     val setWant: (List<String>, Boolean) -> Unit,
+    /** Opens a comic from a collection, whose order then decides what comes next. */
+    val openIn: (LibraryItem, String?) -> Unit,
+    val reorderCollection: (String, List<String>) -> Unit,
 )
 
 private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
@@ -1102,6 +1105,8 @@ private fun ShelfScreen(
         ?: list.firstOrNull { it.progress?.finished != true }
     var renaming by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var reordering by remember { mutableStateOf(false) }
+    val openHere: (LibraryItem) -> Unit = { if (collection != null) actions.openIn(it, collection.id) else actions.open(it) }
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(if (wide) 160.dp else 104.dp),
@@ -1155,7 +1160,7 @@ private fun ShelfScreen(
                         if (next != null) {
                             PillButton(
                                 if (next.progress?.started == true) (str(R.string.continue_) + " " + (next.series.number?.let { "#" + it.toInt() } ?: "")).trim() else str(R.string.start),
-                                onClick = { actions.open(next) },
+                                onClick = { openHere(next) },
                                 height = 48.dp,
                                 leading = { Icon(Icons.Filled.PlayArrow, null, Modifier.size(18.dp)) },
                             )
@@ -1173,6 +1178,14 @@ private fun ShelfScreen(
                             height = 48.dp,
                             style = PillStyle.Ghost,
                         )
+                        if (collection != null && list.size >= 2) {
+                            PillButton(
+                                str(R.string.reading_order),
+                                onClick = { reordering = true },
+                                height = 48.dp,
+                                style = PillStyle.Ghost,
+                            )
+                        }
                         if (shelf is Shelf.Series || shelf is Shelf.Folder) {
                             PillButton(
                                 str(R.string.series_edit),
@@ -1194,8 +1207,16 @@ private fun ShelfScreen(
             }
         }
         items(list, key = { it.comic.id }) { it ->
-            CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = wide, selection = selection)
+            CoverTile(it, onOpen = { openHere(it) }, onMenu = { onMenu(it) }, wide = wide, selection = selection)
         }
+    }
+
+    if (reordering && collection != null) {
+        ReorderDialog(
+            list,
+            onSave = { ids -> actions.reorderCollection(collection.id, ids); reordering = false },
+            onDismiss = { reordering = false },
+        )
     }
 
     if (renaming && collection != null) {

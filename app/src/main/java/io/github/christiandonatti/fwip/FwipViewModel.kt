@@ -39,6 +39,8 @@ data class LibraryState(
     val scanning: Boolean = false,
     val loaded: Boolean = false,
     val openComicId: String? = null,
+    /** The collection a comic was opened from, so "next" follows its reading order. */
+    val openContext: String? = null,
     val collections: List<ComicCollection> = emptyList(),
     val servers: List<io.github.christiandonatti.fwip.remote.Server> = emptyList(),
     /** A book opened straight from a server or a fresh download, not (yet) in the library. */
@@ -66,7 +68,11 @@ data class LibraryState(
     fun item(id: String): LibraryItem? = items.firstOrNull { it.comic.id == id }
 
     /** What to read after [item]: the next issue of its series, or else the next file in its folder. */
-    fun nextAfter(item: LibraryItem): LibraryItem? {
+    fun nextAfter(item: LibraryItem, context: String? = null): LibraryItem? {
+        collections.firstOrNull { it.id == context }?.let { c ->
+            val at = c.comicIds.indexOf(item.comic.id)
+            if (at >= 0) return c.comicIds.drop(at + 1).firstNotNullOfOrNull(::item)
+        }
         val key = seriesKey(item.series.name)
         val series = items.filter { seriesKey(it.series.name) == key }.sortedFor(SortOrder.Title)
         if (series.size >= 2) {
@@ -172,9 +178,13 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun open(comic: Comic) {
-        _state.update { it.copy(openComicId = comic.id) }
+    fun open(comic: Comic, context: String? = null) {
+        _state.update { it.copy(openComicId = comic.id, openContext = context) }
     }
+
+    /** A collection's own reading order (an event, a crossover). */
+    fun reorderCollection(id: String, comicIds: List<String>) =
+        updateCollections { list -> list.map { if (it.id == id) it.copy(comicIds = comicIds) else it } }
 
     /** From a shortcut or the widget. */
     fun openById(id: String) {
@@ -201,6 +211,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { s ->
             s.copy(
                 openComicId = null,
+                openContext = null,
                 outsideComic = null,
                 items = s.items.map { it.copy(progress = repository.progressFor(it.comic.id)) },
             )

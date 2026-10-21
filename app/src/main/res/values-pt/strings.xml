@@ -287,4 +287,10 @@
     <string name="smart_want">Quero ler</string>
     <string name="want_add">Adicionar a Quero ler</string>
     <string name="want_remove">Tirar de Quero ler</string>
+    <string name="reading_order">Ordem de leitura</string>
+    <string name="reading_order_hint">As HQs abertas por esta coleção seguem esta ordem, mesmo misturando séries.</string>
+    <string name="order_by_date">Por data de publicação</string>
+    <string name="order_by_series">Por série e número</string>
+    <string name="move_up">Subir</string>
+    <string name="move_down">Descer</string>
 </resources>

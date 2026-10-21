@@ -34,6 +34,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import io.github.christiandonatti.fwip.data.sortedFor
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
@@ -581,6 +585,48 @@ fun BookmarkGlyph(color: Color, filled: Boolean, modifier: Modifier = Modifier, 
             moveTo(6 * u, 3 * u); lineTo(18 * u, 3 * u); lineTo(18 * u, 21 * u); lineTo(12 * u, 16.5f * u); lineTo(6 * u, 21 * u); close()
         }
         if (filled) drawPath(path, color) else drawPath(path, color, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f * u))
+    }
+}
+
+/**
+ * Puts a collection in reading order: move comics up and down one by one, or sort them by
+ * publication date or by series and number in one tap. Reading from the collection then
+ * follows this order.
+ */
+@Composable
+fun ReorderDialog(items: List<LibraryItem>, onSave: (List<String>) -> Unit, onDismiss: () -> Unit) {
+    var order by remember { mutableStateOf(items) }
+    FwipDialog(onDismiss) {
+        DialogTitle(str(R.string.reading_order), onDismiss)
+        Text(str(R.string.reading_order_hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+        Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PillButton(str(R.string.order_by_date), {
+                order = order.sortedWith(compareBy<LibraryItem> { it.meta?.year ?: it.parsed.year ?: Int.MAX_VALUE }.thenBy { it.meta?.month ?: 0 })
+            }, height = 40.dp, style = PillStyle.Ghost)
+            PillButton(str(R.string.order_by_series), { order = order.sortedFor(io.github.christiandonatti.fwip.data.SortOrder.Title) }, height = 40.dp, style = PillStyle.Ghost)
+        }
+        order.forEachIndexed { i, item ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(FwipColors.Surface)
+                    .padding(start = 8.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text("${i + 1}", style = MaterialTheme.typography.labelMedium, color = FwipColors.Amber, modifier = Modifier.width(24.dp))
+                CoverImage(item, Modifier.size(32.dp, 48.dp), corner = 5.dp, titleSize = 6)
+                Text(item.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                CircleIconButton(Icons.Filled.KeyboardArrowUp, str(R.string.move_up), {
+                    if (i > 0) order = order.toMutableList().apply { add(i - 1, removeAt(i)) }
+                }, size = 36.dp)
+                CircleIconButton(Icons.Filled.KeyboardArrowDown, str(R.string.move_down), {
+                    if (i < order.lastIndex) order = order.toMutableList().apply { add(i + 1, removeAt(i)) }
+                }, size = 36.dp)
+            }
+        }
+        PillButton(str(R.string.save), { onSave(order.map { it.comic.id }) }, style = PillStyle.Amber, height = 46.dp, modifier = Modifier.fillMaxWidth())
     }
 }
 
