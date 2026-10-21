@@ -131,8 +131,19 @@ internal object ImageDecoding {
             inSampleSize = sample
             inPreferredConfig = Bitmap.Config.ARGB_8888
         }
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+        val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options) ?: return null
+        // Power-of-two sampling can leave a page almost twice the size it is shown at, which
+        // costs memory without adding detail. Keep at most 1.5x the screen size (room for zoom).
+        val cap = min(fit * MAX_OVERSIZE, 1f)
+        val capW = (w * cap).toInt().coerceAtLeast(1)
+        val capH = (h * cap).toInt().coerceAtLeast(1)
+        if (decoded.width <= capW * 1.1f) return decoded
+        val scaled = Bitmap.createScaledBitmap(decoded, capW, capH, true)
+        if (scaled !== decoded) decoded.recycle()
+        return scaled
     }
+
+    private const val MAX_OVERSIZE = 1.5f
 }
 
 /** Opens a document as a seekable channel when the provider allows it (local storage does). */

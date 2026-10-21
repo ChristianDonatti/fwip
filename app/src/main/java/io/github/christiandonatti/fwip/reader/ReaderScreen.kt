@@ -168,7 +168,7 @@ private fun Reader(
     onProgress: (Int, Int) -> Unit,
 ) {
     val context = LocalContext.current
-    val cache = remember(source, settings.cropMargins) { PageCache(source, settings.cropMargins) }
+    val cache = remember(source, settings.cropMargins) { PageCache(source, settings.cropMargins, PageCache.budgetFor(context)) }
     DisposableEffect(cache) { onDispose { cache.clear() } }
 
     // Webtoons: pages much taller than wide always scroll vertically.

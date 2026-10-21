@@ -77,6 +77,7 @@ fun ScrollReader(
     // Decode what comes next before the finger gets there.
     LaunchedEffect(listState.firstVisibleItemIndex, host) {
         val first = listState.firstVisibleItemIndex
+        host.cache.hold((first - 1..first + 3).flatMap { spreads.getOrNull(it).orEmpty() }.toSet())
         for (n in first + 1..first + 3) {
             spreads.getOrNull(n)?.firstOrNull()?.let { host.cache.get(it, host.decodeW, host.decodeW * STRIP) }
         }

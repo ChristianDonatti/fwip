@@ -73,6 +73,8 @@ object SpreadLayout {
         pages.size >= 2 -> listOf(pages[0] to Slot.Left, pages[1] to Slot.Right)
         pages.firstOrNull()?.let(isWide) == true -> pages.map { it to Slot.Full }
         pages.firstOrNull() == 0 -> listOf(0 to Slot.Right)
+        // A page alone just before a double-page image is a right-hand page in print.
+        pages.firstOrNull()?.let { isWide(it + 1) } == true -> pages.map { it to Slot.Right }
         else -> pages.map { it to Slot.Left }
     }
 

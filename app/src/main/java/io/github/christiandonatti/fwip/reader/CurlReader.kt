@@ -93,16 +93,13 @@ private class CurlController(initialHost: ReaderHost, start: Int) {
         val leaf = Rect(maxOf(page.left, spine), page.top, page.right, page.bottom)
         if (leaf.width < 8f) return null
         val corner = Offset(leaf.right, if (touchY < leaf.center.y) leaf.top else leaf.bottom)
-        val t = CurlTurn(from, to, leaf, spine, corner, corner)
+        val t = CurlTurn(from, to, leaf, spine, corner, corner, host.spreads[from].first(), host.spreads[to].first())
         if (!forward) t.point = t.end
         return t
     }
 
     /** Lets go of a dragged page: it either finishes turning or falls back. */
     suspend fun settle(t: CurlTurn, complete: Boolean) {
-        // Pages, not indices: the layout may be rebuilt while the page falls.
-        val fromPage = host.spreads.getOrNull(t.from)?.firstOrNull() ?: (host.spreads.getOrNull(current)?.firstOrNull() ?: 0)
-        val toPage = host.spreads.getOrNull(t.to)?.firstOrNull() ?: (host.spreads.getOrNull(current)?.firstOrNull() ?: 0)
         animating = true
         try {
             val target = if (complete) t.end else t.corner
@@ -111,7 +108,8 @@ private class CurlController(initialHost: ReaderHost, start: Int) {
             anim.animateTo(target, tween((180 + distance / w * 260).toInt().coerceIn(180, 420), easing = FastOutSlowInEasing)) {
                 t.point = value
             }
-            current = indexOf(if (complete) toPage else fromPage)
+            // Pages, not indices: the layout may have been rebuilt while the page was moving.
+            current = indexOf(if (complete) t.toPage else t.fromPage)
         } finally {
             turn = null
             animating = false
@@ -133,8 +131,6 @@ private class CurlController(initialHost: ReaderHost, start: Int) {
             return
         }
         zoom?.snapReset()
-        val fromPage = host.spreads.getOrNull(t.from)?.firstOrNull() ?: (host.spreads.getOrNull(current)?.firstOrNull() ?: 0)
-        val toPage = host.spreads.getOrNull(t.to)?.firstOrNull() ?: (host.spreads.getOrNull(current)?.firstOrNull() ?: 0)
         turn = t
         animating = true
         try {
@@ -144,7 +140,7 @@ private class CurlController(initialHost: ReaderHost, start: Int) {
                 val x = t.corner.x + (t.end.x - t.corner.x) * value
                 t.point = Offset(x, t.corner.y - lift * sin(PI * value).toFloat())
             }
-            current = indexOf(if (forward) toPage else fromPage)
+            current = indexOf(if (forward) t.toPage else t.fromPage)
         } finally {
             turn = null
             animating = false
@@ -179,6 +175,8 @@ fun CurlReader(
     LaunchedEffect(ctl.current) { onSpreadChanged(ctl.current) }
 
     LaunchedEffect(ctl.current, host) {
+        // The spread on screen and both neighbours stay in memory: a turn needs all of them.
+        host.cache.hold((ctl.current - 1..ctl.current + 1).flatMap { spreads.getOrNull(it).orEmpty() }.toSet())
         for (n in listOf(ctl.current + 1, ctl.current - 1, ctl.current + 2)) {
             spreads.getOrNull(n)?.forEach { host.cache.get(it, host.wFor(it), host.decodeH) }
             loadedVersion++

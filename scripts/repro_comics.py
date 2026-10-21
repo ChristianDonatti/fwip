@@ -33,8 +33,12 @@ def label(im, text):
     return im
 
 out = []
-for i, im in enumerate(pages[:16]):
-    out.append(im)
+# Leave out credit banners, and scale up to the size of a real digital comic page.
+for im in pages:
+    if im.height < im.width:
+        continue
+    out.append(im.resize((im.width * 5 // 3, im.height * 5 // 3)))
+out = out[:16]
 # A double-page spread at position 9 (two pages side by side), another at 13.
 for at in (9, 13):
     a, b = out[at], out[at + 1]

@@ -66,6 +66,7 @@ fun PagerReader(
     // Pre-decode neighbours so turning never shows a spinner.
     LaunchedEffect(pagerState.settledPage, host) {
         val s = pagerState.settledPage
+        host.cache.hold((s - 1..s + 1).flatMap { spreads.getOrNull(it).orEmpty() }.toSet())
         for (n in listOf(s + 1, s - 1, s + 2)) {
             spreads.getOrNull(n)?.forEach { host.cache.get(it, host.wFor(it), host.decodeH) }
         }

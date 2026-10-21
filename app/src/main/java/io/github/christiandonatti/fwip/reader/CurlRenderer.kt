@@ -33,6 +33,9 @@ class CurlTurn(
     val spine: Float,
     val corner: Offset,
     point: Offset,
+    /** First page of each spread: indices can shift if the layout is rebuilt mid-turn. */
+    val fromPage: Int = -1,
+    val toPage: Int = -1,
 ) {
     /** Where the corner lands when the page is fully turned: mirrored across the spine. */
     val end = Offset(2f * spine - corner.x, corner.y)
