@@ -59,7 +59,7 @@ fun AppearancePicker(modifier: Modifier = Modifier) {
                         .height(42.dp)
                         .clip(CircleShape)
                         .background(if (on) FwipColors.Text else Color.Transparent)
-                        .clickable(role = Role.RadioButton) { ui.setTheme(mode) }
+                        .clickable(role = Role.RadioButton) { ui.updateTheme(mode) }
                         .semantics { selected = on },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -80,7 +80,7 @@ fun AppearancePicker(modifier: Modifier = Modifier) {
                         .padding(if (on) 6.dp else 4.dp)
                         .clip(CircleShape)
                         .background(color)
-                        .clickable(role = Role.RadioButton) { ui.setAccent(accent) }
+                        .clickable(role = Role.RadioButton) { ui.updateAccent(accent) }
                         .semantics {
                             contentDescription = accent.label
                             selected = on

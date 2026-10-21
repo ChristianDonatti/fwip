@@ -25,8 +25,8 @@ class UiSettings private constructor(context: Context) {
     var welcomed by mutableStateOf(prefs.getBoolean("welcomed", false))
         private set
 
-    fun setTheme(value: ThemeMode) { theme = value; prefs.edit().putString("theme", value.name).apply() }
-    fun setAccent(value: Accent) { accent = value; prefs.edit().putString("accent", value.name).apply() }
+    fun updateTheme(value: ThemeMode) { theme = value; prefs.edit().putString("theme", value.name).apply() }
+    fun updateAccent(value: Accent) { accent = value; prefs.edit().putString("accent", value.name).apply() }
 
     /** Live while the fingers move; [save] once they lift. */
     fun scaleCovers(factor: Float) { coverScale = (coverScale * factor).coerceIn(MIN_SCALE, MAX_SCALE) }
