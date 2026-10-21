@@ -252,6 +252,8 @@ private fun Reader(
                 Modifier
                     .fillMaxSize()
                     .turnEffect(pagerState, index, settings.turnStyle, rtl, double)
+                    // Opaque like paper, so the page underneath never shows through the margins.
+                    .background(FwipColors.ReaderBg)
             ) {
                 Zoomable(
                     state = zoom,
@@ -320,8 +322,10 @@ private fun Modifier.turnEffect(
 ): Modifier = this
     .zIndex(
         run {
-            val o = (index - pagerState.currentPage) - pagerState.currentPageOffsetFraction
-            if (style == TurnStyle.Flip && !double) (if (o < 0f) 2f else 1f) else (if (o > 0f) 2f else 1f)
+            // Flip: the page being turned away sits on top, then the current one, then the next.
+            // Slide: the incoming page slides over the current one, which sits over the previous.
+            val o = ((index - pagerState.currentPage) - pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
+            if (style == TurnStyle.Flip && !double) (if (o < 0f) 2f else 1f - o) else (if (o > 0f) 2f else 1f + o)
         }
     )
     .graphicsLayer {
@@ -436,13 +440,21 @@ private fun PageImage(index: Int, cache: PageCache, maxW: Int, maxH: Int) {
     }
     val b = bitmap
     if (b == null && failed) {
-        Text(
-            "Não foi possível carregar a página ${index + 1}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = FwipColors.TextMuted,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(24.dp),
-        )
+        Column(
+            Modifier.padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                "Não foi possível carregar a página ${index + 1}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = FwipColors.TextSoft,
+                textAlign = TextAlign.Center,
+            )
+            cache.errorFor(index)?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, textAlign = TextAlign.Center)
+            }
+        }
     } else if (b == null) {
         CircularProgressIndicator(Modifier.size(28.dp), color = FwipColors.TextMuted, strokeWidth = 2.dp)
     } else {

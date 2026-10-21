@@ -211,30 +211,109 @@ private class SevenZipComicSource(
     }
 }
 
-private class RarComicSource(private val archive: Archive) : ComicSource {
+/**
+ * RAR (CBR) pages are extracted in archive order on a background thread into a per-comic cache folder.
+ * Many CBRs are "solid" archives, where a file can only be decompressed after every file before it,
+ * so pages cannot be pulled out one at a time in reading order. Pages become readable as soon as
+ * their file is written, and a fully extracted comic opens instantly the next time.
+ */
+private class RarComicSource(
+    private val archive: Archive,
+    private val dir: File,
+) : ComicSource {
     private val pages: List<FileHeader> = archive.fileHeaders
         .filter { !it.isDirectory && isPageImage(it.fileName) }
         .sortedWith(compareBy(NaturalOrder) { it.fileName })
 
+    private val indexOf: Map<FileHeader, Int> = pages.withIndex().associate { (i, h) -> h to i }
+    private val ready = BooleanArray(pages.size)
+    private val lock = Object()
+    private val complete = File(dir, ".complete")
+
+    @Volatile private var closed = false
+    @Volatile private var finished = false
+    @Volatile private var failure: Throwable? = null
+
     override val pageCount: Int get() = pages.size
 
-    // junrar's getInputStream extracts on a background thread through a pipe; reading two pages
-    // that way at once corrupts the shared archive state. Extract synchronously into memory instead.
-    @Synchronized
+    init {
+        dir.mkdirs()
+        if (complete.exists() && pages.indices.all { pageFile(it).length() > 0 }) {
+            ready.fill(true)
+            finished = true
+            runCatching { archive.close() }
+        } else {
+            Thread(::extractAll, "fwip-rar").apply { isDaemon = true }.start()
+        }
+    }
+
+    private fun pageFile(i: Int) = File(dir, "p$i")
+
+    private fun extractAll() {
+        try {
+            for (header in archive.fileHeaders) {
+                if (closed) break
+                if (header.isDirectory) continue
+                val i = indexOf[header]
+                if (i == null) {
+                    // Not a page, but solid archives still need it decompressed to keep going.
+                    archive.extractFile(header, NullSink)
+                    continue
+                }
+                val tmp = File(dir, "p$i.${System.nanoTime()}.part")
+                tmp.outputStream().buffered().use { archive.extractFile(header, it) }
+                tmp.renameTo(pageFile(i))
+                synchronized(lock) {
+                    ready[i] = true
+                    lock.notifyAll()
+                }
+            }
+            if (!closed) complete.createNewFile()
+        } catch (t: Throwable) {
+            failure = t
+        } finally {
+            synchronized(lock) {
+                finished = true
+                lock.notifyAll()
+            }
+            runCatching { archive.close() }
+        }
+    }
+
     override fun decodePage(index: Int, maxWidth: Int, maxHeight: Int): Bitmap? {
-        val header = pages[index]
-        val out = ByteArrayOutputStream(header.fullUnpackSize.coerceIn(0L, 64L * 1024 * 1024).toInt())
-        archive.extractFile(header, out)
-        return ImageDecoding.decodeBytes(out.toByteArray(), maxWidth, maxHeight)
+        synchronized(lock) {
+            while (!ready[index] && !finished && !closed) lock.wait(250)
+        }
+        if (!ready[index]) {
+            throw failure ?: java.io.IOException("Página não encontrada no arquivo")
+        }
+        return ImageDecoding.decodeBytes(pageFile(index).readBytes(), maxWidth, maxHeight)
     }
 
     override fun close() {
-        runCatching { archive.close() }
+        closed = true
+        synchronized(lock) { lock.notifyAll() }
+    }
+
+    private object NullSink : java.io.OutputStream() {
+        override fun write(b: Int) {}
+        override fun write(b: ByteArray, off: Int, len: Int) {}
     }
 
     companion object {
-        fun open(context: Context, comic: Comic): ComicSource =
-            RarComicSource(Archive(ArchiveCache.fileFor(context, comic)))
+        private const val KEEP = 5
+
+        fun open(context: Context, comic: Comic): ComicSource {
+            val root = File(context.cacheDir, "pages").apply { mkdirs() }
+            val dir = File(root, sha1(comic.id))
+            dir.setLastModified(System.currentTimeMillis())
+            root.listFiles()
+                ?.filter { it.isDirectory && it != dir }
+                ?.sortedByDescending { it.lastModified() }
+                ?.drop(KEEP - 1)
+                ?.forEach { it.deleteRecursively() }
+            return RarComicSource(Archive(ArchiveCache.fileFor(context, comic)), dir)
+        }
     }
 }
 

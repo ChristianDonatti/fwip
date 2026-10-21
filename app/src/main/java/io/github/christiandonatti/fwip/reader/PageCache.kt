@@ -19,6 +19,11 @@ class PageCache(private val source: ComicSource) {
 
     private val mutex = Mutex()
 
+    /** Why a page failed to load, shown on screen to help diagnose broken files. */
+    private val errors = java.util.concurrent.ConcurrentHashMap<Int, String>()
+
+    fun errorFor(index: Int): String? = errors[index]
+
     private fun key(index: Int, w: Int, h: Int) = "$index:${w / 64}:${h / 64}"
 
     fun peek(index: Int, w: Int, h: Int): Bitmap? = cache.get(key(index, w, h))
@@ -30,7 +35,12 @@ class PageCache(private val source: ComicSource) {
         return withContext(Dispatchers.IO) {
             mutex.withLock {
                 cache.get(k) ?: runCatching { source.decodePage(index, w, h) }
-                    .onFailure { android.util.Log.w("Fwip", "Failed to decode page $index", it) }
+                    .onFailure {
+                        android.util.Log.w("Fwip", "Failed to decode page $index", it)
+                        val cause = generateSequence(it) { e -> e.cause }.last()
+                        errors[index] = cause.javaClass.simpleName + (cause.message?.let { m -> ": $m" } ?: "")
+                    }
+                    .onSuccess { b -> if (b == null) errors[index] = "Formato de imagem não suportado" }
                     .getOrNull()?.also { cache.put(k, it) }
             }
         }
