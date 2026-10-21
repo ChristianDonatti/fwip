@@ -26,6 +26,15 @@ import io.github.christiandonatti.fwip.ui.LibraryActions
 import io.github.christiandonatti.fwip.ui.ServerActions
 import io.github.christiandonatti.fwip.ui.LibraryScreen
 import io.github.christiandonatti.fwip.ui.theme.FwipTheme
+import io.github.christiandonatti.fwip.ui.theme.FwipColors
+import io.github.christiandonatti.fwip.ui.UiSettings
+import io.github.christiandonatti.fwip.ui.CoverZoom
+import io.github.christiandonatti.fwip.ui.CoverZoomOverlay
+import io.github.christiandonatti.fwip.ui.CoverPositions
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 class MainActivity : ComponentActivity() {
 
@@ -38,10 +47,26 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) handleOpenIntent(intent)
+        val ui = UiSettings.get(this)
+        ui.applyNow(this)
 
         setContent {
-            FwipTheme {
+            FwipTheme(ui.theme, ui.accent) {
                 val state by viewModel.state.collectAsStateWithLifecycle()
+                val readerOpen = state.readerComic != null
+                // Light library: the lights go down while the reader opens, and back up after.
+                LaunchedEffect(readerOpen) {
+                    androidx.compose.animation.core.animate(FwipColors.dim, if (readerOpen) 1f else 0f, animationSpec = tween(360)) { v, _ ->
+                        FwipColors.dim = v
+                    }
+                }
+                val lightBars = FwipColors.chosen.light && !readerOpen
+                val view = androidx.compose.ui.platform.LocalView.current
+                SideEffect {
+                    val bars = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                    bars.isAppearanceLightStatusBars = lightBars
+                    bars.isAppearanceLightNavigationBars = lightBars
+                }
                 val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
                     if (uri != null) viewModel.addFolder(uri)
                 }
@@ -111,11 +136,49 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                // The cover that grows into the reader (and shrinks back on closing).
+                var zoom by remember { mutableStateOf<CoverZoom?>(null) }
+                val opened = remember { arrayOfNulls<String>(1) }
+                val shelfRect = remember { arrayOfNulls<androidx.compose.ui.geometry.Rect>(1) }
+                val readerId = state.readerComic?.id
+                if (opened[0] != readerId) {
+                    val previous = opened[0]
+                    opened[0] = readerId
+                    zoom = when {
+                        previous == null && readerId != null -> {
+                            val rect = CoverPositions.of(readerId)
+                            shelfRect[0] = rect
+                            val cover = state.item(readerId)?.coverPath
+                            if (rect != null && cover != null) CoverZoom(readerId, cover, rect, opening = true) else null
+                        }
+                        previous != null && readerId == null -> {
+                            val rect = shelfRect[0]
+                            val cover = state.item(previous)?.coverPath
+                            if (rect != null && cover != null) CoverZoom(previous, cover, rect, opening = false) else null
+                        }
+                        else -> {
+                            // Moved on to the next issue: it was never on screen.
+                            shelfRect[0] = null
+                            null
+                        }
+                    }
+                }
+                val growing = zoom != null
+
                 AnimatedContent(
                     targetState = state.readerComic,
                     transitionSpec = {
-                        (fadeIn(tween(260)) + scaleIn(tween(320), initialScale = 0.96f)) togetherWith
-                            (fadeOut(tween(200)) + scaleOut(tween(260), targetScale = 1.02f))
+                        if (growing) {
+                            // The flying cover carries the eye; the screens just cross-fade behind it.
+                            if (targetState != null) {
+                                fadeIn(tween(260, delayMillis = 200)) togetherWith fadeOut(tween(300))
+                            } else {
+                                fadeIn(tween(260)) togetherWith fadeOut(tween(220, delayMillis = 60))
+                            }
+                        } else {
+                            (fadeIn(tween(260)) + scaleIn(tween(320), initialScale = 0.96f)) togetherWith
+                                (fadeOut(tween(200)) + scaleOut(tween(260), targetScale = 1.02f))
+                        }
                     },
                     contentKey = { it?.id },
                     label = "screen",
@@ -149,6 +212,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+                zoom?.let { z -> CoverZoomOverlay(z, onDone = { if (zoom == z) zoom = null }) }
             }
         }
     }

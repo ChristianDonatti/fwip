@@ -408,6 +408,8 @@ internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
                 Choice(str(R.string.tap_zones), TapZones.entries, settings.tapZones, { it.label }, settings::updateTapZones)
                 TapZonePreview(settings.tapZones, settings.mangaMode)
                 Toggle(str(R.string.volume_keys), str(R.string.volume_keys_hint), settings.volumeKeys, settings::updateVolume)
+                Toggle(str(R.string.turn_haptic), str(R.string.turn_haptic_hint), settings.turnHaptic, settings::updateTurnHaptic)
+                Toggle(str(R.string.turn_sound), str(R.string.turn_sound_hint), settings.turnSound, settings::updateTurnSound)
 
                 Section(str(R.string.section_comfort))
                 Toggle(

@@ -110,6 +110,7 @@ fun CoverTile(
                     .shadow(10.dp, RoundedCornerShape(16.dp)),
                 corner = 16.dp,
                 titleSize = if (wide) 22 else 15,
+                track = true,
             )
             if (item.progress?.finished == true) {
                 Box(
@@ -238,14 +239,24 @@ fun fileSizeLabel(bytes: Long): String = when {
 }
 
 @Composable
-fun FwipDialog(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+fun FwipDialog(onDismiss: () -> Unit, tint: Color? = null, content: @Composable () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Column(
             Modifier
                 .widthIn(max = 520.dp)
                 .heightIn(max = 640.dp)
                 .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xFF16171E))
+                .background(FwipColors.Panel)
+                // A comic's own colour washing down from the top of its sheet.
+                .then(
+                    if (tint == null) Modifier
+                    else Modifier.background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            0f to tint.copy(alpha = if (FwipColors.isLight) 0.16f else 0.26f),
+                            0.45f to tint.copy(alpha = 0f),
+                        )
+                    )
+                )
                 .border(1.dp, FwipColors.Stroke, RoundedCornerShape(28.dp))
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
@@ -285,7 +296,7 @@ fun SheetButton(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        val tint = if (danger) Color(0xFFFF8A80) else FwipColors.Text
+        val tint = if (danger) FwipColors.Danger else FwipColors.Text
         if (leading != null) {
             Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) {
                 androidx.compose.runtime.CompositionLocalProvider(LocalContentColor provides tint) { leading() }
@@ -314,7 +325,7 @@ fun ComicActionsDialog(
     onEdit: () -> Unit = {},
     onEditSeries: () -> Unit = {},
 ) {
-    FwipDialog(onDismiss) {
+    FwipDialog(onDismiss, tint = item.glowColor()) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             CoverImage(item, Modifier.size(72.dp, 108.dp), corner = 10.dp, titleSize = 10)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {

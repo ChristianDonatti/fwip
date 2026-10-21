@@ -359,7 +359,11 @@ private fun Reader(
         }
 
         // ---------- Navigation & input ----------
+        val feedback = rememberTurnFeedback()
+        val turnFeedback = { feedback.turn(settings.turnHaptic, settings.turnSound) }
         val onSpreadChanged: (Int) -> Unit = { s ->
+            // The paper reader announces its turns as they start; the others once they land.
+            if (!scroll && settings.turnStyle != TurnStyle.Curl && spreads.getOrNull(s)?.firstOrNull() != lastPage) turnFeedback()
             if (s != spread) {
                 stop = -1
                 if (guide != null && pending == null) pending = PendingStop.First
@@ -447,6 +451,7 @@ private fun Reader(
                     onTap = onTap,
                     onDoubleTap = onDoubleTap,
                     onEnd = { showEnd = true },
+                    onTurn = turnFeedback,
                 )
             } else {
                 PagerReader(

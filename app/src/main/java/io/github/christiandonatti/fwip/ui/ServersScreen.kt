@@ -285,7 +285,7 @@ private fun ServerDialog(initial: Server?, onSave: (Server) -> Unit, onDelete: (
             Field(if (kind == ServerKind.Komga) "E-mail" else str(R.string.user), user, { user = it.trim(); error = null }, if (kind == ServerKind.Komga) str(R.string.email_hint) else str(R.string.optional), keyboard = KeyboardType.Email)
             Field(str(R.string.password), password, { password = it; error = null }, if (kind == ServerKind.Komga) "" else str(R.string.optional), password = true, keyboard = KeyboardType.Password)
         }
-        error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFFF8A80)) }
+        error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = FwipColors.Danger) }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (onDelete != null) {
                 CircleIconButton(Icons.Filled.Delete, str(R.string.remove_server), onDelete, size = 48.dp)
@@ -496,7 +496,7 @@ fun ServerBrowser(
         if (!loading) {
             error?.takeIf { entries.isNotEmpty() }?.let { msg ->
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(msg, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFFF8A80))
+                    Text(msg, style = MaterialTheme.typography.bodyMedium, color = FwipColors.Danger)
                 }
             }
             items(nav, key = { "n:" + it.id + it.navigation?.href }, span = { GridItemSpan(maxLineSpan) }) { entry ->
@@ -616,7 +616,7 @@ fun RemoteCover(server: Server, url: String?, modifier: Modifier = Modifier, cor
     Box(
         modifier
             .clip(RoundedCornerShape(corner))
-            .background(Color(0xFF1E1F27))
+            .background(FwipColors.PanelHigh)
     ) {
         if (url != null) {
             AsyncImage(

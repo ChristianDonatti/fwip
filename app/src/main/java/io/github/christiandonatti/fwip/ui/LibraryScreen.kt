@@ -182,7 +182,12 @@ fun LibraryScreen(
     var browsing by rememberSaveable { mutableStateOf<String?>(null) }
     var showAbout by rememberSaveable { mutableStateOf(false) }
     var showStats by rememberSaveable { mutableStateOf(false) }
+    var showAppearance by rememberSaveable { mutableStateOf(false) }
     val browsingServer = state.servers.firstOrNull { it.id == browsing }
+    val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
+    // A brand new install gets the welcome; anyone who already has comics never sees it.
+    val fresh = state.items.isEmpty() && state.folders.isEmpty() && state.servers.isEmpty()
+    LaunchedEffect(fresh) { if (!fresh && !ui.welcomed) ui.setWelcomed() }
 
     BackHandler(enabled = selection.active) { selection.clear() }
     BackHandler(enabled = shelf != null && !selection.active) { shelfToken = null }
@@ -209,7 +214,13 @@ fun LibraryScreen(
             val boxHeight = maxHeight
             val gutter = if (wide) 48.dp else 20.dp
 
-            if (showStats) {
+            if (fresh && !ui.welcomed) {
+                WelcomeScreen(
+                    onPickFolder = { ui.setWelcomed(); actions.addFolder() },
+                    onServers = { ui.setWelcomed(); tab = Tab.Servers },
+                    onSkip = { ui.setWelcomed() },
+                )
+            } else if (showStats) {
                 StatsScreen(state, actions.stats, gutter, wide, onBack = { showStats = false })
             } else if (showAbout) {
                 AboutScreen(gutter, onBack = { showAbout = false })
@@ -284,7 +295,7 @@ fun LibraryScreen(
                     onClose = { selection.clear() },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
-            } else if (!wide && shelf == null && browsingServer == null && !showAbout && !showStats && (state.items.isNotEmpty() || tab == Tab.Servers)) {
+            } else if (!wide && shelf == null && browsingServer == null && !showAbout && !showStats && !(fresh && !ui.welcomed) && (state.items.isNotEmpty() || tab == Tab.Servers)) {
                 PhoneTabBar(tab, onTab = { tab = it }, Modifier.align(Alignment.BottomCenter))
             }
 
@@ -300,10 +311,15 @@ fun LibraryScreen(
             onAddNet = { showFolders = false; tab = Tab.Servers },
             onSync = { showFolders = false; showSync = true },
             onStats = { showFolders = false; showStats = true },
+            onAppearance = { showFolders = false; showAppearance = true },
 
             onRemove = actions.removeFolder,
             onDismiss = { showFolders = false },
         )
+    }
+
+    if (showAppearance) {
+        AppearanceDialog(onDismiss = { showAppearance = false })
     }
 
     if (showSync) {
@@ -667,7 +683,7 @@ private fun CarouselCard(item: LibraryItem, selected: Boolean, width: Dp, height
             .then(if (selected) Modifier.border(3.dp, FwipColors.Text, RoundedCornerShape(22.dp)) else Modifier)
             .combinedClickable(role = Role.Button, onClickLabel = item.title, onLongClick = onLongClick, onClick = onClick)
     ) {
-        CoverImage(item, Modifier.fillMaxSize(), corner = 22.dp)
+        CoverImage(item, Modifier.fillMaxSize(), corner = 22.dp, track = selected)
     }
 }
 
@@ -692,7 +708,7 @@ private fun ShelfRowCard(title: String, list: List<LibraryItem>, modifier: Modif
                     Modifier
                         .padding(start = (i * 14).dp)
                         .size(34.dp, 50.dp)
-                        .border(2.dp, Color(0xFF15161C), RoundedCornerShape(6.dp)),
+                        .border(2.dp, FwipColors.Panel, RoundedCornerShape(6.dp)),
                     corner = 6.dp,
                     titleSize = 6,
                 )
@@ -753,7 +769,7 @@ private fun PhoneHome(
                     .padding(18.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                CoverImage(hero, Modifier.size(120.dp, 180.dp).shadow(12.dp, RoundedCornerShape(14.dp)), corner = 14.dp, titleSize = 16)
+                CoverImage(hero, Modifier.size(120.dp, 180.dp).shadow(12.dp, RoundedCornerShape(14.dp)), corner = 14.dp, titleSize = 16, track = true)
                 Column(Modifier.weight(1f).height(180.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(kicker(hero), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
                     Text(hero.title, style = MaterialTheme.typography.titleLarge, maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -852,6 +868,7 @@ private fun CoverRow(title: String, list: List<LibraryItem>, actions: LibraryAct
                             .combinedClickable(role = Role.Button, onClickLabel = it.title, onLongClick = { onMenu(it) }) { actions.open(it) },
                         corner = 14.dp,
                         titleSize = 16,
+                        track = true,
                     )
                     val p = it.progress
                     if (p != null && p.started && !p.finished) ProgressBar(p.fraction, it.glowColor(), Modifier.fillMaxWidth())
@@ -877,14 +894,17 @@ private fun LibraryTab(
 ) {
     var filter by rememberSaveable { mutableStateOf(Filter.All) }
     var sort by rememberSaveable { mutableStateOf(SortOrder.Title) }
-    val minCell = if (wide) 160.dp else 104.dp
-    val shelfCell = if (wide) 220.dp else 150.dp
+    val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
+    val minCell = (if (wide) 160.dp else 104.dp) * ui.coverScale
+    val shelfCell = (if (wide) 220.dp else 150.dp) * ui.coverScale.coerceIn(0.8f, 1.6f)
+    val bigTitles = wide || ui.coverScale > 1.35f
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(if (filter == Filter.Series || filter == Filter.Folders) shelfCell else minCell),
         contentPadding = PaddingValues(start = gutter, end = gutter, top = 4.dp, bottom = if (wide) 32.dp else 110.dp),
         horizontalArrangement = Arrangement.spacedBy(if (wide) 22.dp else 12.dp),
         verticalArrangement = Arrangement.spacedBy(if (wide) 26.dp else 18.dp),
+        modifier = Modifier.pinchToResize(ui::scaleCovers, ui::saveCoverScale),
     ) {
         if (searching) {
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -919,7 +939,7 @@ private fun LibraryTab(
                 )
             }
             items(results, key = { it.comic.id }) { it ->
-                CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = wide, selection = selection)
+                CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
             }
             return@LazyVerticalGrid
         }
@@ -964,7 +984,7 @@ private fun LibraryTab(
                     }
                 }
                 items(list, key = { it.comic.id }) { it ->
-                    CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = wide, selection = selection)
+                    CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
                 }
             }
         }
@@ -1048,7 +1068,7 @@ private fun SelectionBar(
             .fillMaxWidth()
             .height(64.dp)
             .clip(CircleShape)
-            .background(Color(0xF216171E))
+            .background(FwipColors.Panel.copy(alpha = 0.95f))
             .border(1.dp, FwipColors.Stroke, CircleShape)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1173,13 +1193,28 @@ private fun ShelfScreen(
     var confirmDelete by remember { mutableStateOf(false) }
     var reordering by remember { mutableStateOf(false) }
     val openHere: (LibraryItem) -> Unit = { if (collection != null) actions.openIn(it, collection.id) else actions.open(it) }
+    val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
+    val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+    val backdropFade by remember {
+        androidx.compose.runtime.derivedStateOf {
+            if (gridState.firstVisibleItemIndex > 0) 0f else (1f - gridState.firstVisibleItemScrollOffset / 700f).coerceIn(0f, 1f)
+        }
+    }
 
+    Box(Modifier.fillMaxSize()) {
+    // The series' first cover, blurred, colours the top of the screen.
+    CoverBackdrop(
+        list.firstOrNull { it.coverPath != null },
+        Modifier.fillMaxWidth().height(if (wide) 460.dp else 380.dp),
+        alpha = backdropFade,
+    )
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(if (wide) 160.dp else 104.dp),
+        state = gridState,
+        columns = GridCells.Adaptive((if (wide) 160.dp else 104.dp) * ui.coverScale),
         contentPadding = PaddingValues(start = gutter, end = gutter, top = if (wide) 24.dp else 12.dp, bottom = 40.dp),
         horizontalArrangement = Arrangement.spacedBy(if (wide) 22.dp else 12.dp),
         verticalArrangement = Arrangement.spacedBy(if (wide) 26.dp else 18.dp),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().pinchToResize(ui::scaleCovers, ui::saveCoverScale),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -1273,8 +1308,9 @@ private fun ShelfScreen(
             }
         }
         items(list, key = { it.comic.id }) { it ->
-            CoverTile(it, onOpen = { openHere(it) }, onMenu = { onMenu(it) }, wide = wide, selection = selection)
+            CoverTile(it, onOpen = { openHere(it) }, onMenu = { onMenu(it) }, wide = wide || ui.coverScale > 1.35f, selection = selection)
         }
+    }
     }
 
     if (reordering && collection != null) {
@@ -1323,7 +1359,7 @@ private fun PhoneTabBar(tab: Tab, onTab: (Tab) -> Unit, modifier: Modifier = Mod
             .fillMaxWidth()
             .height(64.dp)
             .clip(RoundedCornerShape(26.dp))
-            .background(Color(0xE616171E))
+            .background(FwipColors.Panel.copy(alpha = 0.92f))
             .border(1.dp, FwipColors.Stroke, RoundedCornerShape(26.dp)),
     ) {
         Tab.entries.forEach { t ->
@@ -1388,6 +1424,7 @@ private fun FoldersDialog(
     onAddNet: () -> Unit,
     onSync: () -> Unit,
     onStats: () -> Unit,
+    onAppearance: () -> Unit,
     onRemove: (Uri) -> Unit,
     onDismiss: () -> Unit,
     onAbout: () -> Unit,
@@ -1414,6 +1451,7 @@ private fun FoldersDialog(
         }
         PillButton(str(R.string.add_folder), onAdd, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
         PillButton(str(R.string.add_network_folder), onAddNet, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
+        SheetButton(str(R.string.appearance), onAppearance)
         SheetButton(str(R.string.stats_title), onStats)
         SheetButton(str(R.string.sync_title), onSync)
         SheetButton(str(R.string.about), onAbout)

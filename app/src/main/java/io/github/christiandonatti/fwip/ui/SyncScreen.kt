@@ -121,7 +121,7 @@ fun SyncDialog(
             SheetButton(str(R.string.backup_restore), actions.restoreBackup)
 
             info.message?.let {
-                Text(it, style = MaterialTheme.typography.bodyMedium, color = if (info.failed) Color(0xFFFF8A80) else FwipColors.Amber)
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = if (info.failed) FwipColors.Danger else FwipColors.Amber)
             }
         }
     }

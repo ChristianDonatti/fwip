@@ -72,6 +72,8 @@ private class CurlController(initialHost: ReaderHost, start: Int) {
     val h get() = size.height.toFloat().coerceAtLeast(1f)
 
     var onEnd: () -> Unit = {}
+    /** A page is going over: tick and rustle. */
+    var onTurn: () -> Unit = {}
 
     fun bitmap(page: Int) = host.cache.peek(page, host.wFor(page), host.decodeH)
 
@@ -101,6 +103,8 @@ private class CurlController(initialHost: ReaderHost, start: Int) {
     /** Lets go of a dragged page: it either finishes turning or falls back. */
     suspend fun settle(t: CurlTurn, complete: Boolean) {
         animating = true
+        // The page going over is the moment to hear and feel it, not when it has landed.
+        if (complete == (t.fromPage == host.spreads.getOrNull(current)?.firstOrNull())) onTurn()
         try {
             val target = if (complete) t.end else t.corner
             val distance = (target - t.point).getDistance()
@@ -128,9 +132,11 @@ private class CurlController(initialHost: ReaderHost, start: Int) {
             // A layout with nothing to lift (e.g. a lone left page before a wide one): just move.
             zoom?.snapReset()
             current += if (forward) 1 else -1
+            onTurn()
             return
         }
         zoom?.snapReset()
+        onTurn()
         turn = t
         animating = true
         try {
@@ -162,11 +168,13 @@ fun CurlReader(
     onTap: (Offset, IntSize, ZoomState) -> Unit,
     onDoubleTap: (Offset, ZoomState) -> Boolean,
     onEnd: () -> Unit,
+    onTurn: () -> Unit = {},
 ) {
     val ctl = remember { CurlController(host, startSpread) }
     ctl.updateHost(host)
     val spreads = host.spreads
     ctl.onEnd = onEnd
+    ctl.onTurn = onTurn
     val renderer = remember { CurlRenderer() }
     val scope = rememberCoroutineScope()
     // Bumped when a neighbour finishes decoding so a turn in progress redraws with it.
@@ -219,6 +227,7 @@ fun CurlReader(
                             if (forward) ctl.onEnd()
                         } else {
                             ctl.current += if (forward) 1 else -1
+                            ctl.onTurn()
                         }
                         return@awaitEachGesture
                     }

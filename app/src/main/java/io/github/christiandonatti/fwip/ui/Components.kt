@@ -31,6 +31,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +58,8 @@ import kotlin.math.max
 @Composable
 fun AmbientBackground(color: Color, intensity: Float = 0.55f, content: @Composable BoxScope.() -> Unit) {
     val animated by animateColorAsState(color, tween(700), label = "ambient")
+    // Coloured light is stronger on paper-white than on black, so it is toned down there.
+    val k = if (FwipColors.isLight) 0.6f else 1f
     Box(
         Modifier
             .fillMaxSize()
@@ -58,14 +69,14 @@ fun AmbientBackground(color: Color, intensity: Float = 0.55f, content: @Composab
             val r = max(size.width, size.height)
             drawRect(
                 Brush.radialGradient(
-                    colors = listOf(animated.copy(alpha = intensity), animated.copy(alpha = intensity * 0.35f), Color.Transparent),
+                    colors = listOf(animated.copy(alpha = intensity * k), animated.copy(alpha = intensity * k * 0.35f), Color.Transparent),
                     center = Offset(size.width * 0.12f, size.height * 0.05f),
                     radius = r * 0.75f,
                 )
             )
             drawRect(
                 Brush.radialGradient(
-                    colors = listOf(animated.copy(alpha = intensity * 0.25f), Color.Transparent),
+                    colors = listOf(animated.copy(alpha = intensity * k * 0.25f), Color.Transparent),
                     center = Offset(size.width * 0.95f, size.height * 1.05f),
                     radius = r * 0.55f,
                 )
@@ -137,11 +148,18 @@ fun PillButton(
 
 /** A cover from the library, or a generated placeholder while the real one is being rendered. */
 @Composable
-fun CoverImage(item: LibraryItem, modifier: Modifier = Modifier, corner: Dp = 18.dp, titleSize: Int = 26) {
+fun CoverImage(item: LibraryItem, modifier: Modifier = Modifier, corner: Dp = 18.dp, titleSize: Int = 26, track: Boolean = false) {
     val shape = RoundedCornerShape(corner)
     val base = item.color?.let { Color(it) } ?: placeholderColor(item.comic.id)
+    val id = item.comic.id
+    if (track) {
+        androidx.compose.runtime.DisposableEffect(id) {
+            onDispose { CoverPositions.forget(id) }
+        }
+    }
     Box(
         modifier
+            .then(if (track) Modifier.onGloballyPositioned { CoverPositions.remember(id, it) } else Modifier)
             .clip(shape)
             .background(base.copy(alpha = 1f).darken(0.45f))
     ) {
@@ -180,7 +198,7 @@ fun ProgressBar(fraction: Float, color: Color, modifier: Modifier = Modifier) {
         modifier
             .height(6.dp)
             .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.12f))
+            .background(FwipColors.Text.copy(alpha = 0.12f))
     ) {
         Box(
             Modifier
@@ -225,3 +243,67 @@ private val placeholderPalette = listOf(
 fun placeholderColor(id: String): Color = placeholderPalette[(id.hashCode() and 0x7fffffff) % placeholderPalette.size]
 
 fun LibraryItem.glowColor(): Color = (color?.let { Color(it) } ?: placeholderColor(comic.id)).forGlow()
+
+/** Where each cover sits on screen, so opening a comic can grow it from there into the reader. */
+object CoverPositions {
+    private val rects = java.util.concurrent.ConcurrentHashMap<String, androidx.compose.ui.geometry.Rect>()
+
+    fun remember(id: String, coords: androidx.compose.ui.layout.LayoutCoordinates) {
+        if (!coords.isAttached) return
+        val p = coords.positionInRoot()
+        rects[id] = androidx.compose.ui.geometry.Rect(p.x, p.y, p.x + coords.size.width, p.y + coords.size.height)
+    }
+
+    fun forget(id: String) { rects.remove(id) }
+
+    fun of(id: String): androidx.compose.ui.geometry.Rect? = rects[id]
+}
+
+/**
+ * Pinch with two fingers to make covers bigger or smaller; one finger still scrolls.
+ * [onScale] gets the change of each step, [onEnd] runs when the fingers lift.
+ */
+fun Modifier.pinchToResize(onScale: (Float) -> Unit, onEnd: () -> Unit): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        var pinched = false
+        do {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            if (event.changes.count { it.pressed } >= 2) {
+                pinched = true
+                val zoom = event.calculateZoom()
+                if (zoom != 1f) onScale(zoom)
+                event.changes.forEach { it.consume() }
+            }
+        } while (event.changes.any { it.pressed })
+        if (pinched) onEnd()
+    }
+}
+
+/**
+ * A big, blurred copy of a cover that tints the top of a screen, fading into the background.
+ * [alpha] lets it fade away as the page scrolls.
+ */
+@Composable
+fun CoverBackdrop(item: LibraryItem?, modifier: Modifier = Modifier, alpha: Float = 1f) {
+    val path = item?.coverPath ?: return
+    val canBlur = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
+    val strength = (if (canBlur) 0.6f else 0.28f) * (if (FwipColors.isLight) 0.75f else 1f)
+    Box(modifier.graphicsLayer { this.alpha = alpha }) {
+        AsyncImage(
+            model = File(path),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { this.alpha = strength }
+                .then(if (canBlur) Modifier.blur(56.dp) else Modifier),
+        )
+        val ink = FwipColors.Ink
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Brush.verticalGradient(listOf(ink.copy(alpha = 0.15f), ink.copy(alpha = 0.55f), ink)))
+        )
+    }
+}

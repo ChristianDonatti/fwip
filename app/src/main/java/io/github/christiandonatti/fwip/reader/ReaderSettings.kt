@@ -77,6 +77,12 @@ class ReaderSettings(context: Context) {
         private set
     var tapZones by mutableStateOf(runCatching { TapZones.valueOf(prefs.getString("taps", null) ?: "") }.getOrDefault(TapZones.Sides))
         private set
+    /** A light tick under the finger at each page turn. */
+    var turnHaptic by mutableStateOf(prefs.getBoolean("haptic", true))
+        private set
+    /** The rustle of paper at each page turn. */
+    var turnSound by mutableStateOf(prefs.getBoolean("sound", false))
+        private set
 
     fun updateManga(value: Boolean) { mangaMode = value; prefs.edit().putBoolean("manga", value).apply() }
     fun updateTurn(value: TurnStyle) { turnStyle = value; prefs.edit().putString("turn2", value.name).apply() }
@@ -88,12 +94,15 @@ class ReaderSettings(context: Context) {
     fun updateKeepScreenOn(value: Boolean) { keepScreenOn = value; prefs.edit().putBoolean("awake", value).apply() }
     fun updateRotation(value: ScreenRotation) { rotation = value; prefs.edit().putString("rotation", value.name).apply() }
     fun updateTapZones(value: TapZones) { tapZones = value; prefs.edit().putString("taps", value.name).apply() }
+    fun updateTurnHaptic(value: Boolean) { turnHaptic = value; prefs.edit().putBoolean("haptic", value).apply() }
+    fun updateTurnSound(value: Boolean) { turnSound = value; prefs.edit().putBoolean("sound", value).apply() }
 
     /** Everything worth carrying to another device in a backup. */
     fun toJson(): org.json.JSONObject = org.json.JSONObject()
         .put("manga", mangaMode).put("turn", turnStyle.name).put("spread", spreadMode.name)
         .put("volume", volumeKeys).put("crop", cropMargins).put("brightness", brightness.toDouble())
         .put("warmth", warmth.toDouble()).put("awake", keepScreenOn).put("rotation", rotation.name).put("taps", tapZones.name)
+        .put("haptic", turnHaptic).put("sound", turnSound)
 
     fun fromJson(o: org.json.JSONObject) {
         if (o.has("manga")) updateManga(o.getBoolean("manga"))
@@ -106,6 +115,8 @@ class ReaderSettings(context: Context) {
         if (o.has("awake")) updateKeepScreenOn(o.getBoolean("awake"))
         runCatching { updateRotation(ScreenRotation.valueOf(o.getString("rotation"))) }
         runCatching { updateTapZones(TapZones.valueOf(o.getString("taps"))) }
+        if (o.has("haptic")) updateTurnHaptic(o.getBoolean("haptic"))
+        if (o.has("sound")) updateTurnSound(o.getBoolean("sound"))
     }
 }
 

@@ -179,7 +179,7 @@ fun NetBrowser(
                 Text(str(R.string.nothing_here), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextMuted, modifier = Modifier.padding(vertical = 24.dp))
             }
             else -> {
-                error?.let { msg -> item { Text(msg, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFFF8A80)) } }
+                error?.let { msg -> item { Text(msg, style = MaterialTheme.typography.bodyMedium, color = FwipColors.Danger) } }
                 items(list, key = { it.path }) { e ->
                     NetRow(
                         e,
