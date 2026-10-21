@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -42,10 +43,15 @@ fun CoverZoomOverlay(zoom: CoverZoom, onDone: () -> Unit) {
         return
     }
     val t = remember(zoom) { Animatable(0f) }
+    // Once it has landed it draws nothing, whatever happens to the caller's state.
+    val landed = remember(zoom) { androidx.compose.runtime.mutableStateOf(false) }
+    val done by androidx.compose.runtime.rememberUpdatedState(onDone)
     LaunchedEffect(zoom) {
         t.animateTo(1f, tween(if (zoom.opening) 460 else 400, easing = Glide))
-        onDone()
+        landed.value = true
+        done()
     }
+    if (landed.value) return
     Canvas(Modifier.fillMaxSize()) {
         // Where the page will be: the cover fitted to the screen height, centred.
         val ratio = image.width.toFloat() / image.height

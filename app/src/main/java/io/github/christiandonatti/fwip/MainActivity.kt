@@ -164,6 +164,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val growing = zoom != null
+                val libraryState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
 
                 AnimatedContent(
                     targetState = state.readerComic,
@@ -184,13 +185,16 @@ class MainActivity : ComponentActivity() {
                     label = "screen",
                 ) { comic ->
                     if (comic == null) {
-                        LibraryScreen(
-                            state = state,
-                            actions = actions,
-                            serverActions = serverActions,
-                            syncActions = syncActions,
-                            metaActions = metaActions,
-                        )
+                        // Tab, open series and scroll position are still there after reading.
+                        libraryState.SaveableStateProvider("library") {
+                            LibraryScreen(
+                                state = state,
+                                actions = actions,
+                                serverActions = serverActions,
+                                syncActions = syncActions,
+                                metaActions = metaActions,
+                            )
+                        }
                     } else {
                         val progress = viewModel.repository.progressFor(comic.id)
                         val start = when {
@@ -212,7 +216,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
-                zoom?.let { z -> CoverZoomOverlay(z, onDone = { if (zoom == z) zoom = null }) }
+                zoom?.let { z -> CoverZoomOverlay(z, onDone = { if (zoom === z) zoom = null }) }
             }
         }
     }
