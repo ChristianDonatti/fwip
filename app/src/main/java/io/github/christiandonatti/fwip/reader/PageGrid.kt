@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package io.github.christiandonatti.fwip.reader
 
 import io.github.christiandonatti.fwip.R
