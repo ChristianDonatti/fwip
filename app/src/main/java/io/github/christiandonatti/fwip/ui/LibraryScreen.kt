@@ -127,7 +127,7 @@ private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
     val label: String get() = str(labelRes)
 }
 
-private enum class Filter(@androidx.annotation.StringRes val labelRes: Int) {
+internal enum class Filter(@androidx.annotation.StringRes val labelRes: Int) {
     All(R.string.filter_all), Series(R.string.filter_series), Folders(R.string.filter_folders), Want(R.string.smart_want), Unread(R.string.smart_unread), Finished(R.string.smart_read);
 
     val label: String get() = str(labelRes)
@@ -183,6 +183,15 @@ fun LibraryScreen(
     var showAbout by rememberSaveable { mutableStateOf(false) }
     var showStats by rememberSaveable { mutableStateOf(false) }
     var showAppearance by rememberSaveable { mutableStateOf(false) }
+    var libraryFilter by rememberSaveable { mutableStateOf(Filter.All) }
+    // "See all" under the home shelf jumps to the matching list.
+    val seeAll: (ShelfKind) -> Unit = { kind ->
+        when (kind) {
+            ShelfKind.Collections -> tab = Tab.Collections
+            ShelfKind.Folders -> { libraryFilter = Filter.Folders; tab = Tab.Library }
+            else -> { libraryFilter = Filter.Series; tab = Tab.Library }
+        }
+    }
     val browsingServer = state.servers.firstOrNull { it.id == browsing }
     val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
     // A brand new install gets the welcome; anyone who already has comics never sees it.
@@ -212,6 +221,9 @@ fun LibraryScreen(
         ) {
             val wide = maxWidth >= 840.dp
             val boxHeight = maxHeight
+            val boxWidth = maxWidth
+            // A tablet held upright: tall and roomy, too big for the phone layout.
+            val tall = maxHeight > maxWidth && maxWidth >= 600.dp
             val gutter = if (wide) 48.dp else 20.dp
 
             if (fresh && !ui.welcomed) {
@@ -268,7 +280,12 @@ fun LibraryScreen(
                         )
                         when {
                             state.items.isEmpty() && tab != Tab.Servers -> EmptyState(state.folders.isEmpty(), state.scanning, actions.addFolder, onServers = { tab = Tab.Servers })
-                            tab == Tab.Home && wide -> WideHome(state, selected, { selected = it }, actions, openShelf, showMenu, gutter, boxHeight)
+                            tab == Tab.Home && tall -> TallHome(
+                                state, selected, { selected = it }, actions, openShelf, showMenu, seeAll,
+                                onStats = { showStats = true },
+                                gutter = gutter, maxWidth = boxWidth, maxHeight = boxHeight, wide = wide,
+                            )
+                            tab == Tab.Home && wide -> WideHome(state, selected, { selected = it }, actions, openShelf, showMenu, seeAll, gutter, boxHeight)
                             tab == Tab.Home -> PhoneHome(state, actions, openShelf, showMenu, gutter)
                             tab == Tab.Servers -> ServersTab(state.servers, serverActions, wide, gutter, onBrowse = { browsing = it.id })
                             tab == Tab.Library -> LibraryTab(
@@ -277,6 +294,8 @@ fun LibraryScreen(
                                 query = query,
                                 onQuery = { query = it },
                                 onCloseSearch = { searching = false; query = "" },
+                                filter = libraryFilter,
+                                onFilter = { libraryFilter = it },
                             )
                             else -> CollectionsTab(state, actions, openShelf, wide, gutter)
                         }
@@ -526,19 +545,19 @@ private fun Chip(text: String, on: Boolean, onClick: () -> Unit) {
     }
 }
 
-private fun kicker(item: LibraryItem): String = when {
+internal fun kicker(item: LibraryItem): String = when {
     item.progress?.finished == true -> str(R.string.kicker_again)
     item.progress?.started == true -> str(R.string.kicker_continue)
     else -> str(R.string.kicker_start)
 }
 
-private fun cta(item: LibraryItem): String = when {
+internal fun cta(item: LibraryItem): String = when {
     item.progress?.finished == true -> str(R.string.reread)
     item.progress?.started == true -> str(R.string.continue_)
     else -> str(R.string.start)
 }
 
-private fun progressLine(item: LibraryItem): String {
+internal fun progressLine(item: LibraryItem): String {
     val p = item.progress ?: return item.comic.format.label
     if (p.pageCount <= 0) return item.comic.format.label
     val remaining = p.pageCount - 1 - p.page
@@ -549,7 +568,7 @@ private fun progressLine(item: LibraryItem): String {
     }
 }
 
-private fun subtitle(item: LibraryItem): String {
+internal fun subtitle(item: LibraryItem): String {
     val m = item.meta
     val credits = listOfNotNull(m?.writer, m?.artists).flatMap { it.split(',') }.map { it.trim() }.distinct().take(2)
     return listOfNotNull(
@@ -562,7 +581,7 @@ private fun subtitle(item: LibraryItem): String {
 }
 
 /** Shelves worth surfacing on the home screen: what you are reading, series, your collections. */
-private fun homeShelves(state: LibraryState): List<Pair<Shelf, List<LibraryItem>>> {
+internal fun homeShelves(state: LibraryState): List<Pair<Shelf, List<LibraryItem>>> {
     val out = mutableListOf<Pair<Shelf, List<LibraryItem>>>()
     val reading = state.continueReading
     if (reading.isNotEmpty()) out += Shelf.Smart(SmartKind.Reading) to reading
@@ -584,6 +603,7 @@ private fun WideHome(
     actions: LibraryActions,
     openShelf: (Shelf) -> Unit,
     onMenu: (LibraryItem) -> Unit,
+    onSeeAll: (ShelfKind) -> Unit,
     gutter: Dp,
     maxHeight: Dp,
 ) {
@@ -593,9 +613,8 @@ private fun WideHome(
     val listState = rememberLazyListState()
     LaunchedEffect(index) { listState.animateScrollToItem(index) }
 
-    val cardH = (maxHeight * 0.42f).coerceIn(220.dp, 420.dp)
+    val cardH = (maxHeight * 0.4f).coerceIn(200.dp, 400.dp)
     val cardW = cardH * (2f / 3f)
-    val shelves = homeShelves(state).take(4)
 
     Column(Modifier.fillMaxSize().padding(bottom = 28.dp)) {
         Row(
@@ -657,22 +676,12 @@ private fun WideHome(
                 }
             }
         }
-        if (shelves.isNotEmpty()) {
-            Column(Modifier.padding(horizontal = gutter), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(str(R.string.shelf), style = MaterialTheme.typography.titleLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    shelves.forEach { (shelf, list) ->
-                        ShelfRowCard(shelf.title, list, Modifier.weight(1f)) { openShelf(shelf) }
-                    }
-                    repeat(4 - shelves.size) { Spacer(Modifier.weight(1f)) }
-                }
-            }
-        }
+        ShelfStrip(state, actions, openShelf, onSeeAll, gutter)
     }
 }
 
 @Composable
-private fun CarouselCard(item: LibraryItem, selected: Boolean, width: Dp, height: Dp, onClick: () -> Unit, onLongClick: () -> Unit) {
+internal fun CarouselCard(item: LibraryItem, selected: Boolean, width: Dp, height: Dp, onClick: () -> Unit, onLongClick: () -> Unit) {
     val scale by animateFloatAsState(if (selected) 1f else 0.86f, spring(dampingRatio = 0.8f, stiffness = 300f), label = "scale")
     val alpha by animateFloatAsState(if (selected) 1f else 0.6f, label = "alpha")
     Box(
@@ -687,42 +696,8 @@ private fun CarouselCard(item: LibraryItem, selected: Boolean, width: Dp, height
     }
 }
 
-/** Compact horizontal card for the home strip: a few covers and a name. */
 @Composable
-private fun ShelfRowCard(title: String, list: List<LibraryItem>, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Row(
-        modifier
-            .height(88.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(FwipColors.Surface)
-            .border(1.dp, FwipColors.Stroke, RoundedCornerShape(22.dp))
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Box(Modifier.width(62.dp).height(50.dp)) {
-            list.take(3).forEachIndexed { i, it ->
-                CoverImage(
-                    it,
-                    Modifier
-                        .padding(start = (i * 14).dp)
-                        .size(34.dp, 50.dp)
-                        .border(2.dp, FwipColors.Panel, RoundedCornerShape(6.dp)),
-                    corner = 6.dp,
-                    titleSize = 6,
-                )
-            }
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(countLabel(list.size), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
-        }
-    }
-}
-
-@Composable
-private fun SectionTitle(text: String, action: String? = null, onAction: (() -> Unit)? = null) {
+internal fun SectionTitle(text: String, action: String? = null, onAction: (() -> Unit)? = null) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
         if (action != null && onAction != null) {
@@ -848,22 +823,22 @@ private fun PhoneHome(
     }
 }
 
-private fun seriesSubtitle(list: List<LibraryItem>): String {
+internal fun seriesSubtitle(list: List<LibraryItem>): String {
     val read = list.count { it.progress?.finished == true }
     return if (read > 0) str(R.string.n_issues_read, list.size, read) else str(R.string.n_issues, list.size)
 }
 
 @Composable
-private fun CoverRow(title: String, list: List<LibraryItem>, actions: LibraryActions, onMenu: (LibraryItem) -> Unit, gutter: Dp) {
+internal fun CoverRow(title: String, list: List<LibraryItem>, actions: LibraryActions, onMenu: (LibraryItem) -> Unit, gutter: Dp, coverW: Dp = 112.dp) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(Modifier.padding(horizontal = gutter)) { SectionTitle(title) }
         LazyRow(contentPadding = PaddingValues(horizontal = gutter), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(list, key = { it.comic.id }) { it ->
-                Column(Modifier.width(112.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(Modifier.width(coverW), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     CoverImage(
                         it,
                         Modifier
-                            .size(112.dp, 168.dp)
+                            .size(coverW, coverW * 1.5f)
                             .shadow(10.dp, RoundedCornerShape(14.dp))
                             .combinedClickable(role = Role.Button, onClickLabel = it.title, onLongClick = { onMenu(it) }) { actions.open(it) },
                         corner = 14.dp,
@@ -891,8 +866,9 @@ private fun LibraryTab(
     query: String,
     onQuery: (String) -> Unit,
     onCloseSearch: () -> Unit,
+    filter: Filter,
+    onFilter: (Filter) -> Unit,
 ) {
-    var filter by rememberSaveable { mutableStateOf(Filter.All) }
     var sort by rememberSaveable { mutableStateOf(SortOrder.Title) }
     val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
     val minCell = (if (wide) 160.dp else 104.dp) * ui.coverScale
@@ -949,7 +925,7 @@ private fun LibraryTab(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Filter.entries.forEach { f -> Chip(f.label, f == filter) { filter = f } }
+                Filter.entries.forEach { f -> Chip(f.label, f == filter) { onFilter(f) } }
                 if (filter != Filter.Series && filter != Filter.Folders) {
                     Spacer(Modifier.width(8.dp))
                     Chip(str(R.string.sort_by, sort.label), false) { sort = SortOrder.entries[(sort.ordinal + 1) % SortOrder.entries.size] }

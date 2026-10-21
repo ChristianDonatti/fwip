@@ -366,4 +366,7 @@
     <string name="turn_haptic_hint">A light tick, like feeling the paper. Follows the system touch feedback setting.</string>
     <string name="turn_sound">Paper sound</string>
     <string name="turn_sound_hint">A soft rustle at each page turn, at the media volume.</string>
+    <string name="see_all">See all</string>
+    <string name="week_title">Your last 7 days</string>
+    <string name="week_streak">days in a row</string>
 </resources>

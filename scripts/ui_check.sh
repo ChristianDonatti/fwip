@@ -64,18 +64,28 @@ restart 25
 shot l1-home-light 3
 ui '^Library\|' ; shot l2-library-light 3
 
+# Home shelf strip: chips and swiping.
+ui '^Home\|' ; sleep 2
+ui '^Series\|' ; shot h1-strip-series 2
+adb shell input swipe $(( W * 8 / 10 )) $(( H - 120 )) $(( W * 2 / 10 )) $(( H - 120 )) 400
+shot h2-strip-swiped 2
+ui '^See all\|' ; shot h3-see-all 3
+
 # Options sheet tinted by the cover, then the series with its backdrop.
-xy=$(find_xy '\|Pepper')
+ui '^Library\|' ; sleep 1
+ui '^All\|' ; sleep 2
+xy=$(find_xy '^Pepper')
 if [ -n "$xy" ]; then
   set -- $xy
-  adb shell input swipe $1 $2 $1 $2 900
+  adb shell input swipe $1 $(( $2 - 150 )) $1 $(( $2 - 150 )) 900
   shot l3-options 2
   ui '^See series' ; shot l4-series 3
   # Tap a cover and catch it growing.
-  xy2=$(find_xy '\|Pepper')
+  xy2=$(find_xy '^Pepper&Carrot #2')
+  [ -z "$xy2" ] && xy2=$(find_xy '^Pepper')
   set -- $xy2
-  adb shell input tap $1 $2
-  sleep 0.12; quick z1-opening-a
+  adb shell input tap $1 $(( $2 - 150 ))
+  sleep 0.1; quick z1-opening-a
   quick z1-opening-b
   shot z2-reader 6
   # Reader settings with the new switches.
@@ -84,18 +94,32 @@ if [ -n "$xy" ]; then
   adb shell input swipe $(( W / 2 )) $(( H * 3 / 4 )) $(( W / 2 )) $(( H / 4 )) 400
   shot r1-settings 2
   adb shell input keyevent KEYCODE_BACK; sleep 1
-  adb shell input keyevent KEYCODE_BACK; sleep 1
+  adb shell input keyevent KEYCODE_BACK; sleep 1.5
   adb shell input keyevent KEYCODE_BACK
-  sleep 0.1; quick z3-closing-a
+  sleep 0.08; quick z3-closing-a
   quick z3-closing-b
   shot z4-back 3
+  adb shell input keyevent KEYCODE_BACK; sleep 1
 fi
 
 # Appearance dialog from the folder button.
-adb shell input keyevent KEYCODE_BACK; sleep 1
 ui '\|Library folders' ; sleep 1.5
 ui '^Appearance\|' ; shot a1-appearance 2
-adb shell input keyevent KEYCODE_BACK
+adb shell input keyevent KEYCODE_BACK; sleep 1
+
+# Tablet held upright.
+adb shell wm size 1200x1920
+sleep 4
+prefs Dark Amber 1.0
+shot t1-portrait-home 3
+adb shell input swipe 600 1500 600 400 500
+shot t2-portrait-scrolled 2
+adb shell input swipe 600 1500 600 400 500
+shot t3-portrait-bottom 2
+prefs Light Blue 1.0
+shot t4-portrait-light 3
+adb shell wm size ${W}x${H}
+sleep 4
 
 # Other looks.
 prefs Dark Green 1.0
@@ -108,13 +132,14 @@ ui '^Library\|' ; shot d3-library-small 3
 # Phone, light theme.
 adb shell wm size 1080x2400
 adb shell wm density 420
+sleep 4
 prefs Light Violet 1.0
 shot p1-phone-home 3
-xy=$(find_xy '\|Pepper')
+xy=$(find_xy '^Pepper')
 if [ -n "$xy" ]; then
   set -- $xy
-  adb shell input tap $1 $2
-  sleep 0.12; quick p2-opening
+  adb shell input tap $1 $(( $2 - 200 ))
+  sleep 0.1; quick p2-opening
   shot p3-reader 6
 fi
 adb shell wm size reset

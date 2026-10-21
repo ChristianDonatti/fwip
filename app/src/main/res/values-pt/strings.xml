@@ -365,4 +365,7 @@
     <string name="turn_haptic_hint">Um toque leve, como sentir o papel. Segue a opção de vibração ao toque do sistema.</string>
     <string name="turn_sound">Som de papel</string>
     <string name="turn_sound_hint">Um farfalhar suave a cada página, no volume de mídia.</string>
+    <string name="see_all">Ver tudo</string>
+    <string name="week_title">Seus últimos 7 dias</string>
+    <string name="week_streak">dias seguidos</string>
 </resources>
