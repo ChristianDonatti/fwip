@@ -49,6 +49,11 @@ Test builds are signed with the development key in `keystore/`. It is public on 
 
 Kotlin, Jetpack Compose, Apache Commons Compress, junrar, Android PdfRenderer, Coil.
 
+## License
+
+Fwip is free software, released under the [GNU General Public License v3.0](LICENSE) or later.
+You can use, study, share and modify it, as long as derived versions stay under the same license.
+
 ## Credits
 
 Fonts: [Unbounded](https://github.com/googlefonts/unbounded) and [Manrope](https://github.com/sharanda/manrope), both under the SIL Open Font License 1.1 (see `FONTS-OFL.txt`).
