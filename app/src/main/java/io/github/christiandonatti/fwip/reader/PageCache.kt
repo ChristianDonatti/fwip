@@ -19,7 +19,8 @@ class PageCache(private val source: ComicSource, private val cropMargins: Boolea
         override fun sizeOf(key: String, value: Bitmap): Int = value.allocationByteCount
     }
 
-    private val mutex = Mutex()
+    /** One lock per page and size: a page still being extracted never holds up the others. */
+    private val locks = java.util.concurrent.ConcurrentHashMap<String, Mutex>()
 
     /** Why a page failed to load, shown on screen to help diagnose broken files. */
     private val errors = java.util.concurrent.ConcurrentHashMap<Int, String>()
@@ -35,7 +36,7 @@ class PageCache(private val source: ComicSource, private val cropMargins: Boolea
         val k = key(index, w, h)
         cache.get(k)?.let { return it }
         return withContext(Dispatchers.IO) {
-            mutex.withLock {
+            locks.getOrPut(k) { Mutex() }.withLock {
                 cache.get(k) ?: runCatching {
                     val raw = source.decodePage(index, w, h)
                     if (raw != null && cropMargins) MarginCrop.crop(raw).also { if (it !== raw) raw.recycle() } else raw

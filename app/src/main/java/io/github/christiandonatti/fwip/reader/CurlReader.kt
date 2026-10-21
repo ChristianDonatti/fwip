@@ -40,8 +40,29 @@ import kotlin.math.sin
 
 /** Turn bookkeeping for [CurlReader], kept outside composition so gestures and commands share it. */
 @Stable
-private class CurlController(private val host: ReaderHost, start: Int) {
-    var current by mutableIntStateOf(start.coerceIn(0, host.spreads.lastIndex))
+private class CurlController(initialHost: ReaderHost, start: Int) {
+    /**
+     * The layout can change while reading (a double-page image found further on): the reader
+     * then stays on the same pages instead of being rebuilt, so a turn in progress is not lost.
+     */
+    var host: ReaderHost = initialHost
+        private set
+
+    fun updateHost(new: ReaderHost) {
+        if (new === host) return
+        val old = host
+        val page = old.spreads.getOrNull(current)?.firstOrNull() ?: 0
+        host = new
+        current = indexOf(page)
+        turn?.let { t ->
+            if (old.spreads.getOrNull(t.from) != new.spreads.getOrNull(t.from) || old.spreads.getOrNull(t.to) != new.spreads.getOrNull(t.to)) turn = null
+        }
+    }
+
+    /** The spread that shows [page] in the current layout. */
+    fun indexOf(page: Int) = host.spreads.indexOfFirst { page in it }.coerceAtLeast(0)
+
+    var current by mutableIntStateOf(start.coerceIn(0, initialHost.spreads.lastIndex))
     var turn by mutableStateOf<CurlTurn?>(null)
     var animating by mutableStateOf(false)
     var size by mutableStateOf(IntSize.Zero)
@@ -79,6 +100,9 @@ private class CurlController(private val host: ReaderHost, start: Int) {
 
     /** Lets go of a dragged page: it either finishes turning or falls back. */
     suspend fun settle(t: CurlTurn, complete: Boolean) {
+        // Pages, not indices: the layout may be rebuilt while the page falls.
+        val fromPage = host.spreads.getOrNull(t.from)?.firstOrNull() ?: (host.spreads.getOrNull(current)?.firstOrNull() ?: 0)
+        val toPage = host.spreads.getOrNull(t.to)?.firstOrNull() ?: (host.spreads.getOrNull(current)?.firstOrNull() ?: 0)
         animating = true
         try {
             val target = if (complete) t.end else t.corner
@@ -87,7 +111,7 @@ private class CurlController(private val host: ReaderHost, start: Int) {
             anim.animateTo(target, tween((180 + distance / w * 260).toInt().coerceIn(180, 420), easing = FastOutSlowInEasing)) {
                 t.point = value
             }
-            current = if (complete) t.to else t.from
+            current = indexOf(if (complete) toPage else fromPage)
         } finally {
             turn = null
             animating = false
@@ -109,6 +133,8 @@ private class CurlController(private val host: ReaderHost, start: Int) {
             return
         }
         zoom?.snapReset()
+        val fromPage = host.spreads.getOrNull(t.from)?.firstOrNull() ?: (host.spreads.getOrNull(current)?.firstOrNull() ?: 0)
+        val toPage = host.spreads.getOrNull(t.to)?.firstOrNull() ?: (host.spreads.getOrNull(current)?.firstOrNull() ?: 0)
         turn = t
         animating = true
         try {
@@ -118,7 +144,7 @@ private class CurlController(private val host: ReaderHost, start: Int) {
                 val x = t.corner.x + (t.end.x - t.corner.x) * value
                 t.point = Offset(x, t.corner.y - lift * sin(PI * value).toFloat())
             }
-            current = if (forward) t.to else t.from
+            current = indexOf(if (forward) toPage else fromPage)
         } finally {
             turn = null
             animating = false
@@ -141,8 +167,9 @@ fun CurlReader(
     onDoubleTap: (Offset, ZoomState) -> Boolean,
     onEnd: () -> Unit,
 ) {
+    val ctl = remember { CurlController(host, startSpread) }
+    ctl.updateHost(host)
     val spreads = host.spreads
-    val ctl = remember(host) { CurlController(host, startSpread) }
     ctl.onEnd = onEnd
     val renderer = remember { CurlRenderer() }
     val scope = rememberCoroutineScope()
@@ -164,7 +191,7 @@ fun CurlReader(
                 is NavCommand.Go -> repeat(abs(cmd.delta)) { ctl.autoTurn(cmd.delta > 0) }
                 is NavCommand.Seek -> if (!ctl.animating) {
                     ctl.turn = null
-                    ctl.current = cmd.spread.coerceIn(0, spreads.lastIndex)
+                    ctl.current = cmd.spread.coerceIn(0, ctl.host.spreads.lastIndex)
                 }
             }
         }

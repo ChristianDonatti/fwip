@@ -238,7 +238,7 @@ private fun Reader(
         }
         val startSpread = remember(host) { spreads.indexOfFirst { lastPage in it }.coerceAtLeast(0) }
         var spread by remember(host) { mutableIntStateOf(startSpread) }
-        var zoom by remember(host) { mutableStateOf<ZoomState?>(null) }
+        var zoom by remember { mutableStateOf<ZoomState?>(null) }
 
         var showEnd by remember { mutableStateOf(false) }
 
@@ -425,7 +425,9 @@ private fun Reader(
         }
 
         val flatZoom = remember { ZoomState() }
-        key(host, settings.turnStyle, scroll) {
+        // The paper reader follows layout changes itself; the others start over with them.
+        val readerKey: Any = if (scroll || settings.turnStyle != TurnStyle.Curl) host else listOf(double, rtl, cache, wPx, hPx)
+        key(readerKey, settings.turnStyle, scroll) {
             if (scroll) {
                 ScrollReader(
                     host = host,
