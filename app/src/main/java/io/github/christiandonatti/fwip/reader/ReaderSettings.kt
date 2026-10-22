@@ -29,6 +29,21 @@ enum class ScreenRotation(@androidx.annotation.StringRes private val labelRes: I
     val label: String get() = str(labelRes)
 }
 
+/** What is behind the pages. */
+enum class ReaderGround(@androidx.annotation.StringRes private val labelRes: Int, val argb: Long) {
+    Black(R.string.ground_black, 0xFF121318), Gray(R.string.ground_gray, 0xFF3A3B42), Paper(R.string.ground_paper, 0xFFE7DECB);
+
+    val label: String get() = str(labelRes)
+}
+
+/** Reader looks read while drawing (outside composition), set from [ReaderSettings]. */
+object ReaderLook {
+    /** Strength of the shadow where two pages meet, 0..1 (0.5 = the usual). */
+    @Volatile var spine: Float = 0.5f
+    /** Paper fibres on the back of a turning sheet. */
+    @Volatile var texture: Boolean = false
+}
+
 /** What a tap on the left or right side of the page does (the middle always shows the controls). */
 enum class TapZones(@androidx.annotation.StringRes private val labelRes: Int) {
     Sides(R.string.tap_sides), Reversed(R.string.tap_reversed), Forward(R.string.tap_forward), Off(R.string.tap_off);
@@ -80,6 +95,12 @@ class ReaderSettings(context: Context) {
     /** A light tick under the finger at each page turn. */
     var turnHaptic by mutableStateOf(prefs.getBoolean("haptic", true))
         private set
+    var ground by mutableStateOf(runCatching { ReaderGround.valueOf(prefs.getString("ground", null) ?: "") }.getOrDefault(ReaderGround.Black))
+        private set
+    var spineShadow by mutableFloatStateOf(prefs.getFloat("spine", 0.5f))
+        private set
+    var paperTexture by mutableStateOf(prefs.getBoolean("texture", false))
+        private set
     /** The rustle of paper at each page turn. */
     var turnSound by mutableStateOf(prefs.getBoolean("sound", false))
         private set
@@ -94,6 +115,9 @@ class ReaderSettings(context: Context) {
     fun updateKeepScreenOn(value: Boolean) { keepScreenOn = value; prefs.edit().putBoolean("awake", value).apply() }
     fun updateRotation(value: ScreenRotation) { rotation = value; prefs.edit().putString("rotation", value.name).apply() }
     fun updateTapZones(value: TapZones) { tapZones = value; prefs.edit().putString("taps", value.name).apply() }
+    fun updateGround(value: ReaderGround) { ground = value; prefs.edit().putString("ground", value.name).apply() }
+    fun updateSpineShadow(value: Float) { spineShadow = value; prefs.edit().putFloat("spine", value).apply() }
+    fun updatePaperTexture(value: Boolean) { paperTexture = value; prefs.edit().putBoolean("texture", value).apply() }
     fun updateTurnHaptic(value: Boolean) { turnHaptic = value; prefs.edit().putBoolean("haptic", value).apply() }
     fun updateTurnSound(value: Boolean) { turnSound = value; prefs.edit().putBoolean("sound", value).apply() }
 
@@ -103,6 +127,7 @@ class ReaderSettings(context: Context) {
         .put("volume", volumeKeys).put("crop", cropMargins).put("brightness", brightness.toDouble())
         .put("warmth", warmth.toDouble()).put("awake", keepScreenOn).put("rotation", rotation.name).put("taps", tapZones.name)
         .put("haptic", turnHaptic).put("sound", turnSound)
+        .put("ground", ground.name).put("spine", spineShadow.toDouble()).put("texture", paperTexture)
 
     fun fromJson(o: org.json.JSONObject) {
         if (o.has("manga")) updateManga(o.getBoolean("manga"))
@@ -117,6 +142,9 @@ class ReaderSettings(context: Context) {
         runCatching { updateTapZones(TapZones.valueOf(o.getString("taps"))) }
         if (o.has("haptic")) updateTurnHaptic(o.getBoolean("haptic"))
         if (o.has("sound")) updateTurnSound(o.getBoolean("sound"))
+        runCatching { updateGround(ReaderGround.valueOf(o.getString("ground"))) }
+        if (o.has("spine")) updateSpineShadow(o.getDouble("spine").toFloat())
+        if (o.has("texture")) updatePaperTexture(o.getBoolean("texture"))
     }
 }
 

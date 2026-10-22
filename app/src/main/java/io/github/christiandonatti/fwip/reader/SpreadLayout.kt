@@ -215,7 +215,7 @@ fun SpreadView(
                 val bottom = placed.maxOf { it.rect.bottom }
                 drawRect(
                     Brush.horizontalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.22f), Color.Transparent),
+                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.44f * ReaderLook.spine), Color.Transparent),
                         startX = spine - sw,
                         endX = spine + sw,
                     ),

@@ -2,6 +2,7 @@ package io.github.christiandonatti.fwip.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +24,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,9 +57,14 @@ import io.github.christiandonatti.fwip.ui.theme.Unbounded
 import java.io.File
 import kotlin.math.max
 
-/** Big soft color blobs behind the library that follow the selected cover, launcher style. */
+/**
+ * What sits behind the library, as picked in Appearance: soft colour blobs that follow the
+ * selected cover (launcher style), a plain colour, slowly drifting colours, or a picture of the
+ * user's, blurred. The Comic theme adds halftone dots over any of them.
+ */
 @Composable
 fun AmbientBackground(color: Color, intensity: Float = 0.55f, content: @Composable BoxScope.() -> Unit) {
+    val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
     val animated by animateColorAsState(color, tween(700), label = "ambient")
     // Coloured light is stronger on paper-white than on black, so it is toned down there.
     val k = if (FwipColors.isLight) 0.6f else 1f
@@ -65,25 +73,113 @@ fun AmbientBackground(color: Color, intensity: Float = 0.55f, content: @Composab
             .fillMaxSize()
             .background(FwipColors.Ink)
     ) {
-        Canvas(Modifier.fillMaxSize()) {
-            val r = max(size.width, size.height)
-            drawRect(
-                Brush.radialGradient(
-                    colors = listOf(animated.copy(alpha = intensity * k), animated.copy(alpha = intensity * k * 0.35f), Color.Transparent),
-                    center = Offset(size.width * 0.12f, size.height * 0.05f),
-                    radius = r * 0.75f,
+        when (ui.backdrop) {
+            Backdrop.Glow -> Canvas(Modifier.fillMaxSize()) {
+                val r = max(size.width, size.height)
+                drawRect(
+                    Brush.radialGradient(
+                        colors = listOf(animated.copy(alpha = intensity * k), animated.copy(alpha = intensity * k * 0.35f), Color.Transparent),
+                        center = Offset(size.width * 0.12f, size.height * 0.05f),
+                        radius = r * 0.75f,
+                    )
                 )
-            )
-            drawRect(
-                Brush.radialGradient(
-                    colors = listOf(animated.copy(alpha = intensity * k * 0.25f), Color.Transparent),
-                    center = Offset(size.width * 0.95f, size.height * 1.05f),
-                    radius = r * 0.55f,
+                drawRect(
+                    Brush.radialGradient(
+                        colors = listOf(animated.copy(alpha = intensity * k * 0.25f), Color.Transparent),
+                        center = Offset(size.width * 0.95f, size.height * 1.05f),
+                        radius = r * 0.55f,
+                    )
                 )
-            )
+            }
+            Backdrop.Solid -> {}
+            Backdrop.Living -> LivingColours(animated, k)
+            Backdrop.Image -> BackdropPicture(ui)
         }
+        if (FwipColors.halftone) Halftone()
         content()
     }
+}
+
+/** Two or three colours drifting very slowly across the screen. */
+@Composable
+private fun LivingColours(cover: Color, k: Float) {
+    val transition = androidx.compose.animation.core.rememberInfiniteTransition(label = "living")
+    val t by transition.animateFloat(
+        0f, 1f,
+        androidx.compose.animation.core.infiniteRepeatable(tween(28_000, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "drift",
+    )
+    val accent = FwipColors.Amber
+    val third = remember(cover) { cover.shiftHue(140f) }
+    Canvas(Modifier.fillMaxSize()) {
+        val r = max(size.width, size.height)
+        val a = (t * 2 * Math.PI).toFloat()
+        fun blob(c: Color, x: Float, y: Float, radius: Float, alpha: Float) = drawRect(
+            Brush.radialGradient(listOf(c.copy(alpha = alpha * k), Color.Transparent), center = Offset(x, y), radius = radius)
+        )
+        blob(cover, size.width * (0.25f + 0.2f * kotlin.math.cos(a)), size.height * (0.2f + 0.15f * kotlin.math.sin(a)), r * 0.7f, 0.5f)
+        blob(accent, size.width * (0.8f + 0.15f * kotlin.math.sin(a * 2)), size.height * (0.75f + 0.2f * kotlin.math.cos(a)), r * 0.55f, 0.32f)
+        blob(third, size.width * (0.55f + 0.3f * kotlin.math.sin(a + 2f)), size.height * (0.5f + 0.3f * kotlin.math.cos(a * 1.5f)), r * 0.45f, 0.22f)
+    }
+}
+
+/** The user's own picture, blurred and veiled so text stays readable over it. */
+@Composable
+private fun BackdropPicture(ui: UiSettings) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val file = remember(ui.backdropVersion) { Backdrops.file(context) }
+    if (!file.exists()) return
+    val canBlur = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
+    AsyncImage(
+        model = coil.request.ImageRequest.Builder(context).data(file).memoryCacheKey(file.path + ui.backdropVersion).diskCacheKey(file.path + ui.backdropVersion).build(),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer { alpha = if (canBlur) 0.9f else 0.55f }
+            .then(if (canBlur) Modifier.blur(36.dp) else Modifier),
+    )
+    val ink = FwipColors.Ink
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(ink.copy(alpha = 0.55f), ink.copy(alpha = 0.72f)))))
+}
+
+/** Comic-book dots over the background. */
+@Composable
+private fun Halftone() {
+    val dot = FwipColors.Text.copy(alpha = 0.09f)
+    Canvas(Modifier.fillMaxSize()) {
+        val step = 11.dp.toPx()
+        val radius = 1.3.dp.toPx()
+        var y = step / 2
+        var row = 0
+        while (y < size.height) {
+            var x = if (row % 2 == 0) step / 2 else step
+            while (x < size.width) {
+                drawCircle(dot, radius, Offset(x, y))
+                x += step
+            }
+            y += step
+            row++
+        }
+    }
+}
+
+fun Color.shiftHue(degrees: Float): Color {
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(android.graphics.Color.argb(255, (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt()), hsv)
+    hsv[0] = (hsv[0] + degrees) % 360f
+    return Color(android.graphics.Color.HSVToColor(hsv))
+}
+
+/** Cover rounding as chosen in Appearance. */
+@Composable
+fun coverCorner(base: Dp): Dp = base * UiSettings.get(androidx.compose.ui.platform.LocalContext.current).corners.factor
+
+/** A cover's drop shadow, unless shadows are turned off. */
+@Composable
+fun Modifier.coverShadow(elevation: Dp, corner: Dp): Modifier {
+    val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
+    return if (ui.coverShadow) this.shadow(elevation, RoundedCornerShape(corner * ui.corners.factor)) else this
 }
 
 @Composable
@@ -149,7 +245,7 @@ fun PillButton(
 /** A cover from the library, or a generated placeholder while the real one is being rendered. */
 @Composable
 fun CoverImage(item: LibraryItem, modifier: Modifier = Modifier, corner: Dp = 18.dp, titleSize: Int = 26, track: Boolean = false) {
-    val shape = RoundedCornerShape(corner)
+    val shape = RoundedCornerShape(coverCorner(corner))
     val base = item.color?.let { Color(it) } ?: placeholderColor(item.comic.id)
     val id = item.comic.id
     if (track) {

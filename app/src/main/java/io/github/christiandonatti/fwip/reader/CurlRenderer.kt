@@ -92,6 +92,36 @@ class CurlRenderer {
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val shadePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val path = Path()
+    private val texturePaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = android.graphics.BitmapShader(paperTexture(), Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
+        }
+    }
+
+    /** A tile of paper: faint speckles and short fibres, light and dark, mostly transparent. */
+    private fun paperTexture(): Bitmap {
+        val size = 256
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val rnd = java.util.Random(7)
+        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        repeat(1400) {
+            val light = rnd.nextBoolean()
+            p.color = if (light) 0x16FFFFFF else 0x14503C20
+            c.drawCircle(rnd.nextFloat() * size, rnd.nextFloat() * size, 0.6f + rnd.nextFloat() * 0.9f, p)
+        }
+        p.strokeWidth = 0.8f
+        p.strokeCap = Paint.Cap.ROUND
+        repeat(220) {
+            p.color = if (rnd.nextBoolean()) 0x1A6B5030 else 0x14FFFFFF
+            val x = rnd.nextFloat() * size
+            val y = rnd.nextFloat() * size
+            val a = rnd.nextFloat() * Math.PI.toFloat()
+            val len = 4f + rnd.nextFloat() * 10f
+            c.drawLine(x, y, x + kotlin.math.cos(a) * len, y + kotlin.math.sin(a) * len, p)
+        }
+        return bmp
+    }
     private val matrix = Matrix()
     private val tmp = RectF()
 
@@ -164,6 +194,8 @@ class CurlRenderer {
             // Double page: the back of this sheet is the next spread's left page.
             pages.back?.let { page(c, it, rtl, mirror = true) }
         }
+        // Paper fibres on the back of the sheet, when turned on in the reader settings.
+        if (ReaderLook.texture) c.drawRect(toRectF(leaf), texturePaint)
         // Curvature: dark close to the fold, a soft highlight further out.
         val depth = len / 2f
         shadePaint.shader = LinearGradient(

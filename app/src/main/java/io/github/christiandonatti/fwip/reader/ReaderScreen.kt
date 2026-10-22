@@ -25,6 +25,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -134,6 +135,11 @@ fun ReaderScreen(
     }
 
     BackHandler(onBack = onClose)
+    SideEffect {
+        FwipColors.ReaderBg = androidx.compose.ui.graphics.Color(settings.ground.argb)
+        ReaderLook.spine = settings.spineShadow
+        ReaderLook.texture = settings.paperTexture
+    }
     KeepScreenOn(settings.keepScreenOn)
     ReaderComfort(settings)
 

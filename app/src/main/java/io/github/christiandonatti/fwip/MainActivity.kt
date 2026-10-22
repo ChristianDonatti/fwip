@@ -17,6 +17,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.getValue
+import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.christiandonatti.fwip.reader.ReaderKeys
 import io.github.christiandonatti.fwip.reader.ReaderScreen
@@ -48,10 +49,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) handleOpenIntent(intent)
         val ui = UiSettings.get(this)
-        ui.applyNow(this)
+        ui.apply()
 
         setContent {
-            FwipTheme(ui.theme, ui.accent) {
+            // Every setting that changes colours or fonts re-applies the look.
+            val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+            val look = listOf(ui.preset, ui.accentMode, ui.accentIndex, ui.titleFont, ui.coverTint, systemDark)
+            LaunchedEffect(look) { ui.apply(systemDark) }
+            FwipTheme {
                 val state by viewModel.state.collectAsStateWithLifecycle()
                 val readerOpen = state.readerComic != null
                 // Light library: the lights go down while the reader opens, and back up after.
@@ -83,6 +88,16 @@ class MainActivity : ComponentActivity() {
                     if (uri != null) viewModel.saveReport(uri)
                 }
                 val context = androidx.compose.ui.platform.LocalContext.current
+                val lookScope = androidx.compose.runtime.rememberCoroutineScope()
+                val pickBackdrop = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                    if (uri != null) lookScope.launch {
+                        val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.christiandonatti.fwip.ui.Backdrops.set(context, uri) }
+                        if (ok) {
+                            ui.updateBackdrop(io.github.christiandonatti.fwip.ui.Backdrop.Image)
+                            ui.backdropChanged()
+                        }
+                    }
+                }
                 // Quietly look for a newer Fwip (at most twice a day).
                 LaunchedEffect(Unit) { io.github.christiandonatti.fwip.data.Updates.checkInBackground(context) }
                 // The app closed by itself last time: offer to save a report.
@@ -131,6 +146,7 @@ class MainActivity : ComponentActivity() {
                         downloadsUri = { viewModel.downloadsUri },
                         dismissFileMessage = viewModel::dismissFileMessage,
                         saveReport = { saveReport.launch(io.github.christiandonatti.fwip.data.Reports.fileName()) },
+                        pickBackdrop = { pickBackdrop.launch("image/*") },
                         addFolder = { pickFolder.launch(null) },
                         removeFolder = viewModel::removeFolder,
                         refresh = viewModel::refresh,
@@ -163,6 +179,7 @@ class MainActivity : ComponentActivity() {
                     val previous = opened[0]
                     opened[0] = readerId
                     zoom = when {
+                        !ui.coverAnimation -> null
                         previous == null && readerId != null -> {
                             val rect = CoverPositions.of(readerId)
                             shelfRect[0] = rect

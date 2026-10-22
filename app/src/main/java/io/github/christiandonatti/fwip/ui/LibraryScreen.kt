@@ -121,6 +121,8 @@ class LibraryActions(
     val downloadsUri: () -> Uri,
     val dismissFileMessage: () -> Unit,
     val saveReport: () -> Unit = {},
+    /** Picks a picture for the library background. */
+    val pickBackdrop: () -> Unit = {},
 )
 
 private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
@@ -215,6 +217,7 @@ fun LibraryScreen(
         else -> null
     } ?: sel?.glowColor() ?: FwipColors.Glow
 
+    LaunchedEffect(glow) { ui.coverTint = glow }
     val openShelf: (Shelf) -> Unit = { shelfToken = it.toToken() }
     val showMenu: (LibraryItem) -> Unit = { menuFor = it.comic.id }
 
@@ -237,6 +240,8 @@ fun LibraryScreen(
                     onServers = { ui.setWelcomed(); tab = Tab.Servers },
                     onSkip = { ui.setWelcomed() },
                 )
+            } else if (showAppearance) {
+                AppearanceScreen(state, gutter, wide, onPickImage = actions.pickBackdrop, onBack = { showAppearance = false })
             } else if (showStats) {
                 StatsScreen(state, actions.stats, gutter, wide, onBack = { showStats = false })
             } else if (showAbout) {
@@ -285,13 +290,16 @@ fun LibraryScreen(
                         )
                         when {
                             state.items.isEmpty() && tab != Tab.Servers -> EmptyState(state.folders.isEmpty(), state.scanning, actions.addFolder, onServers = { tab = Tab.Servers })
-                            tab == Tab.Home && tall -> TallHome(
+                            tab == Tab.Home -> Home(
                                 state, selected, { selected = it }, actions, openShelf, showMenu, seeAll,
                                 onStats = { showStats = true },
                                 gutter = gutter, maxWidth = boxWidth, maxHeight = boxHeight, wide = wide,
+                                layout = when {
+                                    tall -> HomeLayout.Upright
+                                    wide -> HomeLayout.Landscape
+                                    else -> HomeLayout.Phone
+                                },
                             )
-                            tab == Tab.Home && wide -> WideHome(state, selected, { selected = it }, actions, openShelf, showMenu, seeAll, gutter, boxHeight)
-                            tab == Tab.Home -> PhoneHome(state, actions, openShelf, showMenu, gutter)
                             tab == Tab.Servers -> ServersTab(state.servers, serverActions, wide, gutter, onBrowse = { browsing = it.id })
                             tab == Tab.Library -> LibraryTab(
                                 state, actions, openShelf, showMenu, wide, gutter, selection,
@@ -308,7 +316,7 @@ fun LibraryScreen(
                 }
             }
             val update = io.github.christiandonatti.fwip.data.Updates.available
-            if (update != null && !selection.active && !(fresh && !ui.welcomed) && shelf == null && !showStats && !showAbout && browsingServer == null) {
+            if (update != null && !selection.active && !(fresh && !ui.welcomed) && shelf == null && !showStats && !showAbout && !showAppearance && browsingServer == null) {
                 UpdateBanner(
                     update,
                     onNotes = { showUpdateNotes = true },
@@ -327,7 +335,7 @@ fun LibraryScreen(
                     onClose = { selection.clear() },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
-            } else if (!wide && shelf == null && browsingServer == null && !showAbout && !showStats && !(fresh && !ui.welcomed) && (state.items.isNotEmpty() || tab == Tab.Servers)) {
+            } else if (!wide && shelf == null && browsingServer == null && !showAbout && !showStats && !showAppearance && !(fresh && !ui.welcomed) && (state.items.isNotEmpty() || tab == Tab.Servers)) {
                 PhoneTabBar(tab, onTab = { tab = it }, Modifier.align(Alignment.BottomCenter))
             }
 
@@ -352,9 +360,6 @@ fun LibraryScreen(
         )
     }
 
-    if (showAppearance) {
-        AppearanceDialog(onDismiss = { showAppearance = false })
-    }
     if (showUpdates) {
         UpdatesDialog(onDismiss = { showUpdates = false })
     }
@@ -620,100 +625,17 @@ internal fun homeShelves(state: LibraryState): List<Pair<Shelf, List<LibraryItem
 }
 
 @Composable
-private fun WideHome(
-    state: LibraryState,
-    selected: Int,
-    onSelect: (Int) -> Unit,
-    actions: LibraryActions,
-    openShelf: (Shelf) -> Unit,
-    onMenu: (LibraryItem) -> Unit,
-    onSeeAll: (ShelfKind) -> Unit,
-    gutter: Dp,
-    maxHeight: Dp,
-) {
-    val row = state.homeRow
-    val index = selected.coerceIn(0, row.lastIndex)
-    val item = row[index]
-    val listState = rememberLazyListState()
-    LaunchedEffect(index) { listState.animateScrollToItem(index) }
-
-    val cardH = (maxHeight * 0.4f).coerceIn(200.dp, 400.dp)
-    val cardW = cardH * (2f / 3f)
-
-    Column(Modifier.fillMaxSize().padding(bottom = 28.dp)) {
-        Row(
-            Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(start = gutter),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AnimatedContent(
-                targetState = item,
-                transitionSpec = { fadeIn(spring(stiffness = Spring.StiffnessLow)) togetherWith fadeOut() },
-                contentKey = { it.comic.id },
-                label = "hero",
-                modifier = Modifier.width(380.dp),
-            ) { hero ->
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text(kicker(hero), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
-                    Text(hero.title, style = MaterialTheme.typography.displaySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                    Text(subtitle(hero), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
-                    hero.meta?.summary?.let {
-                        Text(it, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ProgressBar(hero.progress?.fraction ?: 0f, hero.glowColor(), Modifier.width(320.dp))
-                        Text(progressLine(hero), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        PillButton(cta(hero), onClick = { actions.open(hero) }, leading = { Icon(Icons.Filled.PlayArrow, null, Modifier.size(20.dp)) })
-                        PillButton(str(R.string.options), onClick = { onMenu(hero) }, style = PillStyle.Ghost)
-                    }
-                }
-            }
-            Spacer(Modifier.width(40.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                LazyRow(
-                    state = listState,
-                    contentPadding = PaddingValues(start = 14.dp, end = gutter + cardW * 2),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.height(cardH + 60.dp),
-                ) {
-                    itemsIndexed(row, key = { _, it -> it.comic.id }) { i, it ->
-                        CarouselCard(
-                            item = it,
-                            selected = i == index,
-                            width = cardW,
-                            height = cardH,
-                            onClick = { if (i == index) actions.open(it) else onSelect(i) },
-                            onLongClick = { onMenu(it) },
-                        )
-                    }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CircleIconButton(Icons.Filled.KeyboardArrowLeft, str(R.string.previous), { onSelect((index - 1).coerceAtLeast(0)) }, size = 44.dp)
-                    CircleIconButton(Icons.Filled.KeyboardArrowRight, str(R.string.next_item), { onSelect((index + 1).coerceAtMost(row.lastIndex)) }, size = 44.dp)
-                    Text(str(R.string.page_x_of_n, index + 1, row.size), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
-                }
-            }
-        }
-        ShelfStrip(state, actions, openShelf, onSeeAll, gutter)
-    }
-}
-
-@Composable
-internal fun CarouselCard(item: LibraryItem, selected: Boolean, width: Dp, height: Dp, onClick: () -> Unit, onLongClick: () -> Unit) {
-    val scale by animateFloatAsState(if (selected) 1f else 0.86f, spring(dampingRatio = 0.8f, stiffness = 300f), label = "scale")
-    val alpha by animateFloatAsState(if (selected) 1f else 0.6f, label = "alpha")
+internal fun CarouselCard(item: LibraryItem, selected: Boolean, width: Dp, height: Dp, onClick: () -> Unit, onLongClick: () -> Unit, flat: Boolean = true) {
+    // In the flat row the side covers shrink and fade; the other carousels do that themselves.
+    val scale by animateFloatAsState(if (selected || !flat) 1f else 0.86f, spring(dampingRatio = 0.8f, stiffness = 300f), label = "scale")
+    val alpha by animateFloatAsState(if (selected || !flat) 1f else 0.6f, label = "alpha")
+    val corner = coverCorner(22.dp)
     Box(
         Modifier
             .size(width, height)
             .graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha }
-            .shadow(if (selected) 24.dp else 10.dp, RoundedCornerShape(22.dp))
-            .then(if (selected) Modifier.border(3.dp, FwipColors.Text, RoundedCornerShape(22.dp)) else Modifier)
+            .coverShadow(if (selected) 24.dp else 10.dp, 22.dp)
+            .then(if (selected) Modifier.border(3.dp, FwipColors.Text, RoundedCornerShape(corner)) else Modifier)
             .combinedClickable(role = Role.Button, onClickLabel = item.title, onLongClick = onLongClick, onClick = onClick)
     ) {
         CoverImage(item, Modifier.fillMaxSize(), corner = 22.dp, track = selected)
@@ -738,124 +660,29 @@ internal fun SectionTitle(text: String, action: String? = null, onAction: (() ->
     }
 }
 
-@Composable
-private fun PhoneHome(
-    state: LibraryState,
-    actions: LibraryActions,
-    openShelf: (Shelf) -> Unit,
-    onMenu: (LibraryItem) -> Unit,
-    gutter: Dp,
-) {
-    val hero = state.homeRow.first()
-    val reading = state.continueReading.filter { it.comic.id != hero.comic.id }
-    val series = state.homeSeries
-    val shelves = homeShelves(state).filter { it.first !is Shelf.Series && it.first !is Shelf.Smart }
-    val recent = state.items.sortedFor(SortOrder.Added).filter { it.comic.id != hero.comic.id }.take(12)
-
-    LazyColumn(
-        contentPadding = PaddingValues(top = 8.dp, bottom = 110.dp),
-        verticalArrangement = Arrangement.spacedBy(26.dp),
-    ) {
-        item {
-            Row(
-                Modifier
-                    .padding(horizontal = gutter)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(FwipColors.Surface)
-                    .border(1.dp, FwipColors.Stroke, RoundedCornerShape(28.dp))
-                    .combinedClickable(onLongClick = { onMenu(hero) }, onClick = { actions.open(hero) })
-                    .padding(18.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                CoverImage(hero, Modifier.size(120.dp, 180.dp).shadow(12.dp, RoundedCornerShape(14.dp)), corner = 14.dp, titleSize = 16, track = true)
-                Column(Modifier.weight(1f).height(180.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(kicker(hero), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
-                    Text(hero.title, style = MaterialTheme.typography.titleLarge, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                    Text(progressLine(hero), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    ProgressBar(hero.progress?.fraction ?: 0f, hero.glowColor(), Modifier.fillMaxWidth())
-                    Spacer(Modifier.weight(1f))
-                    PillButton(
-                        cta(hero),
-                        onClick = { actions.open(hero) },
-                        height = 46.dp,
-                        modifier = Modifier.fillMaxWidth(),
-                        leading = { Icon(Icons.Filled.PlayArrow, null, Modifier.size(18.dp)) },
-                    )
-                }
-            }
-        }
-        if (reading.isNotEmpty()) {
-            item { CoverRow(str(R.string.continue_reading), reading, actions, onMenu, gutter) }
-        }
-        if (series.isNotEmpty()) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.padding(horizontal = gutter)) { SectionTitle(str(R.string.filter_series)) }
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = gutter),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(series, key = { it.first.key }) { (shelf, list) ->
-                            ShelfCard(
-                                shelf.title,
-                                list,
-                                onClick = { openShelf(shelf) },
-                                subtitle = seriesSubtitle(list),
-                                modifier = Modifier.width(168.dp),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        if (shelves.isNotEmpty()) {
-            item {
-                Column(Modifier.padding(horizontal = gutter), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SectionTitle(str(R.string.shelf))
-                    shelves.chunked(2).forEach { pair ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            pair.forEach { (shelf, list) ->
-                                Row(
-                                    Modifier
-                                        .weight(1f)
-                                        .height(64.dp)
-                                        .clip(RoundedCornerShape(18.dp))
-                                        .background(FwipColors.Surface)
-                                        .border(1.dp, FwipColors.Stroke, RoundedCornerShape(18.dp))
-                                        .clickable(role = Role.Button) { openShelf(shelf) }
-                                        .padding(horizontal = 14.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    if (shelf is Shelf.Folder) FolderIcon(FwipColors.TextSoft) else StackIcon(FwipColors.TextSoft)
-                                    Column {
-                                        Text(shelf.title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text(countLabel(list.size), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
-                                    }
-                                }
-                            }
-                            if (pair.size == 1) Spacer(Modifier.weight(1f))
-                        }
-                    }
-                }
-            }
-        }
-        if (recent.isNotEmpty()) {
-            item { CoverRow(str(R.string.smart_recent), recent, actions, onMenu, gutter) }
-        }
-    }
-}
-
 internal fun seriesSubtitle(list: List<LibraryItem>): String {
     val read = list.count { it.progress?.finished == true }
     return if (read > 0) str(R.string.n_issues_read, list.size, read) else str(R.string.n_issues, list.size)
 }
 
 @Composable
-internal fun CoverRow(title: String, list: List<LibraryItem>, actions: LibraryActions, onMenu: (LibraryItem) -> Unit, gutter: Dp, coverW: Dp = 112.dp) {
+internal fun CoverRow(
+    title: String,
+    list: List<LibraryItem>,
+    actions: LibraryActions,
+    onMenu: (LibraryItem) -> Unit,
+    gutter: Dp,
+    coverW: Dp = 112.dp,
+    kicker: String? = null,
+    onSeeAll: (() -> Unit)? = null,
+    /** A collection whose reading order "next issue" should follow. */
+    openIn: String? = null,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.padding(horizontal = gutter)) { SectionTitle(title) }
+        Column(Modifier.padding(horizontal = gutter)) {
+            if (kicker != null) Text(kicker.uppercase(), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextMuted)
+            SectionTitle(title, if (onSeeAll != null) str(R.string.see_all) else null, onSeeAll)
+        }
         LazyRow(contentPadding = PaddingValues(horizontal = gutter), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(list, key = { it.comic.id }) { it ->
                 Column(Modifier.width(coverW), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -863,8 +690,8 @@ internal fun CoverRow(title: String, list: List<LibraryItem>, actions: LibraryAc
                         it,
                         Modifier
                             .size(coverW, coverW * 1.5f)
-                            .shadow(10.dp, RoundedCornerShape(14.dp))
-                            .combinedClickable(role = Role.Button, onClickLabel = it.title, onLongClick = { onMenu(it) }) { actions.open(it) },
+                            .coverShadow(10.dp, 14.dp)
+                            .combinedClickable(role = Role.Button, onClickLabel = it.title, onLongClick = { onMenu(it) }) { if (openIn != null) actions.openIn(it, openIn) else actions.open(it) },
                         corner = 14.dp,
                         titleSize = 16,
                         track = true,

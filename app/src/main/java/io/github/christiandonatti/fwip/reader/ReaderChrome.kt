@@ -411,6 +411,9 @@ internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
                 Toggle(str(R.string.turn_haptic), str(R.string.turn_haptic_hint), settings.turnHaptic, settings::updateTurnHaptic)
                 Toggle(str(R.string.turn_sound), str(R.string.turn_sound_hint), settings.turnSound, settings::updateTurnSound)
 
+                Section(str(R.string.section_look))
+                ReaderLookSettings(settings)
+
                 Section(str(R.string.section_comfort))
                 Toggle(
                     str(R.string.system_brightness),
@@ -439,7 +442,7 @@ private fun Section(title: String) {
 }
 
 @Composable
-private fun LevelSlider(title: String, value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit, hint: String? = null) {
+internal fun LevelSlider(title: String, value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit, hint: String? = null) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
@@ -496,7 +499,7 @@ private fun TapZonePreview(zones: TapZones, rtl: Boolean) {
 }
 
 @Composable
-private fun <T> Choice(title: String, options: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit) {
+internal fun <T> Choice(title: String, options: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(title, style = MaterialTheme.typography.labelLarge)
         Row(
@@ -526,7 +529,7 @@ private fun <T> Choice(title: String, options: List<T>, selected: T, label: (T) 
 }
 
 @Composable
-private fun Toggle(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun Toggle(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -628,5 +631,15 @@ internal fun EndCard(
                 color = FwipColors.TextMuted,
             )
         }
+    }
+}
+
+/** Background behind the pages, spine shadow and paper texture; also shown in Appearance. */
+@Composable
+internal fun ReaderLookSettings(settings: ReaderSettings) {
+    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Choice(str(R.string.reader_ground), ReaderGround.entries, settings.ground, { it.label }, settings::updateGround)
+        LevelSlider(str(R.string.spine_shadow), settings.spineShadow, 0f..1f, settings::updateSpineShadow, hint = str(R.string.spine_shadow_hint))
+        Toggle(str(R.string.paper_texture), str(R.string.paper_texture_hint), settings.paperTexture, settings::updatePaperTexture)
     }
 }

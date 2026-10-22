@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package io.github.christiandonatti.fwip.ui
 
 import io.github.christiandonatti.fwip.R
@@ -11,6 +13,12 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.runtime.key
+import androidx.compose.ui.draw.zIndex
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -226,7 +234,7 @@ private fun ShelfStripCard(shelf: Shelf, list: List<LibraryItem>, modifier: Modi
                             val s = 1f - depth * 0.08f
                             scaleX = s; scaleY = s
                         }
-                        .shadow(6.dp, RoundedCornerShape(8.dp)),
+                        .coverShadow(6.dp, 8.dp),
                     corner = 8.dp,
                     titleSize = 7,
                 )
@@ -276,12 +284,16 @@ private fun SmallChip(text: String, on: Boolean, onClick: () -> Unit) {
 private fun Modifier.horizontalScrollSafe(): Modifier =
     this.then(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()))
 
+/** How the home screen is arranged on this screen. */
+internal enum class HomeLayout { Landscape, Upright, Phone }
+
 /**
- * Home for a tablet held upright: big covers to flick through at the top, the chosen one told
- * in full below, then this week's reading, what is in progress, the shelf and what is new.
+ * The home screen, built from the parts chosen in Appearance › Home, in their order: greeting,
+ * cover carousel (or the phone's featured card), continue reading, the shelf, the last 7 days,
+ * want to read, recently added, and any pinned collections and series.
  */
 @Composable
-internal fun TallHome(
+internal fun Home(
     state: LibraryState,
     selected: Int,
     onSelect: (Int) -> Unit,
@@ -294,88 +306,295 @@ internal fun TallHome(
     maxWidth: Dp,
     maxHeight: Dp,
     wide: Boolean,
+    layout: HomeLayout,
 ) {
+    val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
     val row = state.homeRow
     val index = selected.coerceIn(0, row.lastIndex)
     val item = row[index]
-    val cardH = (maxHeight * 0.3f).coerceIn(250.dp, 440.dp)
-    val cardW = cardH * (2f / 3f)
-    val carousel = rememberLazyListState()
-    // Keep the chosen cover in the middle of the screen.
-    val side = ((maxWidth - cardW) / 2f).coerceAtLeast(gutter)
-    LaunchedEffect(index) { carousel.animateScrollToItem(index) }
-    val reading = state.continueReading.filter { it.comic.id != item.comic.id }
-    val want = state.itemsOf(Shelf.Smart(SmartKind.Want)).filter { it.progress?.finished != true }
-    val recent = state.items.sortedFor(SortOrder.Added).take(14)
+    val parts = ui.sections.filter { it.on && (it.part != HomePart.Carousel || ui.showCarousel) }
+    val hasHero = parts.any { it.part == HomePart.Carousel }
     val week = remember(state.items) { weekSummary(actions.stats()) }
+    val rowCover = when (layout) {
+        HomeLayout.Phone -> 112.dp
+        else -> 136.dp
+    }
 
     LazyColumn(
-        contentPadding = PaddingValues(top = 8.dp, bottom = if (wide) 40.dp else 110.dp),
-        verticalArrangement = Arrangement.spacedBy(30.dp),
+        contentPadding = PaddingValues(top = if (layout == HomeLayout.Landscape) 0.dp else 8.dp, bottom = if (wide) 40.dp else 110.dp),
+        verticalArrangement = Arrangement.spacedBy(if (layout == HomeLayout.Phone) 24.dp else 30.dp),
     ) {
-        item(key = "carousel") {
-            LazyRow(
-                state = carousel,
-                contentPadding = PaddingValues(start = side, end = side),
-                horizontalArrangement = Arrangement.spacedBy(22.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.height(cardH + 40.dp),
-            ) {
-                itemsIndexed(row, key = { _, it -> it.comic.id }) { i, it ->
-                    CarouselCard(
-                        item = it,
-                        selected = i == index,
-                        width = cardW,
-                        height = cardH,
-                        onClick = { if (i == index) actions.open(it) else onSelect(i) },
-                        onLongClick = { onMenu(it) },
+        parts.forEach { part ->
+            when (part.part) {
+                HomePart.Greeting -> item(key = part.key) {
+                    Text(
+                        greetingText(ui.name),
+                        style = if (layout == HomeLayout.Phone) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(horizontal = gutter),
                     )
                 }
-            }
-        }
-        item(key = "hero") {
-            AnimatedContent(
-                targetState = item,
-                transitionSpec = { fadeIn(spring(stiffness = Spring.StiffnessLow)) togetherWith fadeOut() },
-                contentKey = { it.comic.id },
-                label = "tallHero",
-                modifier = Modifier.padding(horizontal = gutter),
-            ) { hero ->
-                Column(Modifier.widthIn(max = 760.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(kicker(hero), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft, modifier = Modifier.weight(1f))
-                        CircleIconButton(Icons.Filled.KeyboardArrowLeft, str(R.string.previous), { onSelect((index - 1).coerceAtLeast(0)) }, size = 40.dp)
-                        Spacer(Modifier.width(8.dp))
-                        CircleIconButton(Icons.Filled.KeyboardArrowRight, str(R.string.next_item), { onSelect((index + 1).coerceAtMost(row.lastIndex)) }, size = 40.dp)
+                HomePart.Carousel -> when (layout) {
+                    HomeLayout.Landscape -> item(key = part.key) {
+                        LandscapeHero(row, index, item, onSelect, actions, onMenu, gutter, maxHeight, ui.carousel)
                     }
-                    Text(hero.title, style = MaterialTheme.typography.displaySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(subtitle(hero), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
-                    hero.meta?.summary?.let {
-                        Text(it, style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextSoft, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                    HomeLayout.Upright -> {
+                        item(key = part.key) {
+                            val cardH = (maxHeight * 0.3f).coerceIn(250.dp, 440.dp)
+                            CoverCarousel(row, index, onSelect, actions.open, onMenu, cardH * (2f / 3f), cardH, ui.carousel, centered = true, gutter = gutter, maxWidth = maxWidth)
+                        }
+                        item(key = part.key + ":story") {
+                            HeroStory(item, index, row.lastIndex, onSelect, actions, onMenu, Modifier.padding(horizontal = gutter), arrows = true)
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        ProgressBar(hero.progress?.fraction ?: 0f, hero.glowColor(), Modifier.weight(1f))
-                        Text(progressLine(hero), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1)
+                    HomeLayout.Phone -> item(key = part.key) { PhoneHero(item, actions, onMenu, gutter) }
+                }
+                HomePart.Continue -> {
+                    val reading = state.continueReading.filter { !hasHero || it.comic.id != item.comic.id }
+                    if (reading.isNotEmpty()) item(key = part.key) { CoverRow(str(R.string.continue_reading), reading, actions, onMenu, gutter, coverW = rowCover) }
+                }
+                HomePart.Shelf -> item(key = part.key) {
+                    ShelfStrip(state, actions, openShelf, onSeeAll, gutter, cardWidth = if (layout == HomeLayout.Phone) 270.dp else 310.dp)
+                }
+                HomePart.Week -> item(key = part.key) { WeekCard(week, onStats, compact = layout == HomeLayout.Phone, modifier = Modifier.padding(horizontal = gutter)) }
+                HomePart.Want -> {
+                    val want = state.itemsOf(Shelf.Smart(SmartKind.Want)).filter { it.progress?.finished != true }
+                    if (want.isNotEmpty()) item(key = part.key) {
+                        CoverRow(str(R.string.smart_want), want, actions, onMenu, gutter, coverW = rowCover, onSeeAll = { openShelf(Shelf.Smart(SmartKind.Want)) })
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 4.dp)) {
-                        PillButton(cta(hero), onClick = { actions.open(hero) }, leading = { Icon(Icons.Filled.PlayArrow, null, Modifier.size(20.dp)) })
-                        PillButton(str(R.string.options), onClick = { onMenu(hero) }, style = PillStyle.Ghost)
+                }
+                HomePart.Recent -> {
+                    val recent = state.items.sortedFor(SortOrder.Added).take(14)
+                    if (recent.isNotEmpty()) item(key = part.key) {
+                        CoverRow(str(R.string.smart_recent), recent, actions, onMenu, gutter, coverW = rowCover, onSeeAll = { openShelf(Shelf.Smart(SmartKind.Recent)) })
+                    }
+                }
+                HomePart.Collection -> {
+                    val c = state.collections.firstOrNull { it.id == part.ref }
+                    if (c != null) {
+                        val shelf = Shelf.Custom(c.id, c.name)
+                        val list = state.itemsOf(shelf)
+                        if (list.isNotEmpty()) item(key = part.key) {
+                            CoverRow(c.name, list, actions, onMenu, gutter, coverW = rowCover, kicker = str(R.string.kind_collection), onSeeAll = { openShelf(shelf) }, openIn = c.id)
+                        }
+                    }
+                }
+                HomePart.Series -> {
+                    val shelf = Shelf.Series(part.ref, part.title)
+                    val list = state.itemsOf(shelf)
+                    if (list.isNotEmpty()) item(key = part.key) {
+                        CoverRow(list.first().series.name, list, actions, onMenu, gutter, coverW = rowCover, kicker = str(R.string.kind_series), onSeeAll = { openShelf(shelf) })
                     }
                 }
             }
         }
-        item(key = "week") {
-            WeekCard(week, onStats, Modifier.padding(horizontal = gutter))
+    }
+}
+
+/** Tablet on its side: the story on the left, covers to flick through on the right. */
+@Composable
+private fun LandscapeHero(
+    row: List<LibraryItem>,
+    index: Int,
+    item: LibraryItem,
+    onSelect: (Int) -> Unit,
+    actions: LibraryActions,
+    onMenu: (LibraryItem) -> Unit,
+    gutter: Dp,
+    maxHeight: Dp,
+    style: CarouselStyle,
+) {
+    // Leaves room for the shelf to show under it, as before.
+    val heroH = (maxHeight - 214.dp).coerceAtLeast(300.dp)
+    val cardH = (maxHeight * 0.4f).coerceIn(200.dp, 400.dp)
+    val cardW = cardH * (2f / 3f)
+    Row(
+        Modifier
+            .height(heroH)
+            .fillMaxWidth()
+            .padding(start = gutter),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HeroStory(item, index, row.lastIndex, onSelect, actions, onMenu, Modifier.width(380.dp), arrows = false)
+        Spacer(Modifier.width(40.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            CoverCarousel(row, index, onSelect, actions.open, onMenu, cardW, cardH, style, centered = false, gutter = gutter, maxWidth = 0.dp)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                CircleIconButton(Icons.Filled.KeyboardArrowLeft, str(R.string.previous), { onSelect((index - 1).coerceAtLeast(0)) }, size = 44.dp)
+                CircleIconButton(Icons.Filled.KeyboardArrowRight, str(R.string.next_item), { onSelect((index + 1).coerceAtMost(row.lastIndex)) }, size = 44.dp)
+                Text(str(R.string.page_x_of_n, index + 1, row.size), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+            }
         }
-        if (reading.isNotEmpty()) {
-            item(key = "reading") { CoverRow(str(R.string.continue_reading), reading, actions, onMenu, gutter, coverW = 136.dp) }
+    }
+}
+
+/** The selected comic told in full: title, credits, synopsis, progress and buttons. */
+@Composable
+private fun HeroStory(
+    item: LibraryItem,
+    index: Int,
+    last: Int,
+    onSelect: (Int) -> Unit,
+    actions: LibraryActions,
+    onMenu: (LibraryItem) -> Unit,
+    modifier: Modifier,
+    arrows: Boolean,
+) {
+    AnimatedContent(
+        targetState = item,
+        transitionSpec = { fadeIn(spring(stiffness = Spring.StiffnessLow)) togetherWith fadeOut() },
+        contentKey = { it.comic.id },
+        label = "hero",
+        modifier = modifier,
+    ) { hero ->
+        Column(Modifier.widthIn(max = 760.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(kicker(hero), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft, modifier = Modifier.weight(1f))
+                if (arrows) {
+                    CircleIconButton(Icons.Filled.KeyboardArrowLeft, str(R.string.previous), { onSelect((index - 1).coerceAtLeast(0)) }, size = 40.dp)
+                    Spacer(Modifier.width(8.dp))
+                    CircleIconButton(Icons.Filled.KeyboardArrowRight, str(R.string.next_item), { onSelect((index + 1).coerceAtMost(last)) }, size = 40.dp)
+                }
+            }
+            Text(hero.title, style = MaterialTheme.typography.displaySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(subtitle(hero), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
+            hero.meta?.summary?.let {
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                ProgressBar(hero.progress?.fraction ?: 0f, hero.glowColor(), Modifier.weight(1f))
+                Text(progressLine(hero), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 4.dp)) {
+                PillButton(cta(hero), onClick = { actions.open(hero) }, leading = { Icon(Icons.Filled.PlayArrow, null, Modifier.size(20.dp)) })
+                PillButton(str(R.string.options), onClick = { onMenu(hero) }, style = PillStyle.Ghost)
+            }
         }
-        item(key = "shelf") { ShelfStrip(state, actions, openShelf, onSeeAll, gutter, cardWidth = 320.dp) }
-        if (want.isNotEmpty()) {
-            item(key = "want") { CoverRow(str(R.string.smart_want), want, actions, onMenu, gutter, coverW = 136.dp) }
+    }
+}
+
+/** The phone's featured card: the comic you are on, with a big button to carry on. */
+@Composable
+private fun PhoneHero(hero: LibraryItem, actions: LibraryActions, onMenu: (LibraryItem) -> Unit, gutter: Dp) {
+    Row(
+        Modifier
+            .padding(horizontal = gutter)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .background(FwipColors.Surface)
+            .border(1.dp, FwipColors.Stroke, RoundedCornerShape(28.dp))
+            .combinedClickable(onLongClick = { onMenu(hero) }, onClick = { actions.open(hero) })
+            .padding(18.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        CoverImage(hero, Modifier.size(120.dp, 180.dp).coverShadow(12.dp, 14.dp), corner = 14.dp, titleSize = 16, track = true)
+        Column(Modifier.weight(1f).height(180.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(kicker(hero), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
+            Text(hero.title, style = MaterialTheme.typography.titleLarge, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(progressLine(hero), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            ProgressBar(hero.progress?.fraction ?: 0f, hero.glowColor(), Modifier.fillMaxWidth())
+            Spacer(Modifier.weight(1f))
+            PillButton(
+                cta(hero),
+                onClick = { actions.open(hero) },
+                height = 46.dp,
+                modifier = Modifier.fillMaxWidth(),
+                leading = { Icon(Icons.Filled.PlayArrow, null, Modifier.size(18.dp)) },
+            )
         }
-        if (recent.isNotEmpty()) {
-            item(key = "recent") { CoverRow(str(R.string.smart_recent), recent, actions, onMenu, gutter, coverW = 136.dp) }
+    }
+}
+
+/**
+ * Covers to flick through. Flat is a row with the chosen cover larger; Tilt turns the side covers
+ * away in perspective; Fan opens them like cards in a hand. Tap a side cover to choose it, the
+ * chosen one to read, hold for options, or swipe.
+ */
+@Composable
+private fun CoverCarousel(
+    row: List<LibraryItem>,
+    index: Int,
+    onSelect: (Int) -> Unit,
+    onOpen: (LibraryItem) -> Unit,
+    onMenu: (LibraryItem) -> Unit,
+    cardW: Dp,
+    cardH: Dp,
+    style: CarouselStyle,
+    centered: Boolean,
+    gutter: Dp,
+    maxWidth: Dp,
+) {
+    if (style == CarouselStyle.Flat) {
+        val listState = rememberLazyListState()
+        LaunchedEffect(index) { listState.animateScrollToItem(index) }
+        val side = if (centered) ((maxWidth - cardW) / 2f).coerceAtLeast(gutter) else 14.dp
+        LazyRow(
+            state = listState,
+            contentPadding = PaddingValues(start = side, end = if (centered) side else gutter + cardW * 2),
+            horizontalArrangement = Arrangement.spacedBy(if (centered) 22.dp else 24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.height(cardH + if (centered) 40.dp else 60.dp),
+        ) {
+            itemsIndexed(row, key = { _, it -> it.comic.id }) { i, it ->
+                CarouselCard(it, i == index, cardW, cardH, onClick = { if (i == index) onOpen(it) else onSelect(i) }, onLongClick = { onMenu(it) })
+            }
+        }
+        return
+    }
+    // Tilt and Fan: the covers overlap, so they are laid out by hand around the chosen one.
+    val pos by animateFloatAsState(index.toFloat(), spring(dampingRatio = 0.82f, stiffness = 260f), label = "carousel")
+    val currentIndex by androidx.compose.runtime.rememberUpdatedState(index)
+    val select by androidx.compose.runtime.rememberUpdatedState(onSelect)
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val stepPx = with(density) { cardW.toPx() } * 0.45f
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(cardH + 60.dp)
+            .pointerInput(row.size) {
+                var acc = 0f
+                detectHorizontalDragGestures(onDragStart = { acc = 0f }) { change, dx ->
+                    change.consume()
+                    acc += dx
+                    if (kotlin.math.abs(acc) > stepPx) {
+                        val next = (currentIndex + if (acc < 0) 1 else -1).coerceIn(0, row.lastIndex)
+                        if (next != currentIndex) select(next)
+                        acc = 0f
+                    }
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        val window = (index - 4).coerceAtLeast(0)..(index + 4).coerceAtMost(row.lastIndex)
+        for (i in window) {
+            val it = row[i]
+            val d = i - pos
+            val ad = kotlin.math.abs(d)
+            key(it.comic.id) {
+                Box(
+                    Modifier
+                        .zIndex(-ad)
+                        .graphicsLayer {
+                            cameraDistance = 14f * density.density
+                            when (style) {
+                                CarouselStyle.Tilt -> {
+                                    translationX = d.coerceIn(-3.5f, 3.5f) * cardW.toPx() * 0.55f + kotlin.math.sign(d) * cardW.toPx() * 0.18f * ad.coerceAtMost(1f)
+                                    rotationY = -d.coerceIn(-1f, 1f) * 52f
+                                    val s = 1f - 0.1f * ad.coerceAtMost(3f)
+                                    scaleX = s; scaleY = s
+                                }
+                                else -> {
+                                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 2.4f)
+                                    rotationZ = d.coerceIn(-4f, 4f) * 9f
+                                    val s = 1f - 0.05f * ad.coerceAtMost(3f)
+                                    scaleX = s; scaleY = s
+                                }
+                            }
+                            alpha = (1f - 0.16f * ad).coerceIn(0f, 1f)
+                        }
+                ) {
+                    CarouselCard(it, i == index, cardW, cardH, onClick = { if (i == index) onOpen(it) else onSelect(i) }, onLongClick = { onMenu(it) }, flat = false)
+                }
+            }
         }
     }
 }
@@ -399,7 +618,7 @@ private fun weekSummary(days: Map<LocalDate, io.github.christiandonatti.fwip.dat
 
 /** This week at a glance, with a small bar per day; opens the full statistics. */
 @Composable
-private fun WeekCard(week: Week, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun WeekCard(week: Week, onClick: () -> Unit, compact: Boolean, modifier: Modifier = Modifier) {
     Row(
         modifier
             .fillMaxWidth()
@@ -413,26 +632,26 @@ private fun WeekCard(week: Week, onClick: () -> Unit, modifier: Modifier = Modif
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(str(R.string.week_title), style = MaterialTheme.typography.titleMedium)
-            Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 14.dp else 22.dp)) {
                 WeekFigure(week.pages.toString(), str(R.string.stats_pages))
                 WeekFigure(if (week.minutes < 60) "${week.minutes} min" else "${week.minutes / 60} h", str(R.string.stats_time))
-                WeekFigure(week.finished.toString(), str(R.string.stats_finished))
+                if (!compact) WeekFigure(week.finished.toString(), str(R.string.stats_finished))
                 WeekFigure(week.streak.toString(), str(R.string.week_streak))
             }
         }
-        // Seven little bars, today in the accent colour.
-        val max = week.perDay.maxOrNull()?.coerceAtLeast(1) ?: 1
-        val density = LocalDensity.current
-        Row(Modifier.height(64.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            week.perDay.forEachIndexed { i, p ->
-                val h = with(density) { (64.dp.toPx() * p / max).coerceAtLeast(4.dp.toPx()).toDp() }
-                Box(
-                    Modifier
-                        .width(10.dp)
-                        .height(h)
-                        .clip(CircleShape)
-                        .background(if (i == week.perDay.lastIndex) FwipColors.Amber else FwipColors.Amber.copy(alpha = 0.35f))
-                )
+        if (!compact) {
+            // Seven little bars, today in the accent colour.
+            val max = week.perDay.maxOrNull()?.coerceAtLeast(1) ?: 1
+            Row(Modifier.height(64.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                week.perDay.forEachIndexed { i, p ->
+                    Box(
+                        Modifier
+                            .width(10.dp)
+                            .height((64f * p / max).coerceAtLeast(4f).dp)
+                            .clip(CircleShape)
+                            .background(if (i == week.perDay.lastIndex) FwipColors.Amber else FwipColors.Amber.copy(alpha = 0.35f))
+                    )
+                }
             }
         }
     }

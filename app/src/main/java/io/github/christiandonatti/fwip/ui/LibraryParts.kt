@@ -58,6 +58,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
@@ -91,6 +93,8 @@ fun CoverTile(
 ) {
     val selecting = selection?.active == true
     val selected = selection?.contains(item.comic.id) == true
+    val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
+    val finished = item.progress?.finished == true
     Column(
         modifier.combinedClickable(
             role = Role.Button,
@@ -107,12 +111,29 @@ fun CoverTile(
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f)
-                    .shadow(10.dp, RoundedCornerShape(16.dp)),
+                    .coverShadow(10.dp, 16.dp)
+                    .graphicsLayer { alpha = if (finished && ui.readMark == ReadMark.Faded) 0.4f else 1f },
                 corner = 16.dp,
                 titleSize = if (wide) 22 else 15,
                 track = true,
             )
-            if (item.progress?.finished == true) {
+            if (finished && ui.readMark == ReadMark.Ribbon) {
+                Box(Modifier.matchParentSize().clip(RoundedCornerShape(coverCorner(16.dp)))) {
+                    Box(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 30.dp, y = 16.dp)
+                            .rotate(45f)
+                            .width(120.dp)
+                            .background(FwipColors.Amber)
+                            .padding(vertical = 3.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(str(R.string.read_ribbon), style = MaterialTheme.typography.labelSmall, color = FwipColors.AmberInk, maxLines = 1)
+                    }
+                }
+            }
+            if (finished && ui.readMark == ReadMark.Badge) {
                 Box(
                     Modifier
                         .align(Alignment.TopEnd)
@@ -147,7 +168,7 @@ fun CoverTile(
                 }
             }
         }
-        Text(item.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        if (ui.coverTitles) Text(item.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
         val p = item.progress
         if (p != null && p.started && !p.finished) {
             ProgressBar(p.fraction, item.glowColor(), Modifier.fillMaxWidth())
@@ -222,7 +243,7 @@ fun CoverFan(items: List<LibraryItem>, modifier: Modifier = Modifier) {
                         scaleX = if (i == 0) 1f else 0.9f
                         scaleY = if (i == 0) 1f else 0.9f
                     }
-                    .shadow(8.dp, RoundedCornerShape(10.dp)),
+                    .coverShadow(8.dp, 10.dp),
                 corner = 10.dp,
                 titleSize = 9,
             )
@@ -370,6 +391,17 @@ fun ComicActionsDialog(
             SheetButton(str(R.string.cover_change), onCover, leading = { CoverIcon(LocalContentColor.current) })
             SheetButton(str(R.string.move_to), onMove, leading = { FolderIcon(LocalContentColor.current) })
             SheetButton(str(R.string.delete_file), onDelete, leading = { Icon(Icons.Filled.Delete, null) }, danger = true)
+        }
+        if (item.coverPath != null) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            SheetButton(str(R.string.use_as_backdrop), {
+                if (Backdrops.set(context, java.io.File(item.coverPath))) {
+                    val ui = UiSettings.get(context)
+                    ui.updateBackdrop(Backdrop.Image)
+                    ui.backdropChanged()
+                }
+                onDismiss()
+            }, leading = { CoverIcon(LocalContentColor.current) })
         }
         SheetButton(str(R.string.select_several), onSelect, leading = { SelectIcon(LocalContentColor.current) })
         if (seriesSize >= 1) {
