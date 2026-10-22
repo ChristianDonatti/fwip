@@ -70,7 +70,7 @@ data class LibraryItem(
 
     /** Issue number to match against an online database. */
     val issueNumber: String?
-        get() = meta?.number?.takeIf { it.isNotBlank() } ?: parsed.number ?: parsed.volume?.toString()
+        get() = meta?.issue ?: parsed.number ?: parsed.volume?.toString()
 }
 
 /** "Batman (2016)" when the volume is a start year. */

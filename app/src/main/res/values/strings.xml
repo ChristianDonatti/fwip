@@ -520,4 +520,6 @@
     <string name="theme_system_desc">Paper by day, Night at night.</string>
     <string name="unpin">Unpin</string>
     <string name="use_as_backdrop">Use as library background</string>
+    <string name="reset_progress">Start over from the first page</string>
+    <string name="pages_x_y">Pages %1$d and %2$d</string>
 </resources>

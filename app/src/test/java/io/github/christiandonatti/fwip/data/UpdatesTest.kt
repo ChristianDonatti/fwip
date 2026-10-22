@@ -12,3 +12,16 @@ class UpdatesTest {
         assertTrue(Updates.compareVersions("0.3.0", "0.4.0") < 0)
     }
 }
+
+class IssueNumberTest {
+    @Test
+    fun placeholdersAreNoNumber() {
+        org.junit.Assert.assertNull(cleanNumber("None"))
+        org.junit.Assert.assertNull(cleanNumber(" null "))
+        org.junit.Assert.assertNull(cleanNumber(""))
+        org.junit.Assert.assertEquals("12", cleanNumber("#12"))
+        org.junit.Assert.assertEquals("0", cleanNumber("0"))
+        org.junit.Assert.assertNull(ComicMeta(series = "Saga", number = "None").numberValue)
+        org.junit.Assert.assertEquals("Saga", ComicMeta(series = "Saga", number = "None").displayTitle)
+    }
+}

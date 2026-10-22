@@ -34,6 +34,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Delete
 import io.github.christiandonatti.fwip.data.sortedFor
 import androidx.compose.foundation.horizontalScroll
@@ -345,6 +346,7 @@ fun ComicActionsDialog(
     onDelete: () -> Unit = {},
     onEdit: () -> Unit = {},
     onEditSeries: () -> Unit = {},
+    onResetProgress: () -> Unit = {},
 ) {
     FwipDialog(onDismiss, tint = item.glowColor()) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -377,6 +379,9 @@ fun ComicActionsDialog(
             onToggleRead,
             leading = { Icon(Icons.Filled.Check, null) },
         )
+        if (started && !finished) {
+            SheetButton(str(R.string.reset_progress), onResetProgress, leading = { Icon(Icons.Filled.Refresh, null) })
+        }
         SheetButton(str(R.string.add_to_collection), onCollections, leading = { Icon(Icons.Filled.Add, null) })
         if (!finished) {
             SheetButton(

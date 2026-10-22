@@ -235,6 +235,55 @@ internal fun Thumb(page: Int, cache: PageCache, current: Boolean, marked: Boolea
 private const val THUMB_W = 240
 private const val THUMB_H = 360
 
+/** The spread under the finger while dragging the page bar: its pages and their numbers. */
+@Composable
+internal fun ScrubPreview(pages: List<Int>, cache: PageCache, rtl: Boolean) {
+    Column(
+        Modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0xF2121318))
+            .border(1.dp, FwipColors.Stroke, RoundedCornerShape(18.dp))
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            (if (rtl) pages.reversed() else pages).forEach { p -> ScrubPage(p, cache) }
+        }
+        Text(
+            if (pages.size == 2) str(R.string.pages_x_y, pages[0] + 1, pages[1] + 1) else str(R.string.page_n, (pages.firstOrNull() ?: 0) + 1),
+            style = MaterialTheme.typography.labelMedium,
+            color = FwipColors.TextSoft,
+        )
+    }
+}
+
+@Composable
+private fun ScrubPage(page: Int, cache: PageCache) {
+    val bitmap by produceState<Bitmap?>(cache.peek(page, THUMB_W, THUMB_H), page) {
+        if (value == null) {
+            // A finger sweeping across a hundred pages should not queue a hundred decodes.
+            kotlinx.coroutines.delay(70)
+            value = cache.get(page, THUMB_W, THUMB_H)
+        }
+    }
+    Box(
+        Modifier
+            .height(170.dp)
+            .aspectRatio(2f / 3f)
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color.White.copy(alpha = 0.06f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        val b = bitmap
+        if (b != null) {
+            Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+        } else {
+            CircularProgressIndicator(Modifier.size(18.dp), color = FwipColors.TextMuted, strokeWidth = 2.dp)
+        }
+    }
+}
+
 /** Every page of a comic as thumbnails, to pick one (the cover chooser). */
 @Composable
 fun PagePickerDialog(comic: io.github.christiandonatti.fwip.data.Comic, title: String, onPick: (Int) -> Unit, onDismiss: () -> Unit) {

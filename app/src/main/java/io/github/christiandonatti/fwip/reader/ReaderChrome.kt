@@ -228,6 +228,8 @@ internal fun ReaderChrome(
     onPages: () -> Unit,
     /** Panel and balloon reading need whole pages; vertical scrolling has none. */
     guidedAvailable: Boolean = true,
+    /** What a spread looks like, shown above the finger while dragging the page bar. */
+    scrubPreview: (@Composable (Int) -> Unit)? = null,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val roomy = maxWidth >= 600.dp
@@ -296,6 +298,7 @@ internal fun ReaderChrome(
                     onPreview = { preview = it },
                     onSeek = onSeek,
                     modifier = Modifier.weight(1f),
+                    previewContent = scrubPreview,
                 )
                 Text(
                     "${(preview ?: spreadIndex) + 1} / $spreadCount",
@@ -316,6 +319,7 @@ private fun PageScrubber(
     onPreview: (Int?) -> Unit,
     onSeek: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    previewContent: (@Composable (Int) -> Unit)? = null,
 ) {
     val last = (count - 1).coerceAtLeast(1)
     fun toIndex(f: Float) = ((if (rtl) 1f - f else f) * last).roundToInt().coerceIn(0, last)
@@ -352,6 +356,16 @@ private fun PageScrubber(
         contentAlignment = Alignment.CenterStart,
     ) {
         val thumb = if (drag != null) 22.dp else 16.dp
+        // While dragging, the pages under the finger float above the bar, like flipping through.
+        val dragging = drag
+        if (dragging != null && previewContent != null) {
+            val gap = with(androidx.compose.ui.platform.LocalDensity.current) { 18.dp.roundToPx() }
+            androidx.compose.ui.window.Popup(
+                popupPositionProvider = remember(dragging, gap) { ScrubPopupPosition(dragging, gap) },
+            ) {
+                previewContent(toIndex(dragging))
+            }
+        }
         Box(
             Modifier
                 .fillMaxWidth()
@@ -641,5 +655,20 @@ internal fun ReaderLookSettings(settings: ReaderSettings) {
         Choice(str(R.string.reader_ground), ReaderGround.entries, settings.ground, { it.label }, settings::updateGround)
         LevelSlider(str(R.string.spine_shadow), settings.spineShadow, 0f..1f, settings::updateSpineShadow, hint = str(R.string.spine_shadow_hint))
         Toggle(str(R.string.paper_texture), str(R.string.paper_texture_hint), settings.paperTexture, settings::updatePaperTexture)
+    }
+}
+
+/** Puts the scrub preview above the bar, centred on the finger and kept on screen. */
+private class ScrubPopupPosition(private val fraction: Float, private val gap: Int) : androidx.compose.ui.window.PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: androidx.compose.ui.unit.IntRect,
+        windowSize: androidx.compose.ui.unit.IntSize,
+        layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+        popupContentSize: androidx.compose.ui.unit.IntSize,
+    ): androidx.compose.ui.unit.IntOffset {
+        val centre = anchorBounds.left + anchorBounds.width * fraction
+        val x = (centre - popupContentSize.width / 2f).roundToInt().coerceIn(8, (windowSize.width - popupContentSize.width - 8).coerceAtLeast(8))
+        val y = (anchorBounds.top - popupContentSize.height - gap).coerceAtLeast(8)
+        return androidx.compose.ui.unit.IntOffset(x, y)
     }
 }

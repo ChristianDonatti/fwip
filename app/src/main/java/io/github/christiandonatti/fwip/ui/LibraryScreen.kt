@@ -405,6 +405,10 @@ fun LibraryScreen(
                 onMove = { menuFor = null; moveFor = listOf(id) },
                 onDelete = { menuFor = null; deleteFor = listOf(id) },
                 onEdit = { menuFor = null; editFor = id },
+                onResetProgress = {
+                    actions.setRead(listOf(id), false)
+                    menuFor = null
+                },
                 onEditSeries = {
                     menuFor = null
                     seriesEditFor = state.items.filter { seriesKey(it.series.name) == seriesKeyOf }.map { it.comic.id }.ifEmpty { listOf(id) }

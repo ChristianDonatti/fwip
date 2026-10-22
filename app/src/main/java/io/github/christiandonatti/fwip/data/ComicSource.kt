@@ -50,7 +50,7 @@ object ComicSources {
     } ?: if (io.github.christiandonatti.fwip.remote.NetUris.isNet(comic.uri)) openNet(context, comic) else when (comic.format) {
         ComicFormat.ZIP -> ZipComicSource.open(context, comic)
         ComicFormat.SEVEN_ZIP -> SevenZipComicSource.open(context, comic)
-        ComicFormat.RAR -> RarComicSource.open(context, comic)
+        ComicFormat.RAR -> openLocalRar(context, comic)
         ComicFormat.PDF -> PdfComicSource.open(context, comic)
     }
 }
@@ -86,6 +86,45 @@ private fun openNet(context: Context, comic: Comic): ComicSource {
         runCatching { reader.close() }
         throw e
     }
+}
+
+/**
+ * CBR from the device, read in place: a big archive used to be copied whole into the cache
+ * before the first page could show. Falls back to the copy only when the file cannot be read at
+ * random positions.
+ */
+@Suppress("DEPRECATION")
+private fun openLocalRar(context: Context, comic: Comic): ComicSource {
+    if (comic.uri.scheme == "file") {
+        val file = File(comic.uri.path!!)
+        return RarComicSource.open(context, comic, archive = { Archive(file) }, rar5 = { localInStream(file) })
+    }
+    val handle = SeekableHandle.open(context, comic.uri) ?: return RarComicSource.open(context, comic)
+    val reader = io.github.christiandonatti.fwip.remote.BlockReader(ChannelFile(handle))
+    return try {
+        RarComicSource.open(
+            context,
+            comic,
+            archive = { Archive(io.github.christiandonatti.fwip.remote.NetRarVolumes(reader), null, null) },
+            rar5 = { PositionalInStream(reader.length, reader::read) },
+        ).also { source ->
+            if (source is Finishing) source.onFinished = { runCatching { reader.close() } }
+            else runCatching { reader.close() }
+        }
+    } catch (e: Exception) {
+        runCatching { reader.close() }
+        RarComicSource.open(context, comic)
+    }
+}
+
+/** A local document read at any position through its file channel. */
+private class ChannelFile(private val handle: SeekableHandle) : io.github.christiandonatti.fwip.remote.RandomFile {
+    override val length: Long = handle.channel.size()
+
+    override fun read(pos: Long, buf: ByteArray, off: Int, len: Int): Int =
+        synchronized(this) { handle.channel.read(java.nio.ByteBuffer.wrap(buf, off, len), pos) }
+
+    override fun close() = handle.close()
 }
 
 private val imageExtensions = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic", "heif", "avif")

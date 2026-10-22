@@ -41,14 +41,17 @@ data class ComicMeta(
 ) {
     val rightToLeft: Boolean get() = manga.equals("YesAndRightToLeft", ignoreCase = true)
 
-    val numberValue: Float? get() = number?.replace(',', '.')?.trim()?.toFloatOrNull()
+    /** The issue number, unless the tagging tool wrote a placeholder like "None". */
+    val issue: String? get() = cleanNumber(number)
+
+    val numberValue: Float? get() = issue?.replace(',', '.')?.toFloatOrNull()
 
     /** "Saga #54" when the file says which series and issue it is. */
     val displayTitle: String?
         get() = when {
             series.isNullOrBlank() -> title?.takeIf { it.isNotBlank() }
-            number.isNullOrBlank() -> series
-            else -> "$series #$number"
+            issue == null -> series
+            else -> "$series #$issue"
         }
 
     /** The art team, without repeating a name that holds several jobs. */
@@ -236,4 +239,11 @@ data class OnlineMeta(
             creditsLoaded = o.optBoolean("credits"),
         )
     }
+}
+
+/** Tagging tools sometimes write "None", "null" or "-" where a comic has no issue number. */
+fun cleanNumber(raw: String?): String? {
+    val n = raw?.trim()?.removePrefix("#")?.trim() ?: return null
+    if (n.isEmpty()) return null
+    return if (n.lowercase() in setOf("none", "null", "nil", "n/a", "na", "-", "--", "?", "undefined", "nan")) null else n
 }

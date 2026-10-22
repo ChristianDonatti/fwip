@@ -335,7 +335,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                     series = name.trim().ifBlank { null },
                     volume = year,
                     // Keep the number the file name gave, so the issues stay in order.
-                    number = it.number ?: item.issueNumber,
+                    number = it.issue ?: item.issueNumber,
                 )
             }
         }
@@ -584,7 +584,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                         appendLine("Servers: " + s.servers.map { it.kind.name })
                         appendLine("Collections: ${s.collections.size}")
                         appendLine("Sync folder: " + if (s.sync.place != null) "yes" else "no")
-                        appendLine("Look: ${ui.theme} ${ui.accent} covers x${ui.coverScale}")
+                        appendLine("Look: ${ui.preset} accent ${ui.accentMode} #${ui.accentIndex}, font ${ui.titleFont}, backdrop ${ui.backdrop}, carousel ${ui.carousel}, icon ${ui.appIcon}, covers x${ui.coverScale}")
                         appendLine("Reader settings: " + io.github.christiandonatti.fwip.reader.ReaderSettings(app).toJson())
                     }
                     io.github.christiandonatti.fwip.data.Reports.save(app, target, io.github.christiandonatti.fwip.data.Reports.build(app, extra))

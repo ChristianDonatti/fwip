@@ -519,4 +519,6 @@
     <string name="theme_system_desc">Papel de dia, Noite à noite.</string>
     <string name="unpin">Desafixar</string>
     <string name="use_as_backdrop">Usar como fundo da biblioteca</string>
+    <string name="reset_progress">Zerar o progresso (voltar ao início)</string>
+    <string name="pages_x_y">Páginas %1$d e %2$d</string>
 </resources>

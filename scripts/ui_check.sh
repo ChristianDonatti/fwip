@@ -91,7 +91,7 @@ look preset=Manga titleFont=Unbounded corners=Square readMark=Ribbon coverTitles
 ui '^Library\|' ; shot b4-manga-library 3
 look preset=Oled titleFont=Unbounded backdrop=Living readMark=Faded
 ui '^Library\|' ; shot b5-oled-living 3
-look preset=Night titleFont=Classic showCarousel=false 'sections=[{"part":"Series","on":true,"ref":"pepper&carrot","title":"Pepper&Carrot"},{"part":"Continue","on":true},{"part":"Week","on":true},{"part":"Shelf","on":true},{"part":"Recent","on":true}]'
+look preset=Night titleFont=Classic showCarousel=false 'sections=[{"part":"Series","on":true,"ref":"pepper carrot","title":"Pepper&Carrot"},{"part":"Continue","on":true},{"part":"Week","on":true},{"part":"Shelf","on":true},{"part":"Recent","on":true}]'
 shot b6-no-carousel 3
 swipe_up ; shot b7-no-carousel-more 1
 look preset=Night titleFont=Unbounded accentMode=Cover corners=Round

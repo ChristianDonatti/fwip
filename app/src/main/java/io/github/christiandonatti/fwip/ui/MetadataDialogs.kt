@@ -61,7 +61,7 @@ class MetaActions(
 fun EditInfoDialog(item: LibraryItem, actions: MetaActions, onDismiss: () -> Unit) {
     val meta = item.meta
     var series by remember { mutableStateOf(meta?.series ?: item.parsed.series) }
-    var number by remember { mutableStateOf(meta?.number ?: item.parsed.number.orEmpty()) }
+    var number by remember { mutableStateOf(meta?.issue ?: item.parsed.number.orEmpty()) }
     var title by remember { mutableStateOf(meta?.title ?: item.parsed.title.orEmpty()) }
     var year by remember { mutableStateOf((meta?.year ?: item.parsed.year)?.toString().orEmpty()) }
     FwipDialog(onDismiss) {

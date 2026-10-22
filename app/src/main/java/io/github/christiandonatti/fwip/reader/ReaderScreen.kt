@@ -518,6 +518,7 @@ private fun Reader(
             },
             onPages = { showPages = true },
             guidedAvailable = !scroll,
+            scrubPreview = { s -> ScrubPreview(spreads.getOrNull(s).orEmpty(), cache, rtl) },
         )
 
         AnimatedVisibility(
