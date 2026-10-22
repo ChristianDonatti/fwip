@@ -356,7 +356,7 @@
     <string name="welcome_f3_title">Sua coleção inteira</string>
     <string name="welcome_f3">Pastas no aparelho, no seu NAS ou num servidor Komga, Kavita ou OPDS.</string>
     <string name="welcome_look_title">Escolha o visual</string>
-    <string name="welcome_look">Dá para mudar quando quiser no botão de pastas.</string>
+    <string name="welcome_look">Dá para mudar quando quiser no botão de engrenagem.</string>
     <string name="welcome_comics_title">Onde estão suas HQs?</string>
     <string name="welcome_servers">Conectar servidor ou NAS</string>
     <string name="welcome_servers_hint">Pastas de rede (SMB, WebDAV) e servidores Komga, Kavita ou OPDS.</string>
@@ -368,4 +368,5 @@
     <string name="see_all">Ver tudo</string>
     <string name="week_title">Seus últimos 7 dias</string>
     <string name="week_streak">dias seguidos</string>
+    <string name="app_settings">Ajustes</string>
 </resources>

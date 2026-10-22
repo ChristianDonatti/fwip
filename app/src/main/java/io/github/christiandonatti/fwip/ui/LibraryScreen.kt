@@ -65,6 +65,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -497,7 +498,7 @@ private fun Header(
                 CircleIconButton(Icons.Filled.Refresh, str(R.string.refresh_library), onRefresh, size = button)
             }
             CircleIconButton(Icons.Filled.Add, str(R.string.add_folder), onAdd, size = button)
-            CircleButton(str(R.string.library_folders), onFolders, size = button) { FolderIcon(FwipColors.Text) }
+            CircleIconButton(Icons.Filled.Settings, str(R.string.app_settings), onFolders, size = button)
         }
     }
 }
@@ -1406,7 +1407,8 @@ private fun FoldersDialog(
     onAbout: () -> Unit,
 ) {
     FwipDialog(onDismiss) {
-        DialogTitle(str(R.string.library_folders), onDismiss)
+        DialogTitle(str(R.string.app_settings), onDismiss)
+        Text(str(R.string.library_folders), style = MaterialTheme.typography.labelLarge, color = FwipColors.TextSoft)
         if (folders.isEmpty()) {
             Text(str(R.string.no_folders), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
         }

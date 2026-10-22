@@ -357,7 +357,7 @@
     <string name="welcome_f3_title">Your whole collection</string>
     <string name="welcome_f3">Folders on the device, on your NAS or on a Komga, Kavita or OPDS server.</string>
     <string name="welcome_look_title">Pick your look</string>
-    <string name="welcome_look">You can change this any time under the folder button.</string>
+    <string name="welcome_look">You can change this any time under the gear button.</string>
     <string name="welcome_comics_title">Where are your comics?</string>
     <string name="welcome_servers">Connect a server or NAS</string>
     <string name="welcome_servers_hint">Network folders (SMB, WebDAV) and Komga, Kavita or OPDS servers.</string>
@@ -369,4 +369,5 @@
     <string name="see_all">See all</string>
     <string name="week_title">Your last 7 days</string>
     <string name="week_streak">days in a row</string>
+    <string name="app_settings">Settings</string>
 </resources>

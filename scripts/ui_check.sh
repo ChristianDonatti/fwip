@@ -105,7 +105,7 @@ if [ -n "$xy" ]; then
 fi
 
 # Appearance dialog from the folder button.
-ui '\|Library folders' ; sleep 1.5
+ui '\|Settings$' ; sleep 1.5
 ui '^Appearance\|' ; shot a1-appearance 2
 adb shell input keyevent KEYCODE_BACK; sleep 1
 
