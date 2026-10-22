@@ -1,1 +1,5 @@
-Primeira versão pública: virada de página de papel, leitura guiada por quadro ou balão, biblioteca com séries e coleções, ComicInfo.xml, servidores Komga/Kavita/OPDS, pastas de rede SMB e WebDAV, sincronização entre aparelhos por uma pasta compartilhada, backup, grade de páginas, marcadores, ajustes de conforto, widget e atalhos.
+Primeira versão pública.
+Leitura: virada de página de papel com páginas duplas no tablet, leitura guiada por quadro ou balão, rolagem vertical para webtoons, grade de páginas, marcadores, ajustes de conforto, vibração e som de papel ao virar.
+Biblioteca: séries, coleções com ordem de leitura, lista Quero ler, estatísticas de leitura, edição de nomes, séries e capas, apagar e mover HQs, ComicInfo.xml.
+Visual: tema escuro ou claro, seis cores de destaque, capas que crescem até virar a HQ, pinça para o tamanho das capas, página inicial feita para tablet nas duas posições.
+Rede: servidores Komga, Kavita e OPDS, pastas SMB e WebDAV, sincronização entre aparelhos por uma pasta compartilhada, backup, widget e atalhos.

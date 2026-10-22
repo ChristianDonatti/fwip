@@ -21,7 +21,7 @@ Keep a copy of the keystore and its password somewhere safe. If the key is lost,
 2. Push a tag: `git tag v0.3.0 && git push origin v0.3.0`.
 3. The Release workflow builds `fwip-0.3.0.apk`, signs it and publishes it on the Releases page.
 
-A build signed with the release key cannot update a test build (different signatures): uninstall the test build first, after saving a backup from **Library folders > Sync and backup**.
+A build signed with the release key cannot update a test build (different signatures): uninstall the test build first, after saving a backup from **Settings (gear) > Sync and backup**.
 
 ## F-Droid
 

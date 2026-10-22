@@ -1,1 +1,5 @@
-First public release: page curl, guided reading by panel or balloon, library with series and collections, ComicInfo.xml, Komga/Kavita/OPDS servers, SMB and WebDAV network folders, sync between devices through a shared folder, backups, page overview, bookmarks, reading comfort settings, widget and shortcuts.
+First public release.
+Reading: paper page curl with two-page spreads on tablets, guided reading by panel or balloon, vertical scrolling for webtoons, page overview, bookmarks, comfort settings, page turn vibration and paper sound.
+Library: series, collections with reading order, Want to read list, reading statistics, edit names, series and covers, delete and move comics, ComicInfo.xml.
+Look: dark or light theme, six highlight colours, covers that grow into the reader, pinch to resize covers, a home made for tablets in both orientations.
+Network: Komga, Kavita and OPDS servers, SMB and WebDAV folders, sync between devices through a shared folder, backups, widget and shortcuts.
