@@ -570,6 +570,33 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismissFileMessage() = _state.update { it.copy(fileMessage = null) }
 
+    /** Saves an error report (device, version, settings, last crash, recent log) to [target]. */
+    fun saveReport(target: Uri) {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val s = _state.value
+                    val ui = io.github.christiandonatti.fwip.ui.UiSettings.get(app)
+                    val extra = buildString {
+                        appendLine("Comics: ${s.items.size} " + s.items.groupingBy { it.comic.format.label }.eachCount())
+                        appendLine("Folders: ${s.folders.size} (network ${s.folders.count(io.github.christiandonatti.fwip.remote.NetUris::isNet)})")
+                        appendLine("Servers: " + s.servers.map { it.kind.name })
+                        appendLine("Collections: ${s.collections.size}")
+                        appendLine("Sync folder: " + if (s.sync.place != null) "yes" else "no")
+                        appendLine("Look: ${ui.theme} ${ui.accent} covers x${ui.coverScale}")
+                        appendLine("Reader settings: " + io.github.christiandonatti.fwip.reader.ReaderSettings(app).toJson())
+                    }
+                    io.github.christiandonatti.fwip.data.Reports.save(app, target, io.github.christiandonatti.fwip.data.Reports.build(app, extra))
+                    io.github.christiandonatti.fwip.data.Reports.markSeen(app)
+                }
+            }
+            _state.update {
+                it.copy(fileMessage = result.fold({ str(R.string.report_saved) }, { e -> str(R.string.report_failed, e.message ?: e.javaClass.simpleName) }))
+            }
+        }
+    }
+
     /** The app's own downloads folder, a place comics can be moved to as well. */
     val downloadsUri: Uri get() = Uri.fromFile(io.github.christiandonatti.fwip.remote.RemoteComics.downloadsDir(getApplication()))
 

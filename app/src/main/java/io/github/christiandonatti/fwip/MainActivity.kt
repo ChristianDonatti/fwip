@@ -79,6 +79,23 @@ class MainActivity : ComponentActivity() {
                 val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                     if (uri != null) viewModel.importBackup(uri)
                 }
+                val saveReport = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+                    if (uri != null) viewModel.saveReport(uri)
+                }
+                val context = androidx.compose.ui.platform.LocalContext.current
+                // Quietly look for a newer Fwip (at most twice a day).
+                LaunchedEffect(Unit) { io.github.christiandonatti.fwip.data.Updates.checkInBackground(context) }
+                // The app closed by itself last time: offer to save a report.
+                var crashed by remember { mutableStateOf(io.github.christiandonatti.fwip.data.Reports.unseenCrash(context)) }
+                if (crashed) {
+                    io.github.christiandonatti.fwip.ui.CrashDialog(
+                        onSave = { saveReport.launch(io.github.christiandonatti.fwip.data.Reports.fileName()) },
+                        onDismiss = {
+                            io.github.christiandonatti.fwip.data.Reports.markSeen(context)
+                            crashed = false
+                        },
+                    )
+                }
                 val metaActions = remember(viewModel) {
                     io.github.christiandonatti.fwip.ui.MetaActions(
                         saveManual = viewModel::saveManual,
@@ -113,6 +130,7 @@ class MainActivity : ComponentActivity() {
                         moveComics = viewModel::moveComics,
                         downloadsUri = { viewModel.downloadsUri },
                         dismissFileMessage = viewModel::dismissFileMessage,
+                        saveReport = { saveReport.launch(io.github.christiandonatti.fwip.data.Reports.fileName()) },
                         addFolder = { pickFolder.launch(null) },
                         removeFolder = viewModel::removeFolder,
                         refresh = viewModel::refresh,

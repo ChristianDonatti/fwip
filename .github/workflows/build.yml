@@ -55,12 +55,15 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
+          CHANGE: ${{ github.event.head_commit.message }}
         run: |
           gh release delete teste --yes --cleanup-tag || true
+          subject=$(printf '%s' "$CHANGE" | head -1)
+          notes=$(printf '%s\n\n%s' "$subject" "APK gerado automaticamente a partir do commit ${GITHUB_SHA::7}. Baixe o arquivo fwip.apk abaixo e abra no tablet ou celular para instalar.")
           gh release create teste fwip.apk \
             --prerelease \
             --title "Versão de teste (build ${{ github.run_number }})" \
-            --notes "APK gerado automaticamente a partir do commit ${GITHUB_SHA::7}. Baixe o arquivo fwip.apk abaixo e abra no tablet ou celular para instalar."
+            --notes "$notes"
 
   # Reads real comics from a Samba share, the way the app does with a NAS.
   network-test:

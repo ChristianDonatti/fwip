@@ -8,6 +8,7 @@ class FwipApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        io.github.christiandonatti.fwip.data.Reports.install(this)
     }
 
     companion object {

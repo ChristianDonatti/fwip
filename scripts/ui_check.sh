@@ -96,18 +96,40 @@ if [ -n "$xy" ]; then
   ui '\|Reading settings' ; sleep 1
   adb shell input swipe $(( W / 2 )) $(( H * 3 / 4 )) $(( W / 2 )) $(( H / 4 )) 400
   shot r1-settings 2
+  # Paper sound on, then a few page turns: the log says whether the tick and the sound fired.
+  ui '^Paper sound\|' ; sleep 1
   adb shell input keyevent KEYCODE_BACK; sleep 1.5
+  adb logcat -c
+  adb shell input tap $(( W - 60 )) $(( H / 2 )); sleep 2
+  adb shell input tap $(( W - 60 )) $(( H / 2 )); sleep 2
+  adb shell input swipe $(( W - 100 )) $(( H * 3 / 4 )) $(( W / 4 )) $(( H / 2 )) 300; sleep 2
+  adb logcat -d | grep -i "turn feedback\|vibrat\|SoundPool" > $OUT/feedback.txt
+  echo "::notice::feedback: $(grep -c 'turn feedback' $OUT/feedback.txt) lines; $(grep 'turn feedback' $OUT/feedback.txt | tail -1 | cut -c1-200)"
   adb shell input keyevent KEYCODE_BACK
   sleep 0.08; quick z3-closing-a
   quick z3-closing-b
   shot z4-back 3
-  adb shell input keyevent KEYCODE_BACK; sleep 1
 fi
+shot u0-before-settings 1
 
 # Appearance dialog from the folder button.
 ui '\|Settings$' ; sleep 1.5
 ui '^Appearance\|' ; shot a1-appearance 2
 adb shell input keyevent KEYCODE_BACK; sleep 1
+
+# Updates and the error report, from the settings sheet.
+ui '\|Settings$' ; sleep 1.5
+adb shell input swipe $(( W / 2 )) $(( H * 3 / 4 )) $(( W / 2 )) $(( H / 5 )) 400; sleep 1
+shot u1-settings 1
+ui '^Updates\|' ; sleep 1
+ui '^Check now\|' ; shot u2-updates 6
+adb shell input keyevent KEYCODE_BACK; sleep 1
+ui '\|Settings$' ; sleep 1.5
+adb shell input swipe $(( W / 2 )) $(( H * 3 / 4 )) $(( W / 2 )) $(( H / 5 )) 400; sleep 1
+ui '^Error report\|' ; shot u3-report 2
+ui '^Save report\|' ; shot u4-save 4
+adb shell input keyevent KEYCODE_BACK; sleep 2
+shot u5-after-save 2
 
 # Tablet held upright.
 adb shell wm size 1200x1920

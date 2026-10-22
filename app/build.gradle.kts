@@ -47,10 +47,13 @@ android {
     buildTypes {
         debug {
             signingConfig = signingConfigs.getByName("dev")
+            buildConfigField("boolean", "OFFICIAL", "false")
         }
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName(if (releaseStore != null) "release" else "dev")
+            // Official releases look for newer releases; test builds for a newer test build.
+            buildConfigField("boolean", "OFFICIAL", (releaseStore != null).toString())
         }
     }
 
@@ -61,6 +64,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     androidResources {

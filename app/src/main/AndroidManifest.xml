@@ -3,6 +3,8 @@
 
     <!-- Only used to talk to comic servers and network folders the user adds (Komga, Kavita, OPDS, SMB, WebDAV). -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- The light tick on page turns (optional, in the reader settings). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:name=".FwipApp"

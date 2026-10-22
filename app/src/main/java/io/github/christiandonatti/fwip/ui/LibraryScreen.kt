@@ -120,6 +120,7 @@ class LibraryActions(
     val moveComics: (List<String>, Uri) -> Unit,
     val downloadsUri: () -> Uri,
     val dismissFileMessage: () -> Unit,
+    val saveReport: () -> Unit = {},
 )
 
 private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
@@ -184,6 +185,9 @@ fun LibraryScreen(
     var showAbout by rememberSaveable { mutableStateOf(false) }
     var showStats by rememberSaveable { mutableStateOf(false) }
     var showAppearance by rememberSaveable { mutableStateOf(false) }
+    var showUpdates by rememberSaveable { mutableStateOf(false) }
+    var showReport by rememberSaveable { mutableStateOf(false) }
+    var showUpdateNotes by remember { mutableStateOf(false) }
     var libraryFilter by rememberSaveable { mutableStateOf(Filter.All) }
     // "See all" under the home shelf jumps to the matching list.
     val seeAll: (ShelfKind) -> Unit = { kind ->
@@ -303,6 +307,14 @@ fun LibraryScreen(
                     }
                 }
             }
+            val update = io.github.christiandonatti.fwip.data.Updates.available
+            if (update != null && !selection.active && !(fresh && !ui.welcomed) && shelf == null && !showStats && !showAbout && browsingServer == null) {
+                UpdateBanner(
+                    update,
+                    onNotes = { showUpdateNotes = true },
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = if (wide) 0.dp else 78.dp),
+                )
+            }
             if (selection.active) {
                 SelectionBar(
                     count = selection.ids.size,
@@ -332,6 +344,8 @@ fun LibraryScreen(
             onSync = { showFolders = false; showSync = true },
             onStats = { showFolders = false; showStats = true },
             onAppearance = { showFolders = false; showAppearance = true },
+            onUpdates = { showFolders = false; showUpdates = true },
+            onReport = { showFolders = false; showReport = true },
 
             onRemove = actions.removeFolder,
             onDismiss = { showFolders = false },
@@ -340,6 +354,15 @@ fun LibraryScreen(
 
     if (showAppearance) {
         AppearanceDialog(onDismiss = { showAppearance = false })
+    }
+    if (showUpdates) {
+        UpdatesDialog(onDismiss = { showUpdates = false })
+    }
+    if (showReport) {
+        ReportDialog(onSave = actions.saveReport, onDismiss = { showReport = false })
+    }
+    io.github.christiandonatti.fwip.data.Updates.available?.let { u ->
+        if (showUpdateNotes) UpdateNotesDialog(u, onDismiss = { showUpdateNotes = false })
     }
 
     if (showSync) {
@@ -1402,6 +1425,8 @@ private fun FoldersDialog(
     onSync: () -> Unit,
     onStats: () -> Unit,
     onAppearance: () -> Unit,
+    onUpdates: () -> Unit,
+    onReport: () -> Unit,
     onRemove: (Uri) -> Unit,
     onDismiss: () -> Unit,
     onAbout: () -> Unit,
@@ -1432,6 +1457,12 @@ private fun FoldersDialog(
         SheetButton(str(R.string.appearance), onAppearance)
         SheetButton(str(R.string.stats_title), onStats)
         SheetButton(str(R.string.sync_title), onSync)
+        if (io.github.christiandonatti.fwip.data.Updates.available != null) {
+            SheetButton(str(R.string.updates), onUpdates, trailing = { Box(Modifier.size(10.dp).clip(CircleShape).background(FwipColors.Amber)) })
+        } else {
+            SheetButton(str(R.string.updates), onUpdates)
+        }
+        SheetButton(str(R.string.report_title), onReport)
         SheetButton(str(R.string.about), onAbout)
     }
 }
