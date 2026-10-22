@@ -38,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -256,45 +257,61 @@ fun AppearanceScreen(
         Column(
             Modifier
                 .widthIn(max = 860.dp)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = gutter, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(22.dp),
+                .fillMaxWidth(),
         ) {
-            CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
-            Text(str(R.string.appearance), style = if (wide) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineSmall)
-            Row(
-                Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .clip(CircleShape)
-                    .background(FwipColors.Surface)
-                    .border(1.dp, FwipColors.Stroke, CircleShape)
-                    .padding(5.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            // The header and the tabs stay put; only the tab's contents scroll.
+            Column(
+                Modifier.padding(start = gutter, end = gutter, top = 16.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(if (wide) 14.dp else 10.dp),
             ) {
-                LookTab.entries.forEach { t ->
-                    val on = t == tab
-                    Box(
-                        Modifier
-                            .height(40.dp)
-                            .clip(CircleShape)
-                            .background(if (on) FwipColors.Text else Color.Transparent)
-                            .clickable(role = Role.Tab) { tab = t }
-                            .padding(horizontal = 18.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(t.label, style = MaterialTheme.typography.labelMedium, color = if (on) FwipColors.Ink else FwipColors.TextSoft, maxLines = 1)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
+                    Text(str(R.string.appearance), style = if (wide) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineSmall)
+                }
+                Row(
+                    Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .clip(CircleShape)
+                        .background(FwipColors.Surface)
+                        .border(1.dp, FwipColors.Stroke, CircleShape)
+                        .padding(5.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    LookTab.entries.forEach { t ->
+                        val on = t == tab
+                        Box(
+                            Modifier
+                                .height(40.dp)
+                                .clip(CircleShape)
+                                .background(if (on) FwipColors.Text else Color.Transparent)
+                                .clickable(role = Role.Tab) { tab = t }
+                                .padding(horizontal = 18.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(t.label, style = MaterialTheme.typography.labelMedium, color = if (on) FwipColors.Ink else FwipColors.TextSoft, maxLines = 1)
+                        }
                     }
                 }
             }
-            when (tab) {
-                LookTab.Style -> StyleTab(ui, wide, onPickImage)
-                LookTab.Covers -> CoversTab(ui)
-                LookTab.Home -> HomeTab(ui, state)
-                LookTab.Icon -> IconTab(ui)
-                LookTab.Reader -> ReaderTab(ui)
+            key(tab) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(start = gutter, end = gutter, top = 10.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(22.dp),
+                ) {
+                    when (tab) {
+                        LookTab.Style -> StyleTab(ui, wide, onPickImage)
+                        LookTab.Covers -> CoversTab(ui)
+                        LookTab.Home -> HomeTab(ui, state)
+                        LookTab.Icon -> IconTab(ui)
+                        LookTab.Reader -> ReaderTab(ui)
+                    }
+                    Spacer(Modifier.height(40.dp))
+                }
             }
-            Spacer(Modifier.height(40.dp))
         }
     }
 }

@@ -5,6 +5,8 @@ set -x
 APP=io.github.christiandonatti.fwip
 OUT=repro
 mkdir -p $OUT
+# Keep the whole trace next to the screenshots (run logs are not always reachable).
+exec > >(tee $OUT/log.txt) 2>&1
 W=1920; H=1200
 note() { echo "::notice::$*"; }
 note "ui_check start"
@@ -96,7 +98,7 @@ shot b6-no-carousel 3
 swipe_up ; shot b7-no-carousel-more 1
 look preset=Night titleFont=Unbounded accentMode=Cover corners=Round
 shot b8-follow-cover 3
-timeout 20 adb shell input tap $(( W * 70 / 100 )) $(( H * 40 / 100 )) ; shot b9-follow-cover-2 3
+timeout 20 adb shell input tap $(( W * 62 / 100 )) $(( H * 42 / 100 )) ; shot b9-follow-cover-2 3
 
 # ---- Reader look: paper ground and texture ----
 timeout 20 adb shell am force-stop $APP
@@ -121,7 +123,24 @@ if [ -n "$xy" ]; then
   timeout 20 adb shell input tap $(( W - 60 )) $(( H / 2 )); sleep 2
   timeout 20 adb logcat -d > /tmp/log.txt
   grep -i "turn feedback" /tmp/log.txt > $OUT/feedback.txt
+  grep -i "fwip" /tmp/log.txt | tail -60 > $OUT/fwip-log.txt
+  quick r3-after-taps
   note "feedback lines: $(wc -l < $OUT/feedback.txt) $(tail -1 $OUT/feedback.txt | cut -c1-160)"
+  # Page bar: drag along it and look at the floating preview.
+  timeout 20 adb shell input tap $(( W / 2 )) $(( H / 2 )); sleep 2
+  pxy=$(find_xy '\|Pages$')
+  note "pages button: $pxy"
+  if [ -n "$pxy" ]; then
+    set -- $pxy
+    bx=$(( $1 + 120 )); by=$2
+    timeout 20 adb shell input motionevent DOWN $bx $by
+    for k in 1 2 3 4 5 6; do timeout 20 adb shell input motionevent MOVE $(( bx + 40 * k )) $by; done
+    shot s1-scrub-start 1
+    for k in 1 2 3 4 5 6 7 8; do timeout 20 adb shell input motionevent MOVE $(( bx + 240 + 110 * k )) $by; done
+    shot s2-scrub-middle 2
+    timeout 20 adb shell input motionevent UP $(( bx + 1120 )) $by
+    shot s3-scrub-landed 2
+  fi
   timeout 20 adb shell input keyevent KEYCODE_BACK; sleep 2
 fi
 
