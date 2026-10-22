@@ -42,7 +42,7 @@ data class ComicMeta(
     val rightToLeft: Boolean get() = manga.equals("YesAndRightToLeft", ignoreCase = true)
 
     /** The issue number, unless the tagging tool wrote a placeholder like "None". */
-    val issue: String? get() = cleanNumber(number)
+    val issue: String? get() = issueOrNull(number)
 
     val numberValue: Float? get() = issue?.replace(',', '.')?.toFloatOrNull()
 
@@ -242,7 +242,7 @@ data class OnlineMeta(
 }
 
 /** Tagging tools sometimes write "None", "null" or "-" where a comic has no issue number. */
-fun cleanNumber(raw: String?): String? {
+fun issueOrNull(raw: String?): String? {
     val n = raw?.trim()?.removePrefix("#")?.trim() ?: return null
     if (n.isEmpty()) return null
     return if (n.lowercase() in setOf("none", "null", "nil", "n/a", "na", "-", "--", "?", "undefined", "nan")) null else n
