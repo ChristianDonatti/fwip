@@ -1,9 +1,16 @@
 name: Release
 
-# Push a tag like v0.3.0 to publish a release signed with the private key.
+# Publishes a release signed with the private key: push a tag like v0.3.0, or run this
+# workflow from the Actions tab and type the version (the tag is then created for you).
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish, like 0.3.0'
+        required: true
+        default: '0.3.0'
 
 permissions:
   contents: write
@@ -38,7 +45,9 @@ jobs:
           FWIP_KEY_ALIAS: ${{ secrets.FWIP_KEY_ALIAS }}
           FWIP_KEY_PASSWORD: ${{ secrets.FWIP_KEY_PASSWORD }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${{ github.event.inputs.version }}"
+          [ -n "$version" ] || version="${GITHUB_REF_NAME#v}"
+          version="${version#v}"
           IFS=. read -r major minor patch <<< "$version"
           export FWIP_VERSION_NAME="$version"
           export FWIP_VERSION_CODE=$(( major * 10000 + minor * 100 + ${patch:-0} ))
@@ -54,4 +63,4 @@ jobs:
         run: |
           notes="fastlane/metadata/android/en-US/changelogs/$CODE.txt"
           [ -f "$notes" ] || notes=/dev/null
-          gh release create "$GITHUB_REF_NAME" "fwip-$VERSION.apk" --title "Fwip $VERSION" --notes-file "$notes"
+          gh release create "v$VERSION" "fwip-$VERSION.apk" --target "$GITHUB_SHA" --title "Fwip $VERSION" --notes-file "$notes"

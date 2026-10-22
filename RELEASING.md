@@ -18,7 +18,7 @@ Keep a copy of the keystore and its password somewhere safe. If the key is lost,
 ## Making a release
 
 1. Write the changelog in `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (and `pt-BR`), where versionCode is `major * 10000 + minor * 100 + patch` (0.3.0 is 300).
-2. Push a tag: `git tag v0.3.0 && git push origin v0.3.0`.
+2. Push a tag (`git tag v0.3.0 && git push origin v0.3.0`), or on GitHub open **Actions > Release > Run workflow**, type the version and run it: the tag is created for you.
 3. The Release workflow builds `fwip-0.3.0.apk`, signs it and publishes it on the Releases page.
 
 A build signed with the release key cannot update a test build (different signatures): uninstall the test build first, after saving a backup from **Settings (gear) > Sync and backup**.
