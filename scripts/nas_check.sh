@@ -64,6 +64,8 @@ shot n3-picker-fwip 1
 ui '(?i)^use this folder' ; sleep 3
 ui '(?i)^allow\|' ; sleep 3
 shot n3b-after-allow 1
+# Close the settings sheet if it is still open (Back on the home screen would leave the app).
+[ -n "$(find_xy '^Add folder\|')" ] && timeout 20 adb shell input keyevent KEYCODE_BACK
 note "folders: $(timeout 20 adb shell "run-as $APP sh -c 'cat shared_prefs/fwip.xml'" | tr -d '\n' | cut -c1-400)"
 
 # Scan, then the upload runs in the background.
