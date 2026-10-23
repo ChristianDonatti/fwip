@@ -167,6 +167,8 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         repository.addFolder(uri)
         _state.update { it.copy(folders = repository.folders()) }
         refresh()
+        // The upload walks the folders itself, so it can start even if the app is closed before the scan ends.
+        io.github.christiandonatti.fwip.data.NasUpload.schedule(getApplication())
     }
 
     fun removeFolder(uri: Uri) {
