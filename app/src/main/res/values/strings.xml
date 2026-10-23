@@ -542,4 +542,5 @@
     <string name="upload_sending">Copying comics to the NAS</string>
     <string name="also_on_nas">Also on the NAS</string>
     <string name="delete_keeps_nas">The copy on the NAS stays.</string>
+    <string name="upload_speed">%1$s MB/s</string>
 </resources>

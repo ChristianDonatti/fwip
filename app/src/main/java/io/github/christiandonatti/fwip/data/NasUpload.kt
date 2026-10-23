@@ -55,6 +55,8 @@ data class UploadStatus(
     val done: Int = 0,
     val total: Int = 0,
     val progress: Float = 0f,
+    /** Average speed of this round so far, in MB/s (0 until known). */
+    val speed: Float = 0f,
     /** Bumped when the saved settings or the last result change, so screens read them again. */
     val rev: Int = 0,
 )
@@ -233,8 +235,10 @@ object NasUpload {
                 }
                 if (plan.steps.isEmpty()) return count
                 val made = HashSet<String>()
+                var roundBytes = 0L
+                var roundStart = 0L
                 for ((i, step) in plan.steps.withIndex()) {
-                    _status.update { UploadStatus(running = true, current = step.name, done = i, total = plan.steps.size, rev = it.rev) }
+                    _status.update { UploadStatus(running = true, current = step.name, done = i, total = plan.steps.size, speed = it.speed, rev = it.rev) }
                     foreground(step.name)
                     val dir = join(base, step.dir)
                     if (made.add(dir) && dir.isNotEmpty()) client.mkdirs(dir)
@@ -243,19 +247,40 @@ object NasUpload {
                     try {
                         val input = context.contentResolver.openInputStream(Uri.parse(step.file.source))
                             ?: throw java.io.IOException(str(R.string.error_read_file))
+                        val fileStart = System.nanoTime()
+                        if (roundStart == 0L) roundStart = fileStart
+                        var readNanos = 0L
                         input.use { raw ->
                             var done = 0L
+                            var lastUpdate = 0L
                             val counting = object : java.io.FilterInputStream(raw) {
-                                override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { n ->
+                                override fun read(b: ByteArray, off: Int, len: Int): Int {
+                                    val t = System.nanoTime()
+                                    val n = super.read(b, off, len)
+                                    val now = System.nanoTime()
+                                    readNanos += now - t
                                     if (n > 0) {
                                         done += n
-                                        _status.update { s -> s.copy(progress = (i + done / step.file.size.toFloat().coerceAtLeast(1f)) / plan.steps.size) }
+                                        roundBytes += n
+                                        // A few updates a second are plenty for the bar.
+                                        if (now - lastUpdate > 250_000_000L) {
+                                            lastUpdate = now
+                                            val mbs = (roundBytes / 1e6 / ((now - roundStart) / 1e9)).toFloat()
+                                            _status.update { s -> s.copy(progress = (i + done / step.file.size.toFloat().coerceAtLeast(1f)) / plan.steps.size, speed = mbs) }
+                                        }
                                     }
+                                    return n
                                 }
                             }
                             client.upload(part, step.file.size, counting)
                         }
                         client.rename(part, final)
+                        val seconds = (System.nanoTime() - fileStart) / 1e9
+                        Log.i(
+                            TAG,
+                            "upload: %s, %.1f MB in %.1f s (%.1f MB/s), %.1f s of it reading the file here"
+                                .format(java.util.Locale.US, step.name, step.file.size / 1e6, seconds, step.file.size / 1e6 / seconds, readNanos / 1e9),
+                        )
                     } catch (e: Exception) {
                         runCatching { client.delete(part) }
                         throw e

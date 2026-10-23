@@ -541,4 +541,5 @@
     <string name="upload_sending">Copiando HQs para o NAS</string>
     <string name="also_on_nas">Também no NAS</string>
     <string name="delete_keeps_nas">A cópia no NAS continua.</string>
+    <string name="upload_speed">%1$s MB/s</string>
 </resources>

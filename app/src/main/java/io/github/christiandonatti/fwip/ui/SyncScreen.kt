@@ -182,7 +182,8 @@ private fun UploadSection(folders: List<Uri>, servers: List<Server>, actions: Sy
         Text(str(R.string.upload_with), style = MaterialTheme.typography.labelSmall, color = FwipColors.Amber)
         Text(folderLabel(target, servers), style = MaterialTheme.typography.labelLarge)
         val line = when {
-            status.running && status.total > 0 -> str(R.string.upload_progress, status.done + 1, status.total, status.current.orEmpty())
+            status.running && status.total > 0 -> str(R.string.upload_progress, status.done + 1, status.total, status.current.orEmpty()) +
+                (if (status.speed >= 0.1f) " · " + str(R.string.upload_speed, "%.1f".format(status.speed)) else "")
             status.running -> str(R.string.upload_checking)
             status.queued -> str(if (wifi) R.string.upload_queued_wifi else R.string.upload_queued)
             last > 0 -> str(R.string.upload_last, android.text.format.DateUtils.getRelativeTimeSpanString(last).toString(), lastCount)
