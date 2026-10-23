@@ -1,0 +1,1 @@
+O envio de HQs para o NAS ficou bem mais rápido de novo: a assinatura de cada pacote agora usa a criptografia do próprio processador, não uma biblioteca mais lenta. A tela de envio mostra a velocidade, e o relatório de erro inclui o que o NAS combinou com o app.

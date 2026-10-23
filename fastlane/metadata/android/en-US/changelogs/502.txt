@@ -1,0 +1,1 @@
+Sending comics to the NAS is much faster again: packets are now signed with the device's own hardware crypto instead of a slower software library. The send screen shows the speed, and error reports include what the NAS negotiated.
