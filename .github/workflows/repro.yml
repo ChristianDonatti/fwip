@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   repro:
-    if: contains(github.event.head_commit.message, '[repro]') || contains(github.event.head_commit.message, '[uicheck]')
+    if: contains(github.event.head_commit.message, '[repro]') || contains(github.event.head_commit.message, '[uicheck]') || contains(github.event.head_commit.message, '[nascheck]')
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     steps:
@@ -30,6 +30,17 @@ jobs:
           python3 -m pip install --quiet pillow
           python3 scripts/repro_comics.py comics
           python3 scripts/sample_comics.py comics
+      - name: NAS for the upload check
+        if: contains(github.event.head_commit.message, '[nascheck]')
+        run: |
+          sudo apt-get install -y -qq samba > /dev/null
+          mkdir -p /tmp/nas/HQs
+          cp comics/PepperCarrot_03.cbz comics/PepperCarrot_08.cbz /tmp/nas/HQs/
+          chmod -R a+rwX /tmp/nas
+          sudo useradd -M fwip || true
+          (echo fwippass; echo fwippass) | sudo smbpasswd -a -s fwip
+          printf '[Comics]\n  path = /tmp/nas\n  read only = no\n  valid users = fwip\n  force user = runner\n' | sudo tee -a /etc/samba/smb.conf > /dev/null
+          sudo systemctl restart smbd
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -47,7 +58,7 @@ jobs:
           disk-size: 4G
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           disable-animations: false
-          script: bash scripts/${{ contains(github.event.head_commit.message, '[uicheck]') && 'ui_check.sh' || 'repro.sh' }}
+          script: bash scripts/${{ contains(github.event.head_commit.message, '[nascheck]') && 'nas_check.sh' || (contains(github.event.head_commit.message, '[uicheck]') && 'ui_check.sh' || 'repro.sh') }}
       - name: Push screenshots
         if: always()
         run: |
