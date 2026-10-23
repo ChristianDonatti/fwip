@@ -1,1 +1,1 @@
-O envio de HQs para o NAS ficou de 2 a 4 vezes mais rápido: vários pedaços vão ao mesmo tempo, sem esperar o NAS responder cada um, o que faz mais diferença no Wi-Fi.
+O envio de HQs para o NAS ficou de 2 a 4 vezes mais rápido: vários pedaços vão ao mesmo tempo, sem esperar o NAS responder cada um, o que faz mais diferença no Wi-Fi. A tela de envio agora mostra a velocidade.

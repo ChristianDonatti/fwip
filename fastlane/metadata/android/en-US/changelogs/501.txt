@@ -1,1 +1,1 @@
-Sending comics to the NAS is 2 to 4 times faster: several pieces go out at once instead of waiting for the NAS to answer each one, which matters most on Wi-Fi.
+Sending comics to the NAS is 2 to 4 times faster: several pieces go out at once instead of waiting for the NAS to answer each one, which matters most on Wi-Fi. The send screen now shows the speed.
