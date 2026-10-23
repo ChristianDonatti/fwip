@@ -104,6 +104,8 @@ jobs:
           sudo useradd -M fwip || true
           (echo fwippass; echo fwippass) | sudo smbpasswd -a -s fwip
           printf '[Comics]\n  path = /tmp/fwip/share\n  read only = no\n  valid users = fwip\n  force user = runner\n' | sudo tee -a /etc/samba/smb.conf > /dev/null
+          # The same folder again, encrypted, to see what encryption costs.
+          printf '[Secure]\n  path = /tmp/fwip/share\n  read only = no\n  valid users = fwip\n  force user = runner\n  smb encrypt = required\n' | sudo tee -a /etc/samba/smb.conf > /dev/null
           sudo systemctl restart smbd
           ls -la /tmp/fwip/share /tmp/fwip/share/Sub
 
@@ -129,4 +131,17 @@ jobs:
             exit "$status"
           fi
           grep -h '<testcase' app/build/test-results/testReleaseUnitTest/*.xml | sed 's/^/::notice::/' || true
+
+      - name: Upload speed over a slow network
+        env:
+          FWIP_SMB: 127.0.0.1/Comics
+          FWIP_SMB_USER: fwip
+          FWIP_SMB_PASS: fwippass
+          FWIP_SPEED: "1"
+        run: |
+          # About 4 ms round trip, like a good Wi-Fi.
+          sudo tc qdisc add dev lo root netem delay 2ms
+          ./gradlew testReleaseUnitTest --tests '*NetSpeedTest*' --console=plain || true
+          sudo tc qdisc del dev lo root || true
+          grep -h 'SPEED' app/build/test-results/testReleaseUnitTest/*NetSpeedTest*.xml | sed 's/^/::notice::/' || true
 

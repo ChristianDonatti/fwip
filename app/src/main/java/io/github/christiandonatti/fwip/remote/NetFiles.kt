@@ -228,6 +228,16 @@ internal fun splitDomain(user: String): Pair<String, String?> = when {
 // ---------------------------------------------------------------- SMB
 
 /** A Windows/Samba share (most NAS): smb://host/share/optional/folder. */
+/** How files are sent to SMB shares (the network test compares the two ways). */
+internal object SmbTuning {
+    @Volatile var pipelined = true
+    /** Largest read or write per request (the NAS may allow less). */
+    @Volatile var bufferSize = 4 shl 20
+    /** Bytes per write request, and how many may wait for an answer at once. */
+    const val chunk = 1 shl 20
+    const val depth = 8
+}
+
 internal class SmbNet(private val server: Server) : NetClient, Closeable {
     private val hostPort: String
     private val shareName: String
@@ -252,6 +262,9 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
             .withSecurityProvider(com.hierynomus.security.bc.BCSecurityProvider())
             .withTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
             .withSoTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            // Bigger reads and writes per request (the NAS caps them at what it supports).
+            .withReadBufferSize(SmbTuning.bufferSize)
+            .withWriteBufferSize(SmbTuning.bufferSize)
             .build()
         val c = com.hierynomus.smbj.SMBClient(config)
         client = c
@@ -361,7 +374,37 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
             com.hierynomus.mssmb2.SMB2ShareAccess.ALL,
             com.hierynomus.mssmb2.SMB2CreateDisposition.FILE_OVERWRITE_IF,
             null,
-        ).use { f -> f.outputStream.use { out -> input.copyTo(out, 1 shl 20) } }
+        ).use { f ->
+            if (!SmbTuning.pipelined) {
+                f.outputStream.use { out -> input.copyTo(out, 1 shl 20) }
+                return
+            }
+            // Several writes in flight at once: waiting for the NAS to answer each piece before
+            // sending the next one wastes most of the time on Wi-Fi.
+            val inFlight = ArrayDeque<Pair<java.util.concurrent.Future<Long>, ByteArray>>()
+            val spare = ArrayDeque<ByteArray>()
+            var offset = 0L
+            fun waitOldest() {
+                val (future, buf) = inFlight.removeFirst()
+                future.get(60, java.util.concurrent.TimeUnit.SECONDS)
+                spare.addLast(buf)
+            }
+            while (true) {
+                val buf = spare.removeFirstOrNull() ?: ByteArray(SmbTuning.chunk)
+                var n = 0
+                while (n < buf.size) {
+                    val r = input.read(buf, n, buf.size - n)
+                    if (r < 0) break
+                    n += r
+                }
+                if (n == 0) break
+                inFlight.addLast(f.writeAsync(buf, offset, 0, n) to buf)
+                offset += n
+                while (inFlight.size >= SmbTuning.depth) waitOldest()
+                if (n < buf.size) break
+            }
+            while (inFlight.isNotEmpty()) waitOldest()
+        }
     }
 
     override fun delete(path: String) {
