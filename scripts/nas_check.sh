@@ -39,36 +39,32 @@ note "NAS before: $(nas | tr '\n' ' ')"
 timeout 20 adb exec-in "run-as $APP sh -c 'mkdir -p files shared_prefs; cat > files/servers.json'" <<'J'
 [{"id":"nas","name":"NAS","kind":"Smb","url":"smb://10.0.2.2/Comics","user":"fwip","password":"fwippass"}]
 J
-cat > /tmp/fwip_prefs.xml <<'X'
-<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-<map>
-    <set name="folders">
-        <string>fwip-net://nas/HQs</string>
-    </set>
-</map>
-X
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" '<map>' '    <set name="folders">' '        <string>fwip-net://nas/HQs</string>' '    </set>' '</map>' > /tmp/fwip_prefs.xml
+cat /tmp/fwip_prefs.xml
 timeout 20 adb exec-in "run-as $APP sh -c 'cat > shared_prefs/fwip.xml'" < /tmp/fwip_prefs.xml
 python3 scripts/look_prefs.py welcomed=true > /tmp/fwip_ui.xml
 timeout 20 adb exec-in "run-as $APP sh -c 'cat > shared_prefs/fwip_ui.xml'" < /tmp/fwip_ui.xml
 python3 scripts/look_prefs.py target=fwip-net://nas/HQs wifi=false > /tmp/fwip_upload.xml
 timeout 20 adb exec-in "run-as $APP sh -c 'cat > shared_prefs/fwip_upload.xml'" < /tmp/fwip_upload.xml
+timeout 20 adb shell "run-as $APP sh -c 'ls -la shared_prefs files; cat shared_prefs/fwip.xml'"
 restart 15
+timeout 20 adb shell "run-as $APP sh -c 'ls -la shared_prefs; cat shared_prefs/fwip.xml'"
 shot n1-nas-only 2
 
 # Add the device folder through the system picker.
 ui '\|Settings$' ; sleep 2
 ui '^Add folder\|' ; sleep 4
 shot n2-picker 1
+# The picker opens at the storage root: Download, then Fwip.
 if [ -z "$(find_xy '^Fwip\|')" ]; then
-  ui '\|Show roots$' ; sleep 2
-  ui '^Downloads\|' ; sleep 3
+  ui '^Download\|' ; sleep 3
 fi
 ui '^Fwip\|' ; sleep 3
 shot n3-picker-fwip 1
 ui '(?i)^use this folder' ; sleep 3
 ui '(?i)^allow\|' ; sleep 3
 timeout 20 adb shell input keyevent KEYCODE_BACK; sleep 1
-note "folders: $(adb exec-out run-as $APP cat shared_prefs/fwip.xml | tr -d '\n' | cut -c1-400)"
+note "folders: $(timeout 20 adb shell "run-as $APP sh -c 'cat shared_prefs/fwip.xml'" | tr -d '\n' | cut -c1-400)"
 
 # Scan, then the upload runs in the background.
 for i in $(seq 1 24); do
