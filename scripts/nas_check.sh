@@ -63,7 +63,7 @@ ui '^Fwip\|' ; sleep 3
 shot n3-picker-fwip 1
 ui '(?i)^use this folder' ; sleep 3
 ui '(?i)^allow\|' ; sleep 3
-timeout 20 adb shell input keyevent KEYCODE_BACK; sleep 1
+shot n3b-after-allow 1
 note "folders: $(timeout 20 adb shell "run-as $APP sh -c 'cat shared_prefs/fwip.xml'" | tr -d '\n' | cut -c1-400)"
 
 # Scan, then the upload runs in the background.
@@ -94,7 +94,7 @@ shot n7-after-delete 2
 sleep 20
 note "NAS at the end: $(nas | tr '\n' ' ')"
 timeout 20 adb logcat -d > /tmp/log.txt
-grep -i "upload\|fwip" /tmp/log.txt | grep -iv "chatty" | tail -80 > $OUT/fwip-log.txt
+grep " Fwip \|NasUpload" /tmp/log.txt > $OUT/fwip-log.txt
 note "sent lines: $(grep -c 'upload: sent' /tmp/log.txt)"
 timeout 30 adb logcat -d -b crash > $OUT/crash.txt
 note "crashes: $(head -c 600 $OUT/crash.txt | tr '\n' ' ')"
