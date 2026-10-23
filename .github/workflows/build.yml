@@ -104,8 +104,6 @@ jobs:
           sudo useradd -M fwip || true
           (echo fwippass; echo fwippass) | sudo smbpasswd -a -s fwip
           printf '[Comics]\n  path = /tmp/fwip/share\n  read only = no\n  valid users = fwip\n  force user = runner\n' | sudo tee -a /etc/samba/smb.conf > /dev/null
-          # The same folder again, encrypted, to see what encryption costs.
-          printf '[Secure]\n  path = /tmp/fwip/share\n  read only = no\n  valid users = fwip\n  force user = runner\n  smb encrypt = required\n' | sudo tee -a /etc/samba/smb.conf > /dev/null
           sudo systemctl restart smbd
           ls -la /tmp/fwip/share /tmp/fwip/share/Sub
 
@@ -137,11 +135,20 @@ jobs:
           FWIP_SMB: 127.0.0.1/Comics
           FWIP_SMB_USER: fwip
           FWIP_SMB_PASS: fwippass
-          FWIP_SPEED: "1"
         run: |
-          # About 4 ms round trip, like a good Wi-Fi.
+          speed() {
+            FWIP_SPEED="$1" ./gradlew testReleaseUnitTest --tests '*NetSpeedTest*' --rerun --console=plain > /dev/null 2>&1 || true
+            grep -h 'SPEED' app/build/test-results/testReleaseUnitTest/*NetSpeedTest*.xml | sed 's/^/::notice::/' || true
+          }
+          # About 4 ms round trip, like a good Wi-Fi; then 20 ms, like a busy one.
           sudo tc qdisc add dev lo root netem delay 2ms
-          ./gradlew testReleaseUnitTest --tests '*NetSpeedTest*' --console=plain || true
+          speed wifi4ms
+          sudo tc qdisc change dev lo root netem delay 10ms
+          speed wifi20ms
+          # What signing costs, when the NAS asks for it.
+          sudo tc qdisc change dev lo root netem delay 2ms
+          sudo sed -i 's/^\[global\]/[global]\n   server signing = mandatory/' /etc/samba/smb.conf
+          sudo systemctl restart smbd
+          speed signed4ms
           sudo tc qdisc del dev lo root || true
-          grep -h 'SPEED' app/build/test-results/testReleaseUnitTest/*NetSpeedTest*.xml | sed 's/^/::notice::/' || true
 
