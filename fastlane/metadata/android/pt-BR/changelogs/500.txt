@@ -1,0 +1,1 @@
+Do aparelho para o NAS: as HQs que você coloca nas pastas do tablet são copiadas sozinhas para uma pasta do NAS (SMB ou WebDAV), mantendo as subpastas, no Wi-Fi por padrão. Nada é apagado do outro lado. A HQ que está no tablet e no NAS aparece uma vez só e divide o progresso; apague do tablet para liberar espaço e ela continua aparecendo, lida do NAS.

@@ -1,0 +1,1 @@
+This device to the NAS: comics you put in the tablet's folders are copied to a NAS folder by themselves (SMB or WebDAV), keeping their subfolders, on Wi-Fi by default. Nothing is ever deleted on the other side. A comic that is both on the tablet and on the NAS shows once and shares its progress; delete it from the tablet to free space and it keeps showing, read from the NAS.

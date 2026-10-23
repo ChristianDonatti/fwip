@@ -50,6 +50,7 @@ Fluid, simple and made to feel like reading a real comic book.
 - Network folders over SMB (Windows shares, Samba, most NAS) and WebDAV: comics are read in place, a block at a time, or copied for offline reading
 - Komga, Kavita and OPDS servers: browse and search catalogs, read online page by page (progress synced back to Komga) or download
 - Sync between your tablet and phone without an account: progress, bookmarks and collections go through a folder both devices share (one kept in step by Syncthing or similar, or a network folder). Each device writes its own small file in a hidden `.fwip` folder there and reads the others', so sync tools never see conflicting edits. Comics are matched by file name and size
+- This device to the NAS: comics put in the tablet's folders are copied to a NAS folder by themselves (on Wi-Fi by default), keeping their subfolders. Nothing is ever deleted on the other side, and a comic in both places shows once and shares its progress, so you can delete it from the tablet and keep reading it from the NAS
 - Backup and restore in a single file (servers are saved without passwords)
 - A notice on the home screen when a new version is out on GitHub, and a crash report you can save and send
 - English and Portuguese (follows the system, or pick the app language on Android 13+)
