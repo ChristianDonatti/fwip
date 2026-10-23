@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Only used to talk to comic servers and network folders the user adds (Komga, Kavita, OPDS, SMB, WebDAV). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- The light tick on page turns (optional, in the reader settings). -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Copying new comics to the NAS keeps going with the screen off (only when that is turned on). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Wi-Fi only uploads. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".FwipApp"
@@ -365,6 +371,11 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/continue_reading_widget" />
         </receiver>
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
     </application>
 
 </manifest>

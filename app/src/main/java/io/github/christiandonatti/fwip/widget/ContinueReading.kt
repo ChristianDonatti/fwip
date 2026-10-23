@@ -67,7 +67,8 @@ private class Reading(val id: String, val title: String, val fraction: Float, va
 
 private fun loadReading(context: Context, max: Int): List<Reading> {
     val repo = LibraryRepository(context)
-    return repo.cachedComics()
+    // One entry per comic, even when it is both on the tablet and on the NAS.
+    return io.github.christiandonatti.fwip.data.Twins.split(repo.cachedComics()).visible
         .map { c -> LibraryItem(c, repo.coverPathIfReady(c), repo.colorFor(c), repo.progressFor(c.id), repo.metaFor(c)) }
         .filter { it.progress?.started == true && it.progress.finished.not() }
         .sortedByDescending { it.progress?.lastRead ?: 0L }

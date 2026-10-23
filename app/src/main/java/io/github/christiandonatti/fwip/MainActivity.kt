@@ -132,6 +132,9 @@ class MainActivity : ComponentActivity() {
                             saveBackup.launch("fwip-backup-$day.json")
                         },
                         restoreBackup = { openBackup.launch(arrayOf("application/json", "application/octet-stream", "text/plain")) },
+                        uploadTo = { io.github.christiandonatti.fwip.data.NasUpload.setTarget(this, it) },
+                        uploadNow = { io.github.christiandonatti.fwip.data.NasUpload.schedule(this) },
+                        uploadWifi = { io.github.christiandonatti.fwip.data.NasUpload.setWifiOnly(this, it) },
                     )
                 }
 

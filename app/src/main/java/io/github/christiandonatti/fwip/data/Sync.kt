@@ -410,3 +410,46 @@ class SyncManager(private val context: Context, private val repo: LibraryReposit
         const val DIR = ".fwip"
     }
 }
+
+/**
+ * The same comic in more than one place (in a tablet folder and on the NAS, or downloaded):
+ * the library shows one copy, the closest, and every copy shares the reading state.
+ */
+object Twins {
+    private fun rank(c: Comic) = when {
+        io.github.christiandonatti.fwip.remote.NetUris.isNet(c.uri) -> 2
+        c.uri.scheme == "file" -> 1
+        else -> 0
+    }
+
+    class Split(val visible: List<Comic>, val hidden: List<Comic>) {
+        /** Hidden copy id to the id shown in its place. */
+        val aliases: Map<String, String> by lazy {
+            val shown = visible.associateBy { it.syncKey() }
+            hidden.mapNotNull { h -> shown[h.syncKey()]?.let { h.id to it.id } }.toMap()
+        }
+
+        /** Shown comics that also have a copy on the NAS. */
+        val onNas: Set<String> by lazy {
+            val net = hidden.filter { io.github.christiandonatti.fwip.remote.NetUris.isNet(it.uri) }.map { it.syncKey() }.toSet()
+            visible.filter { it.syncKey() in net }.map { it.id }.toSet()
+        }
+    }
+
+    fun split(all: List<Comic>): Split {
+        val visible = ArrayList<Comic>(all.size)
+        val hidden = ArrayList<Comic>()
+        val best = all.groupBy { it.syncKey() }.mapValues { (_, list) -> list.minWith(compareBy(::rank)) }
+        for (c in all) if (best[c.syncKey()] === c) visible += c else hidden += c
+        return Split(visible, hidden)
+    }
+}
+
+/** Gives every copy of the same comic the newest progress, bookmarks, edits and list state. */
+fun LibraryRepository.alignTwins(all: List<Comic>, bookmarks: BookmarkStore): Boolean {
+    val twins = all.groupBy { it.syncKey() }.values.filter { it.size > 1 }.flatten()
+    if (twins.isEmpty()) return false
+    val state = SyncState.local(this, bookmarks, twins, null)
+    return SyncState(state.progress, state.bookmarks, emptyList(), emptyMap(), state.meta, state.want)
+        .applyTo(this, bookmarks, twins).changed
+}

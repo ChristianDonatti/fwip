@@ -51,6 +51,8 @@ data class LibraryItem(
     val meta: ComicMeta? = null,
     /** When it went on the "Want to read" list; null when it is not there. */
     val wantedAt: Long? = null,
+    /** On this device and, as a second copy, on the NAS. */
+    val alsoOnNas: Boolean = false,
 ) {
     val wanted: Boolean get() = wantedAt != null
 

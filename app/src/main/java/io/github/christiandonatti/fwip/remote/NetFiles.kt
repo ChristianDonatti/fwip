@@ -42,6 +42,8 @@ interface NetClient {
     /** Streams a (possibly large) file to [path], replacing what is there. */
     fun upload(path: String, length: Long, input: java.io.InputStream)
     fun delete(path: String)
+    /** Renames [from] to [to] in the same share; fails if [to] exists. */
+    fun rename(from: String, to: String)
 }
 
 /** Network folder files are referenced as fwip-net://<server id>/<path>. */
@@ -366,6 +368,19 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
         withShare { sh -> sh.rm(full(path)) }
     }
 
+    override fun rename(from: String, to: String) {
+        withShare { sh ->
+            sh.openFile(
+                full(from),
+                java.util.EnumSet.of(com.hierynomus.msdtyp.AccessMask.DELETE, com.hierynomus.msdtyp.AccessMask.GENERIC_WRITE),
+                null,
+                com.hierynomus.mssmb2.SMB2ShareAccess.ALL,
+                com.hierynomus.mssmb2.SMB2CreateDisposition.FILE_OPEN,
+                null,
+            ).use { f -> f.rename(full(to), false) }
+        }
+    }
+
     override fun close() = reset()
 }
 
@@ -514,6 +529,11 @@ internal class WebDavNet(private val server: Server) : NetClient {
 
     override fun delete(path: String) {
         check(http.newCall(request(url(path)).delete().build()).execute()).close()
+    }
+
+    override fun rename(from: String, to: String) {
+        val req = request(url(from)).method("MOVE", null).header("Destination", url(to)).header("Overwrite", "F").build()
+        check(http.newCall(req).execute()).close()
     }
 
     override fun mkdirs(path: String) {

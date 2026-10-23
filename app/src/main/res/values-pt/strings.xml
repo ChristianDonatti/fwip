@@ -521,4 +521,24 @@
     <string name="use_as_backdrop">Usar como fundo da biblioteca</string>
     <string name="reset_progress">Zerar o progresso (voltar ao início)</string>
     <string name="pages_x_y">Páginas %1$d e %2$d</string>
+    <string name="upload_title">Do aparelho para o NAS</string>
+    <string name="upload_explain">As HQs que você coloca nas pastas deste aparelho são copiadas sozinhas para uma pasta do NAS, mantendo as subpastas. Apagar de um lado nunca apaga do outro, então dá para liberar espaço aqui depois de ler.</string>
+    <string name="upload_to">Enviar para %1$s</string>
+    <string name="upload_tip">Escolha uma pasta do NAS que também esteja na biblioteca: a HQ que você apagar aqui continua aparecendo, lida do NAS, com o progresso.</string>
+    <string name="upload_no_net">Adicione antes uma pasta de rede (SMB ou WebDAV) na aba Servidores.</string>
+    <string name="upload_with">Enviando para</string>
+    <string name="upload_wifi">Só no Wi-Fi</string>
+    <string name="upload_now">Enviar agora</string>
+    <string name="upload_stop">Parar</string>
+    <string name="upload_progress">Enviando %1$d de %2$d: %3$s</string>
+    <string name="upload_checking">Procurando HQs novas…</string>
+    <string name="upload_queued">Esperando a rede</string>
+    <string name="upload_queued_wifi">Esperando o Wi-Fi</string>
+    <string name="upload_last">Última verificação %1$s · %2$d enviadas</string>
+    <string name="upload_never">Ainda não verificou</string>
+    <string name="upload_failed">A última tentativa falhou: %1$s. Ele tenta de novo sozinho.</string>
+    <string name="upload_channel">Cópias para o NAS</string>
+    <string name="upload_sending">Copiando HQs para o NAS</string>
+    <string name="also_on_nas">Também no NAS</string>
+    <string name="delete_keeps_nas">A cópia no NAS continua.</string>
 </resources>

@@ -433,6 +433,9 @@ fun LibraryScreen(
             DialogTitle(if (list.size == 1) str(R.string.delete_one_title) else str(R.string.delete_n_title, list.size), { deleteFor = null })
             if (list.size == 1) Text(list[0].comic.fileName, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
             Text(str(R.string.delete_explain), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
+            if (list.isNotEmpty() && list.all { it.alsoOnNas }) {
+                Text(str(R.string.delete_keeps_nas), style = MaterialTheme.typography.bodyMedium, color = FwipColors.Amber)
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 PillButton(str(R.string.cancel), { deleteFor = null }, style = PillStyle.Ghost, height = 46.dp, modifier = Modifier.weight(1f))
                 PillButton(str(R.string.delete), {

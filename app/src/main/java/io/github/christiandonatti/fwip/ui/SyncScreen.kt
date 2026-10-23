@@ -20,7 +20,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import io.github.christiandonatti.fwip.data.NasUpload
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +46,10 @@ class SyncActions(
     val syncNow: () -> Unit,
     val saveBackup: () -> Unit,
     val restoreBackup: () -> Unit,
+    /** Copying this device's comics to a NAS folder: turn on (with the folder) or off. */
+    val uploadTo: (Uri?) -> Unit = {},
+    val uploadNow: () -> Unit = {},
+    val uploadWifi: (Boolean) -> Unit = {},
 )
 
 /**
@@ -115,6 +126,9 @@ fun SyncDialog(
             }
 
             Box(Modifier.fillMaxWidth().height(1.dp).background(FwipColors.Stroke))
+            UploadSection(folders, servers, actions)
+
+            Box(Modifier.fillMaxWidth().height(1.dp).background(FwipColors.Stroke))
             Label(str(R.string.backup_title))
             Text(str(R.string.backup_explain), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
             SheetButton(str(R.string.backup_save), actions.saveBackup)
@@ -124,6 +138,93 @@ fun SyncDialog(
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = if (info.failed) FwipColors.Danger else FwipColors.Amber)
             }
         }
+    }
+}
+
+/** Comics put on this device go to a NAS folder by themselves. */
+@Composable
+private fun UploadSection(folders: List<Uri>, servers: List<Server>, actions: SyncActions) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val status by NasUpload.status.collectAsState()
+    // Saved settings and the last result, read again whenever the status says they changed.
+    val target = remember(status.rev) { NasUpload.target(context) }
+    val wifi = remember(status.rev) { NasUpload.wifiOnly(context) }
+    val last = remember(status.rev) { NasUpload.lastRun(context) }
+    val lastCount = remember(status.rev) { NasUpload.lastSent(context) }
+    val error = remember(status.rev) { NasUpload.lastError(context) }
+
+    Label(str(R.string.upload_title))
+    Text(str(R.string.upload_explain), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+    if (target == null) {
+        val netFolders = folders.filter(NetUris::isNet)
+        val roots = servers.filter { it.kind.isFolder }
+            .map { NetUris.of(it.id, "") }
+            .filter { r -> netFolders.none { it.toString().trimEnd('/') == r.toString().trimEnd('/') } }
+        if (netFolders.isEmpty() && roots.isEmpty()) {
+            Text(str(R.string.upload_no_net), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextSoft)
+        }
+        (netFolders + roots).forEach { uri ->
+            SheetButton(str(R.string.upload_to, folderLabel(uri, servers)), { actions.uploadTo(uri) }, leading = { FolderIcon(FwipColors.Amber) })
+        }
+        if (netFolders.isNotEmpty() || roots.isNotEmpty()) {
+            Text(str(R.string.upload_tip), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+        }
+        return
+    }
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(FwipColors.Surface)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(str(R.string.upload_with), style = MaterialTheme.typography.labelSmall, color = FwipColors.Amber)
+        Text(folderLabel(target, servers), style = MaterialTheme.typography.labelLarge)
+        val line = when {
+            status.running && status.total > 0 -> str(R.string.upload_progress, status.done + 1, status.total, status.current.orEmpty())
+            status.running -> str(R.string.upload_checking)
+            status.queued -> str(if (wifi) R.string.upload_queued_wifi else R.string.upload_queued)
+            last > 0 -> str(R.string.upload_last, android.text.format.DateUtils.getRelativeTimeSpanString(last).toString(), lastCount)
+            else -> str(R.string.upload_never)
+        }
+        Text(line, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextSoft, maxLines = 2)
+        if (status.running && status.total > 0) {
+            Spacer(Modifier.height(4.dp))
+            Box(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(FwipColors.Stroke)) {
+                Box(Modifier.fillMaxWidth(status.progress.coerceIn(0f, 1f)).height(4.dp).background(FwipColors.Amber))
+            }
+        }
+        if (error != null && !status.running) {
+            Text(str(R.string.upload_failed, error), style = MaterialTheme.typography.bodySmall, color = FwipColors.Danger)
+        }
+        Spacer(Modifier.height(6.dp))
+        Row(
+            Modifier.fillMaxWidth().clickable(role = androidx.compose.ui.semantics.Role.Switch) { actions.uploadWifi(!wifi) },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(str(R.string.upload_wifi), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+            Switch(
+                checked = wifi,
+                onCheckedChange = actions.uploadWifi,
+                colors = SwitchDefaults.colors(checkedTrackColor = FwipColors.Amber, checkedThumbColor = FwipColors.AmberInk),
+            )
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        PillButton(
+            str(R.string.upload_now),
+            actions.uploadNow,
+            style = PillStyle.Amber,
+            height = 46.dp,
+            enabled = !status.running,
+            modifier = Modifier.weight(1f),
+            leading = {
+                if (status.running) CircularProgressIndicator(Modifier.size(16.dp), color = FwipColors.AmberInk, strokeWidth = 2.dp)
+                else Icon(Icons.Filled.Refresh, null, Modifier.size(18.dp))
+            },
+        )
+        PillButton(str(R.string.upload_stop), { actions.uploadTo(null) }, style = PillStyle.Ghost, height = 46.dp)
     }
 }
 

@@ -14,6 +14,8 @@ import io.github.christiandonatti.fwip.data.seriesKey
 import io.github.christiandonatti.fwip.data.sortedFor
 import io.github.christiandonatti.fwip.data.LibraryItem
 import io.github.christiandonatti.fwip.data.LibraryRepository
+import io.github.christiandonatti.fwip.data.alignTwins
+import io.github.christiandonatti.fwip.data.syncKey
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,6 +54,8 @@ data class LibraryState(
     val fileWork: FileWork? = null,
     /** Result of the last delete or move, shown once. */
     val fileMessage: String? = null,
+    /** Copies not shown (the same comic on the NAS) to the copy shown in their place. */
+    val aliases: Map<String, String> = emptyMap(),
 ) {
     /** Started but not finished, most recent first. */
     val continueReading: List<LibraryItem>
@@ -71,12 +75,13 @@ data class LibraryState(
     /** What the reader shows: a library comic, or one from outside the library. */
     val readerComic: Comic? get() = outsideComic ?: openComic
 
-    fun item(id: String): LibraryItem? = items.firstOrNull { it.comic.id == id }
+    fun item(id: String): LibraryItem? =
+        items.firstOrNull { it.comic.id == id } ?: aliases[id]?.let { a -> items.firstOrNull { it.comic.id == a } }
 
     /** What to read after [item]: the next issue of its series, or else the next file in its folder. */
     fun nextAfter(item: LibraryItem, context: String? = null): LibraryItem? {
         collections.firstOrNull { it.id == context }?.let { c ->
-            val at = c.comicIds.indexOf(item.comic.id)
+            val at = c.comicIds.indexOfFirst { it == item.comic.id || aliases[it] == item.comic.id }
             if (at >= 0) return c.comicIds.drop(at + 1).firstNotNullOfOrNull(::item)
         }
         val key = seriesKey(item.series.name)
@@ -109,7 +114,7 @@ data class LibraryState(
     fun itemsOf(shelf: Shelf, order: SortOrder = SortOrder.Title): List<LibraryItem> = when (shelf) {
         is Shelf.Series -> items.filter { seriesKey(it.series.name) == shelf.key }.sortedFor(SortOrder.Title)
         is Shelf.Folder -> items.filter { it.comic.folder == shelf.name }.sortedFor(order)
-        is Shelf.Custom -> collections.firstOrNull { it.id == shelf.id }?.comicIds.orEmpty().mapNotNull(::item)
+        is Shelf.Custom -> collections.firstOrNull { it.id == shelf.id }?.comicIds.orEmpty().mapNotNull(::item).distinctBy { it.comic.id }
         is Shelf.Smart -> when (shelf.kind) {
             SmartKind.Recent -> items.sortedFor(SortOrder.Added).take(30)
             SmartKind.Reading -> continueReading
@@ -131,10 +136,14 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
 
     private var scanJob: Job? = null
 
+    /** Which copy of each comic shows, when it is in more than one place. */
+    private var twins = io.github.christiandonatti.fwip.data.Twins.split(emptyList())
+
     init {
-        val cached = repository.cachedComics()
+        twins = io.github.christiandonatti.fwip.data.Twins.split(repository.cachedComics())
         _state.value = LibraryState(
-            items = cached.map(::itemFor),
+            items = twins.visible.map(::itemFor),
+            aliases = twins.aliases,
             folders = repository.folders(),
             loaded = true,
             collections = repository.collections(),
@@ -151,6 +160,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         progress = repository.progressFor(comic.id),
         meta = repository.metaFor(comic),
         wantedAt = repository.wantedAt(comic.id),
+        alsoOnNas = comic.id in twins.onNas,
     )
 
     fun addFolder(uri: Uri) {
@@ -178,11 +188,17 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 pendingMoves.clear()
             }
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { sync.afterScan(comics) }
-            _state.update { it.copy(items = comics.map(::itemFor), collections = repository.collections()) }
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                sync.afterScan(comics)
+                repository.alignTwins(comics, io.github.christiandonatti.fwip.data.BookmarkStore.get(getApplication()))
+            }
+            twins = io.github.christiandonatti.fwip.data.Twins.split(comics)
+            _state.update { it.copy(items = twins.visible.map(::itemFor), aliases = twins.aliases, collections = repository.collections()) }
             scheduleSync(0)
+            // New comics on this device go to the NAS, when that is turned on.
+            io.github.christiandonatti.fwip.data.NasUpload.schedule(getApplication())
             // Covers and metadata are read one comic at a time so the shelves fill in while you watch.
-            for (comic in comics) {
+            for (comic in twins.visible) {
                 if (repository.isAnalyzed(comic)) continue
                 repository.analyze(comic)
                 val fresh = itemFor(comic)
@@ -614,9 +630,18 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                     .onFailure { error = it.message ?: it.javaClass.simpleName }
             }
             repository.forgetComics(gone)
+            // A comic deleted here but still on the NAS: the NAS copy takes its place, collections included.
+            val deleted = comics.filter { it.id in gone }
+            val rest = (twins.visible + twins.hidden).filterNot { it.id in gone }
+            for (d in deleted) {
+                rest.firstOrNull { it.syncKey() == d.syncKey() }?.let { repository.migrate(d.id, it.id) }
+            }
+            twins = io.github.christiandonatti.fwip.data.Twins.split(rest)
             _state.update { s ->
                 s.copy(
-                    items = s.items.filterNot { it.comic.id in gone },
+                    items = twins.visible.map(::itemFor),
+                    aliases = twins.aliases,
+                    collections = repository.collections(),
                     fileWork = null,
                     fileMessage = error?.let { str(R.string.delete_failed, gone.size, comics.size, it) }
                         ?: if (gone.size == 1) str(R.string.deleted_one) else str(R.string.deleted_n, gone.size),
@@ -694,7 +719,12 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
             list.map { c ->
                 if (c.id != collectionId) c
                 else if (inside) c.copy(comicIds = (c.comicIds + comicIds).distinct())
-                else c.copy(comicIds = c.comicIds - comicIds.toSet())
+                else {
+                    // The collection may hold the NAS copy of a comic shown from the tablet.
+                    val out = comicIds.toSet()
+                    val aliases = _state.value.aliases
+                    c.copy(comicIds = c.comicIds.filterNot { it in out || aliases[it] in out })
+                }
             }
         }
 }

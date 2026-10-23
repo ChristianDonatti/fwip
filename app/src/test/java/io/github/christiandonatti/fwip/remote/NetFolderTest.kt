@@ -114,6 +114,21 @@ class NetFolderTest {
         assertTrue(c.list("").none { it.name == "Moved.cbz" })
     }
 
+    /** How the tablet sends a comic to the NAS: into a new subfolder, under a temporary name, then renamed. */
+    @Test
+    fun uploadsIntoNewFolderAndRenames() {
+        assumeTrue(address != null)
+        val c = client()
+        val data = ByteArray(1_500_000) { (it % 241).toByte() }
+        c.mkdirs("Up/Batman")
+        c.upload("Up/Batman/Batman 001.cbz.fwip-part", data.size.toLong(), data.inputStream())
+        c.rename("Up/Batman/Batman 001.cbz.fwip-part", "Up/Batman/Batman 001.cbz")
+        val names = c.list("Up/Batman").map { it.name }
+        assertEquals(listOf("Batman 001.cbz"), names)
+        assertEquals(data.size.toLong(), c.list("Up/Batman").single().size)
+        c.delete("Up/Batman/Batman 001.cbz")
+    }
+
     @Test
     fun writesSyncFiles() {
         assumeTrue(address != null)

@@ -363,6 +363,9 @@ fun ComicActionsDialog(
                 if (item.comic.folder.isNotBlank()) {
                     Text(item.comic.folder, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+                if (item.alsoOnNas) {
+                    Text(str(R.string.also_on_nas), style = MaterialTheme.typography.labelSmall, color = FwipColors.Amber)
+                }
             }
             CircleIconButton(Icons.Filled.Close, str(R.string.close), onDismiss, size = 40.dp)
         }

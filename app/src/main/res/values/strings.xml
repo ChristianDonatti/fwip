@@ -522,4 +522,24 @@
     <string name="use_as_backdrop">Use as library background</string>
     <string name="reset_progress">Start over from the first page</string>
     <string name="pages_x_y">Pages %1$d and %2$d</string>
+    <string name="upload_title">This device to the NAS</string>
+    <string name="upload_explain">Comics you put in this device\'s folders are copied to a NAS folder by themselves, keeping their subfolders. Deleting on one side never deletes on the other, so you can free up space here after reading.</string>
+    <string name="upload_to">Send to %1$s</string>
+    <string name="upload_tip">Pick a NAS folder that is also in your library: a comic you delete here keeps showing, read from the NAS, with its progress.</string>
+    <string name="upload_no_net">Add a network folder (SMB or WebDAV) in the Servers tab first.</string>
+    <string name="upload_with">Sending to</string>
+    <string name="upload_wifi">Only on Wi-Fi</string>
+    <string name="upload_now">Send now</string>
+    <string name="upload_stop">Stop</string>
+    <string name="upload_progress">Sending %1$d of %2$d: %3$s</string>
+    <string name="upload_checking">Looking for new comics…</string>
+    <string name="upload_queued">Waiting for the network</string>
+    <string name="upload_queued_wifi">Waiting for Wi-Fi</string>
+    <string name="upload_last">Last check %1$s · %2$d sent</string>
+    <string name="upload_never">Not checked yet</string>
+    <string name="upload_failed">Last try failed: %1$s. It tries again by itself.</string>
+    <string name="upload_channel">Copies to the NAS</string>
+    <string name="upload_sending">Copying comics to the NAS</string>
+    <string name="also_on_nas">Also on the NAS</string>
+    <string name="delete_keeps_nas">The copy on the NAS stays.</string>
 </resources>
