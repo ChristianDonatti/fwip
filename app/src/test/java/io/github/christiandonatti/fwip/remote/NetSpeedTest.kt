@@ -23,8 +23,9 @@ class NetSpeedTest {
         )
     )
 
-    private fun run(share: String, label: String, pipelined: Boolean, buffer: Int, data: ByteArray) {
+    private fun run(share: String, label: String, pipelined: Boolean, buffer: Int, data: ByteArray, fast: Boolean = true) {
         SmbTuning.pipelined = pipelined
+        SmbTuning.fastCrypto = fast
         SmbTuning.bufferSize = buffer
         try {
             val c = client(share)
@@ -41,6 +42,7 @@ class NetSpeedTest {
             if (share == "Comics") throw e
         } finally {
             SmbTuning.pipelined = true
+            SmbTuning.fastCrypto = true
             SmbTuning.bufferSize = 4 shl 20
         }
     }
@@ -51,7 +53,7 @@ class NetSpeedTest {
         val data = ByteArray(48 shl 20) { (it * 31 % 251).toByte() }
         for (share in listOf("Comics")) {
             run(share, "old 1MB one at a time", pipelined = false, buffer = 1 shl 20, data = data)
-            run(share, "4MB one at a time", pipelined = false, buffer = 4 shl 20, data = data)
+            run(share, "1MB x8 in flight, Bouncy Castle", pipelined = true, buffer = 4 shl 20, data = data, fast = false)
             run(share, "1MB x8 in flight", pipelined = true, buffer = 4 shl 20, data = data)
         }
     }

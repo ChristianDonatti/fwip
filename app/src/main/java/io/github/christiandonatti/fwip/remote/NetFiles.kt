@@ -231,6 +231,8 @@ internal fun splitDomain(user: String): Pair<String, String?> = when {
 /** How files are sent to SMB shares (the network test compares the two ways). */
 internal object SmbTuning {
     @Volatile var pipelined = true
+    /** The system's AES for packet signing instead of Bouncy Castle's. */
+    @Volatile var fastCrypto = true
     /** Largest read or write per request (the NAS may allow less). */
     @Volatile var bufferSize = 4 shl 20
     /** Bytes per write request, and how many may wait for an answer at once. */
@@ -259,7 +261,7 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
         share?.takeIf { it.isConnected }?.let { return it }
         reset()
         val config = com.hierynomus.smbj.SmbConfig.builder()
-            .withSecurityProvider(com.hierynomus.security.bc.BCSecurityProvider())
+            .withSecurityProvider(if (SmbTuning.fastCrypto) FastSecurityProvider() else com.hierynomus.security.bc.BCSecurityProvider())
             .withTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
             .withSoTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
             // Bigger reads and writes per request (the NAS caps them at what it supports).
@@ -279,6 +281,13 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
         }
         val s = connection.authenticate(auth)
         session = s
+        runCatching {
+            android.util.Log.i(
+                "Fwip",
+                "smb: ${connection.negotiatedProtocol.dialect}, signing ${if (s.isSigningRequired) "on" else "off"}, " +
+                    "encryption ${if (s.shouldEncryptData()) "on" else "off"}, max write ${connection.negotiatedProtocol.maxWriteSize shr 10} KB",
+            )
+        }
         val sh = s.connectShare(shareName) as? com.hierynomus.smbj.share.DiskShare
             ?: throw IOException(str(R.string.error_smb_share))
         share = sh
