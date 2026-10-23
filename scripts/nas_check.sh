@@ -41,7 +41,12 @@ timeout 20 adb exec-in "run-as $APP sh -c 'mkdir -p files shared_prefs; cat > fi
 J
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" '<map>' '    <set name="folders">' '        <string>fwip-net://nas/HQs</string>' '    </set>' '</map>' > /tmp/fwip_prefs.xml
 cat /tmp/fwip_prefs.xml
-timeout 20 adb exec-in "run-as $APP sh -c 'cat > shared_prefs/fwip.xml'" < /tmp/fwip_prefs.xml
+# adb exec-in sometimes drops a write: try until the file is there.
+for k in 1 2 3 4 5; do
+  timeout 20 adb exec-in "run-as $APP sh -c 'cat > shared_prefs/fwip.xml'" < /tmp/fwip_prefs.xml
+  timeout 20 adb shell "run-as $APP sh -c 'cat shared_prefs/fwip.xml'" | grep -q "nas/HQs" && break
+  sleep 2
+done
 python3 scripts/look_prefs.py welcomed=true > /tmp/fwip_ui.xml
 timeout 20 adb exec-in "run-as $APP sh -c 'cat > shared_prefs/fwip_ui.xml'" < /tmp/fwip_ui.xml
 python3 scripts/look_prefs.py target=fwip-net://nas/HQs wifi=false > /tmp/fwip_upload.xml
