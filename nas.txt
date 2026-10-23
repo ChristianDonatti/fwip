@@ -1,0 +1,20 @@
+/tmp/nas:
+total 20
+drwxrwxrwx  3 runner runner  4096 Oct 23 06:25 .
+drwxrwxrwt 16 root   root   12288 Oct 23 06:27 ..
+drwxrwxrwx  3 runner runner  4096 Oct 23 06:28 HQs
+
+/tmp/nas/HQs:
+total 8492
+drwxrwxrwx 3 runner runner    4096 Oct 23 06:28 .
+drwxrwxrwx 3 runner runner    4096 Oct 23 06:25 ..
+drwxr-xr-x 2 runner runner    4096 Oct 23 06:28 Pepper
+-rw-rw-rw- 1 runner runner 5093296 Oct 23 06:25 PepperCarrot_03.cbz
+-rw-rw-rw- 1 runner runner 3586990 Oct 23 06:25 PepperCarrot_08.cbz
+
+/tmp/nas/HQs/Pepper:
+total 3944
+drwxr-xr-x 2 runner runner    4096 Oct 23 06:28 .
+drwxrwxrwx 3 runner runner    4096 Oct 23 06:28 ..
+-rwxr--r-- 1 runner runner 1197344 Oct 23 06:28 PepperCarrot_01.cbz
+-rwxr--r-- 1 runner runner 2827422 Oct 23 06:28 PepperCarrot_02.cbz

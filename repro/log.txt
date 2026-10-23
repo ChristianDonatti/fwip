@@ -1,0 +1,261 @@
++ W=1920
++ H=1200
++ adb install -r app/build/outputs/apk/debug/app-debug.apk
+Performing Streamed Install
+Success
++ adb shell settings put system screen_off_timeout 1800000
++ adb shell svc power stayon true
++ adb shell wm size 1920x1200
++ adb shell wm density 240
++ adb shell pm clear io.github.christiandonatti.fwip
+Success
++ adb shell mkdir -p /sdcard/Download/Fwip/Pepper
++ adb push comics/PepperCarrot_01.cbz /sdcard/Download/Fwip/Pepper/
+comics/PepperCarrot_01.cbz: 1 file pushed, 0 skipped. 32.7 MB/s (1197344 bytes in 0.035s)
++ adb push comics/PepperCarrot_02.cbz /sdcard/Download/Fwip/Pepper/
+comics/PepperCarrot_02.cbz: 1 file pushed, 0 skipped. 255.9 MB/s (2827422 bytes in 0.011s)
++ adb push comics/PepperCarrot_03.cbz /sdcard/Download/Fwip/
+comics/PepperCarrot_03.cbz: 1 file pushed, 0 skipped. 427.5 MB/s (5093296 bytes in 0.011s)
+++ tr '\n' ' '
+++ nas
+++ cd /tmp/nas
+++ find . -type f
+++ sort
+++ sed 's/^/  /'
++ note 'NAS before:   ./HQs/PepperCarrot_03.cbz   ./HQs/PepperCarrot_08.cbz '
++ echo '::notice::NAS before:   ./HQs/PepperCarrot_03.cbz   ./HQs/PepperCarrot_08.cbz '
+::notice::NAS before:   ./HQs/PepperCarrot_03.cbz   ./HQs/PepperCarrot_08.cbz 
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''mkdir -p files shared_prefs; cat > files/servers.json'\'''
++ printf '%s\n' '<?xml version='\''1.0'\'' encoding='\''utf-8'\'' standalone='\''yes'\'' ?>' '<map>' '    <set name="folders">' '        <string>fwip-net://nas/HQs</string>' '    </set>' '</map>'
++ cat /tmp/fwip_prefs.xml
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <set name="folders">
+        <string>fwip-net://nas/HQs</string>
+    </set>
+</map>
++ for k in 1 2 3 4 5
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip.xml'\'''
++ timeout 20 adb shell 'run-as io.github.christiandonatti.fwip sh -c '\''cat shared_prefs/fwip.xml'\'''
++ grep -q nas/HQs
++ break
++ python3 scripts/look_prefs.py welcomed=true
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_ui.xml'\'''
++ python3 scripts/look_prefs.py target=fwip-net://nas/HQs wifi=false
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_upload.xml'\'''
++ timeout 20 adb shell 'run-as io.github.christiandonatti.fwip sh -c '\''ls -la shared_prefs files; cat shared_prefs/fwip.xml'\'''
+files:
+total 24
+drwxrwxrwx 2 u0_a192 u0_a192 4096 2026-10-23 06:27 .
+drwx------ 4 u0_a192 u0_a192 4096 2026-10-23 06:27 ..
+-rw-rw-rw- 1 u0_a192 u0_a192  107 2026-10-23 06:27 servers.json
+
+shared_prefs:
+total 40
+drwxrwxrwx 2 u0_a192 u0_a192 4096 2026-10-23 06:27 .
+drwx------ 4 u0_a192 u0_a192 4096 2026-10-23 06:27 ..
+-rw-rw-rw- 1 u0_a192 u0_a192  150 2026-10-23 06:27 fwip.xml
+-rw-rw-rw- 1 u0_a192 u0_a192  115 2026-10-23 06:27 fwip_ui.xml
+-rw-rw-rw- 1 u0_a192 u0_a192  166 2026-10-23 06:27 fwip_upload.xml
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <set name="folders">
+        <string>fwip-net://nas/HQs</string>
+    </set>
+</map>
++ restart 15
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ sleep 15
++ timeout 20 adb shell 'run-as io.github.christiandonatti.fwip sh -c '\''ls -la shared_prefs; cat shared_prefs/fwip.xml'\'''
+total 56
+drwxrwxrwx 2 u0_a192 u0_a192 4096 2026-10-23 06:27 .
+drwx------ 7 u0_a192 u0_a192 4096 2026-10-23 06:27 ..
+-rw-rw-rw- 1 u0_a192 u0_a192  150 2026-10-23 06:27 fwip.xml
+-rw-rw---- 1 u0_a192 u0_a192  142 2026-10-23 06:27 fwip_sync.xml
+-rw-rw-rw- 1 u0_a192 u0_a192  115 2026-10-23 06:27 fwip_ui.xml
+-rw-rw---- 1 u0_a192 u0_a192  117 2026-10-23 06:27 fwip_updates.xml
+-rw-rw---- 1 u0_a192 u0_a192  252 2026-10-23 06:27 fwip_upload.xml
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <set name="folders">
+        <string>fwip-net://nas/HQs</string>
+    </set>
+</map>
++ shot n1-nas-only 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/n1-nas-only.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 128.8 MB/s (1236727 bytes in 0.009s)
++ note n1-nas-only
++ echo ::notice::n1-nas-only
+::notice::n1-nas-only
++ ui '\|Settings$'
++ timeout 60 python3 scripts/ui.py '\|Settings$'
++ sleep 2
++ ui '^Add folder\|'
++ timeout 60 python3 scripts/ui.py '^Add folder\|'
++ sleep 4
++ shot n2-picker 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/n2-picker.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 50.7 MB/s (179949 bytes in 0.003s)
++ note n2-picker
++ echo ::notice::n2-picker
+::notice::n2-picker
+++ find_xy '^Fwip\|'
+++ timeout 60 python3 -c 'import sys; sys.path.insert(0,'\''scripts'\''); import ui; p=ui.find(sys.argv[1]); print(f'\''{p[0]} {p[1]}'\'' if p else '\'''\'')' '^Fwip\|'
++ '[' -z '' ']'
++ ui '^Download\|'
++ timeout 60 python3 scripts/ui.py '^Download\|'
++ sleep 3
++ ui '^Fwip\|'
++ timeout 60 python3 scripts/ui.py '^Fwip\|'
++ sleep 3
++ shot n3-picker-fwip 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/n3-picker-fwip.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 34.8 MB/s (69746 bytes in 0.002s)
++ note n3-picker-fwip
++ echo ::notice::n3-picker-fwip
+::notice::n3-picker-fwip
++ ui '(?i)^use this folder'
++ timeout 60 python3 scripts/ui.py '(?i)^use this folder'
++ sleep 3
++ ui '(?i)^allow\|'
++ timeout 60 python3 scripts/ui.py '(?i)^allow\|'
++ sleep 3
++ shot n3b-after-allow 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/n3b-after-allow.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 27.2 MB/s (1234877 bytes in 0.043s)
++ note n3b-after-allow
++ echo ::notice::n3b-after-allow
+::notice::n3b-after-allow
+++ find_xy '^Add folder\|'
+++ timeout 60 python3 -c 'import sys; sys.path.insert(0,'\''scripts'\''); import ui; p=ui.find(sys.argv[1]); print(f'\''{p[0]} {p[1]}'\'' if p else '\'''\'')' '^Add folder\|'
++ '[' -n '' ']'
+++ timeout 20 adb shell 'run-as io.github.christiandonatti.fwip sh -c '\''cat shared_prefs/fwip.xml'\'''
+++ cut -c1-400
+++ tr -d '\n'
++ note 'folders: <?xml version='\''1.0'\'' encoding='\''utf-8'\'' standalone='\''yes'\'' ?><map>    <set name="folders">        <string>content://com.android.externalstorage.documents/tree/primary%3ADownload%2FFwip</string>        <string>fwip-net://nas/HQs</string>    </set></map>'
++ echo '::notice::folders: <?xml version='\''1.0'\'' encoding='\''utf-8'\'' standalone='\''yes'\'' ?><map>    <set name="folders">        <string>content://com.android.externalstorage.documents/tree/primary%3ADownload%2FFwip</string>        <string>fwip-net://nas/HQs</string>    </set></map>'
+::notice::folders: <?xml version='1.0' encoding='utf-8' standalone='yes' ?><map>    <set name="folders">        <string>content://com.android.externalstorage.documents/tree/primary%3ADownload%2FFwip</string>        <string>fwip-net://nas/HQs</string>    </set></map>
+++ seq 1 24
++ for i in $(seq 1 24)
++ sleep 5
++ '[' -f /tmp/nas/HQs/Pepper/PepperCarrot_02.cbz ']'
++ for i in $(seq 1 24)
++ sleep 5
++ '[' -f /tmp/nas/HQs/Pepper/PepperCarrot_02.cbz ']'
++ for i in $(seq 1 24)
++ sleep 5
++ '[' -f /tmp/nas/HQs/Pepper/PepperCarrot_02.cbz ']'
+++ find /tmp/nas -name '*.fwip-part'
++ '[' -z '' ']'
++ break
++ sleep 5
+++ nas
+++ tr '\n' ' '
+++ cd /tmp/nas
+++ find . -type f
+++ sort
+++ sed 's/^/  /'
++ note 'NAS after:   ./HQs/Pepper/PepperCarrot_01.cbz   ./HQs/Pepper/PepperCarrot_02.cbz   ./HQs/PepperCarrot_03.cbz   ./HQs/PepperCarrot_08.cbz '
++ echo '::notice::NAS after:   ./HQs/Pepper/PepperCarrot_01.cbz   ./HQs/Pepper/PepperCarrot_02.cbz   ./HQs/PepperCarrot_03.cbz   ./HQs/PepperCarrot_08.cbz '
+::notice::NAS after:   ./HQs/Pepper/PepperCarrot_01.cbz   ./HQs/Pepper/PepperCarrot_02.cbz   ./HQs/PepperCarrot_03.cbz   ./HQs/PepperCarrot_08.cbz 
++ ls -laR /tmp/nas
++ for f in Pepper/PepperCarrot_01.cbz Pepper/PepperCarrot_02.cbz
+++ basename Pepper/PepperCarrot_01.cbz
++ cmp -s comics/PepperCarrot_01.cbz /tmp/nas/HQs/Pepper/PepperCarrot_01.cbz
++ note 'same bytes: Pepper/PepperCarrot_01.cbz'
++ echo '::notice::same bytes: Pepper/PepperCarrot_01.cbz'
+::notice::same bytes: Pepper/PepperCarrot_01.cbz
++ for f in Pepper/PepperCarrot_01.cbz Pepper/PepperCarrot_02.cbz
+++ basename Pepper/PepperCarrot_02.cbz
++ cmp -s comics/PepperCarrot_02.cbz /tmp/nas/HQs/Pepper/PepperCarrot_02.cbz
++ note 'same bytes: Pepper/PepperCarrot_02.cbz'
++ echo '::notice::same bytes: Pepper/PepperCarrot_02.cbz'
+::notice::same bytes: Pepper/PepperCarrot_02.cbz
++ shot n4-home 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/n4-home.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 180.2 MB/s (1497520 bytes in 0.008s)
++ note n4-home
++ echo ::notice::n4-home
+::notice::n4-home
++ ui '^Library\|'
++ timeout 60 python3 scripts/ui.py '^Library\|'
++ sleep 3
++ shot n5-library 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/n5-library.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 224.3 MB/s (1379713 bytes in 0.006s)
++ note n5-library
++ echo ::notice::n5-library
+::notice::n5-library
++ ui '\|Settings$'
++ timeout 60 python3 scripts/ui.py '\|Settings$'
++ sleep 2
++ ui '^Sync and backup\|'
++ timeout 60 python3 scripts/ui.py '^Sync and backup\|'
++ sleep 3
++ timeout 20 adb shell input swipe 960 900 960 300 500
++ sleep 1
++ shot n6-sync-upload 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/n6-sync-upload.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 172.2 MB/s (600761 bytes in 0.003s)
++ note n6-sync-upload
++ echo ::notice::n6-sync-upload
+::notice::n6-sync-upload
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 1
++ adb shell rm /sdcard/Download/Fwip/Pepper/PepperCarrot_01.cbz
++ restart 20
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ sleep 20
++ ui '^Library\|'
++ timeout 60 python3 scripts/ui.py '^Library\|'
++ sleep 3
++ shot n7-after-delete 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/n7-after-delete.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 29.1 MB/s (1384909 bytes in 0.045s)
++ note n7-after-delete
++ echo ::notice::n7-after-delete
+::notice::n7-after-delete
++ sleep 20
+++ nas
+++ tr '\n' ' '
+++ cd /tmp/nas
+++ find . -type f
+++ sort
+++ sed 's/^/  /'
++ note 'NAS at the end:   ./HQs/Pepper/PepperCarrot_01.cbz   ./HQs/Pepper/PepperCarrot_02.cbz   ./HQs/PepperCarrot_03.cbz   ./HQs/PepperCarrot_08.cbz '
++ echo '::notice::NAS at the end:   ./HQs/Pepper/PepperCarrot_01.cbz   ./HQs/Pepper/PepperCarrot_02.cbz   ./HQs/PepperCarrot_03.cbz   ./HQs/PepperCarrot_08.cbz '
+::notice::NAS at the end:   ./HQs/Pepper/PepperCarrot_01.cbz   ./HQs/Pepper/PepperCarrot_02.cbz   ./HQs/PepperCarrot_03.cbz   ./HQs/PepperCarrot_08.cbz 
++ timeout 20 adb logcat -d
++ grep ' Fwip \|NasUpload' /tmp/log.txt
+++ grep -c 'upload: sent' /tmp/log.txt
++ note 'sent lines: 2'
++ echo '::notice::sent lines: 2'
+::notice::sent lines: 2
++ timeout 30 adb logcat -d -b crash
+++ head -c 600 repro/crash.txt
+++ tr '\n' ' '
++ note 'crashes: '
++ echo '::notice::crashes: '
+::notice::crashes: 
++ adb shell wm size reset
++ adb shell wm density reset

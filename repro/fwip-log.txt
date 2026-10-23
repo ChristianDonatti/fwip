@@ -1,0 +1,10 @@
+10-23 06:27:10.630  3627  3627 D WM-WorkerWrapper: Starting work for io.github.christiandonatti.fwip.data.NasUploadWorker
+10-23 06:27:10.639  3627  3742 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=0a10e348-138d-42c6-917c-7fd48fc707b1, tags={ io.github.christiandonatti.fwip.data.NasUploadWorker } ]
+10-23 06:27:10.640  3627  3627 D WM-WorkerWrapper: Starting work for io.github.christiandonatti.fwip.data.NasUploadWorker
+10-23 06:27:10.647  3627  3716 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=e2e03351-8004-49be-bfd1-eddeb36097d4, tags={ io.github.christiandonatti.fwip.data.NasUploadWorker } ]
+10-23 06:27:57.766  3627  3627 D WM-WorkerWrapper: Starting work for io.github.christiandonatti.fwip.data.NasUploadWorker
+10-23 06:28:19.100  3627  3753 I Fwip    : upload: sent Pepper/PepperCarrot_01.cbz as HQs/Pepper/PepperCarrot_01.cbz
+10-23 06:28:20.313  3627  3753 I Fwip    : upload: sent Pepper/PepperCarrot_02.cbz as HQs/Pepper/PepperCarrot_02.cbz
+10-23 06:28:20.320  3627  3716 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=96b3fad2-2de8-4027-b255-191f287d51e8, tags={ io.github.christiandonatti.fwip.data.NasUploadWorker } ]
+10-23 06:28:57.057  6411  6411 D WM-WorkerWrapper: Starting work for io.github.christiandonatti.fwip.data.NasUploadWorker
+10-23 06:28:57.150  6411  6440 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=16c59162-9f39-46fb-aa65-4e03ee5d300c, tags={ io.github.christiandonatti.fwip.data.NasUploadWorker } ]
