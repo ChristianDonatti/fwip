@@ -1,0 +1,1 @@
+Download from the NAS right from the library: hold a comic and pick "Download to this device", or download its whole series in one go (also in multiple selection). The NAS copy stays, and the downloaded one keeps the same progress. Downloads from SMB are 2 to 3 times faster (several pieces requested at once), and WebDAV now fetches each comic in a single request.

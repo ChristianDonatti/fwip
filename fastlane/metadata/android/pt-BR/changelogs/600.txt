@@ -1,0 +1,1 @@
+Baixe do NAS direto da biblioteca: segure a HQ e escolha "Baixar para este aparelho", ou baixe a série toda de uma vez (também na seleção múltipla). A cópia no NAS continua e a baixada mantém o mesmo progresso. Downloads por SMB ficaram 2 a 3 vezes mais rápidos (vários pedaços pedidos ao mesmo tempo), e por WebDAV cada HQ vem num pedido só.
