@@ -34,8 +34,12 @@ class NetSpeedTest {
             c.upload("speed.bin", data.size.toLong(), data.inputStream())
             val seconds = (System.nanoTime() - start) / 1e9
             println("SPEED $tag $share $label: %.1f MB/s (%.1f s for %d MB)".format(data.size / 1e6 / seconds, seconds, data.size shr 20))
-            val back = BlockReader(c.open("speed.bin"), blockSize = 1 shl 20, maxBlocks = 4).use { it.inputStream().readBytes() }
-            assertArrayEquals(data, back)
+            val out = java.io.ByteArrayOutputStream(data.size)
+            val t = System.nanoTime()
+            c.download("speed.bin", out) { _, _ -> }
+            val down = (System.nanoTime() - t) / 1e9
+            println("SPEED $tag $share $label download: %.1f MB/s".format(data.size / 1e6 / down))
+            assertArrayEquals(data, out.toByteArray())
             c.delete("speed.bin")
         } catch (e: Exception) {
             println("SPEED $tag $share $label: failed: $e")

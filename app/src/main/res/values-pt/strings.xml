@@ -542,4 +542,11 @@
     <string name="also_on_nas">Também no NAS</string>
     <string name="delete_keeps_nas">A cópia no NAS continua.</string>
     <string name="upload_speed">%1$s MB/s</string>
+    <string name="download">Baixar</string>
+    <string name="download_here">Baixar para este aparelho</string>
+    <string name="download_series">Baixar a série (%1$d)</string>
+    <string name="downloading_named">Baixando %1$s</string>
+    <string name="downloaded_one">HQ baixada, ela continua no NAS também</string>
+    <string name="downloaded_n">%1$d HQs baixadas, elas continuam no NAS também</string>
+    <string name="download_some_failed">%1$d de %2$d baixadas. Problema: %3$s</string>
 </resources>

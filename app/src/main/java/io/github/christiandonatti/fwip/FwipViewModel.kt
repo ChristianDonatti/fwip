@@ -618,6 +618,36 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     /** The app's own downloads folder, a place comics can be moved to as well. */
     val downloadsUri: Uri get() = Uri.fromFile(io.github.christiandonatti.fwip.remote.RemoteComics.downloadsDir(getApplication()))
 
+    /** Copies comics from the NAS into this device's downloads, to read offline. The NAS copy stays. */
+    fun downloadComics(ids: List<String>) {
+        val comics = ids.mapNotNull { _state.value.item(it)?.comic }
+            .filter { io.github.christiandonatti.fwip.remote.NetUris.isNet(it.uri) }
+            .distinctBy { it.id }
+        if (comics.isEmpty() || _state.value.fileWork != null) return
+        viewModelScope.launch {
+            var got = 0
+            var error: String? = null
+            for ((i, comic) in comics.withIndex()) {
+                val label = str(R.string.downloading_named, comic.fileName)
+                _state.update { it.copy(fileWork = FileWork(label, i / comics.size.toFloat())) }
+                runCatching {
+                    io.github.christiandonatti.fwip.remote.NetComics.download(getApplication(), comic) { p ->
+                        _state.update { it.copy(fileWork = FileWork(label, (i + p) / comics.size)) }
+                    }
+                }.onSuccess { got++ }.onFailure { error = io.github.christiandonatti.fwip.ui.errorText(it) }
+            }
+            _state.update {
+                it.copy(
+                    fileWork = null,
+                    fileMessage = error?.let { e -> str(R.string.download_some_failed, got, comics.size, e) }
+                        ?: if (got == 1) str(R.string.downloaded_one) else str(R.string.downloaded_n, got),
+                )
+            }
+            // The downloaded copies take the NAS ones' place, with the same progress.
+            refresh()
+        }
+    }
+
     /** Deletes the files themselves (from the device or the NAS), not just from the library. */
     fun deleteComics(ids: List<String>) {
         val comics = ids.mapNotNull { _state.value.item(it)?.comic }

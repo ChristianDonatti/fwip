@@ -126,6 +126,12 @@ class NetFolderTest {
         val names = c.list("Up/Batman").map { it.name }
         assertEquals(listOf("Batman 001.cbz"), names)
         assertEquals(data.size.toLong(), c.list("Up/Batman").single().size)
+        // And back, several pieces at a time, in order.
+        val out = ByteArrayOutputStream()
+        var last = 0L
+        c.download("Up/Batman/Batman 001.cbz", out) { done, total -> last = done; assertEquals(data.size.toLong(), total) }
+        assertArrayEquals(data, out.toByteArray())
+        assertEquals(data.size.toLong(), last)
         c.delete("Up/Batman/Batman 001.cbz")
     }
 

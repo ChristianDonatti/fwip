@@ -138,7 +138,7 @@ jobs:
         run: |
           speed() {
             FWIP_SPEED="$1" ./gradlew testReleaseUnitTest --tests '*NetSpeedTest*' --rerun --console=plain > /dev/null 2>&1 || true
-            grep -h 'SPEED' app/build/test-results/testReleaseUnitTest/*NetSpeedTest*.xml | sed 's/^/::notice::/' || true
+            echo "::notice::$(grep -ho 'SPEED .*' app/build/test-results/testReleaseUnitTest/*NetSpeedTest*.xml | sed 's/^SPEED //' | tr '\n' '|')" || true
           }
           # About 4 ms round trip, like a good Wi-Fi; then 20 ms, like a busy one.
           sudo tc qdisc add dev lo root netem delay 2ms

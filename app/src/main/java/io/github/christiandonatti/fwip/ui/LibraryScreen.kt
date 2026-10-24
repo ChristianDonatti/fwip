@@ -118,6 +118,8 @@ class LibraryActions(
     val stats: () -> Map<java.time.LocalDate, io.github.christiandonatti.fwip.data.DayStats>,
     val deleteComics: (List<String>) -> Unit,
     val moveComics: (List<String>, Uri) -> Unit,
+    /** Copies comics from the NAS to this device (the NAS copy stays). */
+    val downloadComics: (List<String>) -> Unit = {},
     val downloadsUri: () -> Uri,
     val dismissFileMessage: () -> Unit,
     val saveReport: () -> Unit = {},
@@ -332,6 +334,9 @@ fun LibraryScreen(
                     onWant = { actions.setWant(selection.ids.toList(), true); selection.clear() },
                     onMove = { moveFor = selection.ids.toList() },
                     onDelete = { deleteFor = selection.ids.toList() },
+                    onDownload = selection.ids.filter { id -> state.item(id)?.comic?.uri?.let(io.github.christiandonatti.fwip.remote.NetUris::isNet) == true }
+                        .takeIf { it.isNotEmpty() }
+                        ?.let { ids -> { actions.downloadComics(ids); selection.clear() } },
                     onClose = { selection.clear() },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
@@ -381,6 +386,11 @@ fun LibraryScreen(
         } else {
             val seriesKeyOf = seriesKey(item.series.name)
             val seriesSize = state.items.count { seriesKey(it.series.name) == seriesKeyOf }
+            // Issues of this series that are only on the NAS, for "download the series".
+            val seriesOnNas = state.items
+                .filter { seriesKey(it.series.name) == seriesKeyOf && io.github.christiandonatti.fwip.remote.NetUris.isNet(it.comic.uri) }
+                .sortedFor(io.github.christiandonatti.fwip.data.SortOrder.Title)
+                .map { it.comic.id }
             ComicActionsDialog(
                 item = item,
                 seriesSize = seriesSize,
@@ -409,6 +419,13 @@ fun LibraryScreen(
                     actions.setRead(listOf(id), false)
                     menuFor = null
                 },
+                onDownload = if (io.github.christiandonatti.fwip.remote.NetUris.isNet(item.comic.uri)) {
+                    { menuFor = null; actions.downloadComics(listOf(id)) }
+                } else null,
+                onDownloadSeries = if (seriesOnNas.any { it != id }) {
+                    { menuFor = null; actions.downloadComics(seriesOnNas) }
+                } else null,
+                seriesToDownload = seriesOnNas.size,
                 onEditSeries = {
                     menuFor = null
                     seriesEditFor = state.items.filter { seriesKey(it.series.name) == seriesKeyOf }.map { it.comic.id }.ifEmpty { listOf(id) }
@@ -894,6 +911,7 @@ private fun SelectionBar(
     onDelete: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    onDownload: (() -> Unit)? = null,
 ) {
     Row(
         modifier
@@ -922,6 +940,7 @@ private fun SelectionBar(
             PillButton(str(R.string.smart_read), onRead, height = 44.dp, style = PillStyle.Ghost)
             PillButton(str(R.string.smart_unread), onUnread, height = 44.dp, style = PillStyle.Ghost)
             PillButton(str(R.string.smart_want), onWant, height = 44.dp, style = PillStyle.Ghost)
+            onDownload?.let { PillButton(str(R.string.download), it, height = 44.dp, style = PillStyle.Ghost) }
             PillButton(str(R.string.move), onMove, height = 44.dp, style = PillStyle.Ghost)
             PillButton(str(R.string.delete), onDelete, height = 44.dp, style = PillStyle.Ghost)
             PillButton(str(R.string.collection), onCollection, height = 44.dp, style = PillStyle.Amber)

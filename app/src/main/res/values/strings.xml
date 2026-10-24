@@ -543,4 +543,11 @@
     <string name="also_on_nas">Also on the NAS</string>
     <string name="delete_keeps_nas">The copy on the NAS stays.</string>
     <string name="upload_speed">%1$s MB/s</string>
+    <string name="download">Download</string>
+    <string name="download_here">Download to this device</string>
+    <string name="download_series">Download the series (%1$d)</string>
+    <string name="downloading_named">Downloading %1$s</string>
+    <string name="downloaded_one">Comic downloaded, it stays on the NAS too</string>
+    <string name="downloaded_n">%1$d comics downloaded, they stay on the NAS too</string>
+    <string name="download_some_failed">%1$d of %2$d downloaded. Problem: %3$s</string>
 </resources>

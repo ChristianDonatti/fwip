@@ -347,6 +347,11 @@ fun ComicActionsDialog(
     onEdit: () -> Unit = {},
     onEditSeries: () -> Unit = {},
     onResetProgress: () -> Unit = {},
+    /** For a comic on the NAS: copy it here to read offline. */
+    onDownload: (() -> Unit)? = null,
+    /** The other issues of its series still only on the NAS, and how many. */
+    onDownloadSeries: (() -> Unit)? = null,
+    seriesToDownload: Int = 0,
 ) {
     FwipDialog(onDismiss, tint = item.glowColor()) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -384,6 +389,10 @@ fun ComicActionsDialog(
         )
         if (started && !finished) {
             SheetButton(str(R.string.reset_progress), onResetProgress, leading = { Icon(Icons.Filled.Refresh, null) })
+        }
+        onDownload?.let { SheetButton(str(R.string.download_here), it, leading = { DownloadGlyph(LocalContentColor.current) }) }
+        onDownloadSeries?.let {
+            SheetButton(str(R.string.download_series, seriesToDownload), it, leading = { DownloadGlyph(LocalContentColor.current) })
         }
         SheetButton(str(R.string.add_to_collection), onCollections, leading = { Icon(Icons.Filled.Add, null) })
         if (!finished) {
@@ -686,3 +695,18 @@ fun ReorderDialog(items: List<LibraryItem>, onSave: (List<String>) -> Unit, onDi
     }
 }
 
+
+
+/** An arrow into a tray: download to this device. */
+@Composable
+internal fun DownloadGlyph(color: Color, modifier: Modifier = Modifier.size(22.dp)) {
+    androidx.compose.foundation.Canvas(modifier) {
+        val w = size.width
+        val stroke = w * 0.09f
+        val cap = androidx.compose.ui.graphics.StrokeCap.Round
+        drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.5f, w * 0.14f), androidx.compose.ui.geometry.Offset(w * 0.5f, w * 0.62f), stroke, cap)
+        drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.3f, w * 0.44f), androidx.compose.ui.geometry.Offset(w * 0.5f, w * 0.64f), stroke, cap)
+        drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.7f, w * 0.44f), androidx.compose.ui.geometry.Offset(w * 0.5f, w * 0.64f), stroke, cap)
+        drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.18f, w * 0.84f), androidx.compose.ui.geometry.Offset(w * 0.82f, w * 0.84f), stroke, cap)
+    }
+}

@@ -44,6 +44,23 @@ interface NetClient {
     fun delete(path: String)
     /** Renames [from] to [to] in the same share; fails if [to] exists. */
     fun rename(from: String, to: String)
+
+    /** Copies the whole file at [path] into [out]; [onProgress] gets bytes done and the total. */
+    fun download(path: String, out: java.io.OutputStream, onProgress: (Long, Long) -> Unit) {
+        BlockReader(open(path), blockSize = 1 shl 20, maxBlocks = 2).use { reader ->
+            val buf = ByteArray(256 * 1024)
+            var done = 0L
+            reader.inputStream().use { input ->
+                while (true) {
+                    val n = input.read(buf, 0, buf.size)
+                    if (n <= 0) break
+                    out.write(buf, 0, n)
+                    done += n
+                    onProgress(done, reader.length)
+                }
+            }
+        }
+    }
 }
 
 /** Network folder files are referenced as fwip-net://<server id>/<path>. */
@@ -351,6 +368,58 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
         }
     }
 
+    override fun download(path: String, out: java.io.OutputStream, onProgress: (Long, Long) -> Unit) {
+        // Not through withShare: half the file may already be written out.
+        share().openFile(
+            full(path),
+            java.util.EnumSet.of(com.hierynomus.msdtyp.AccessMask.GENERIC_READ),
+            null,
+            com.hierynomus.mssmb2.SMB2ShareAccess.ALL,
+            com.hierynomus.mssmb2.SMB2CreateDisposition.FILE_OPEN,
+            null,
+        ).use { f ->
+            val length = f.getFileInformation(com.hierynomus.msfscc.fileinformation.FileStandardInformation::class.java).endOfFile
+            if (!SmbTuning.pipelined) {
+                var pos = 0L
+                val buf = ByteArray(SmbTuning.chunk)
+                while (pos < length) {
+                    val n = f.read(buf, pos, 0, buf.size)
+                    if (n <= 0) break
+                    out.write(buf, 0, n)
+                    pos += n
+                    onProgress(pos, length)
+                }
+                return
+            }
+            // Like sending: several pieces requested at once, written out in order as they arrive.
+            val inFlight = ArrayDeque<Triple<java.util.concurrent.Future<com.hierynomus.mssmb2.messages.SMB2ReadResponse>, Long, Int>>()
+            var next = 0L
+            var done = 0L
+            while (done < length) {
+                while (inFlight.size < SmbTuning.depth && next < length) {
+                    val n = minOf(SmbTuning.chunk.toLong(), length - next).toInt()
+                    inFlight.addLast(Triple(com.hierynomus.smbj.share.FwipReads.readAsync(f, next, n), next, n))
+                    next += n
+                }
+                val (future, at, asked) = inFlight.removeFirst()
+                val data = future.get(60, java.util.concurrent.TimeUnit.SECONDS).data
+                if (data.isEmpty()) throw IOException(str(R.string.error_read_file))
+                out.write(data, 0, data.size)
+                var got = data.size
+                // A short answer (rare): fetch the rest of that piece before moving on.
+                while (got < asked) {
+                    val rest = ByteArray(asked - got)
+                    val n = f.read(rest, at + got, 0, rest.size)
+                    if (n <= 0) throw IOException(str(R.string.error_read_file))
+                    out.write(rest, 0, n)
+                    got += n
+                }
+                done += got
+                onProgress(done, length)
+            }
+        }
+    }
+
     override fun write(path: String, bytes: ByteArray) {
         withShare { sh ->
             sh.openFile(
@@ -583,6 +652,25 @@ internal class WebDavNet(private val server: Server) : NetClient {
         check(http.newCall(request(url(path)).delete().build()).execute()).close()
     }
 
+    override fun download(path: String, out: java.io.OutputStream, onProgress: (Long, Long) -> Unit) {
+        // One plain request for the whole file, instead of a ranged request per block.
+        check(http.newCall(request(url(path)).build()).execute()).use { r ->
+            val body = r.body ?: throw IOException(str(R.string.error_read_file))
+            val total = body.contentLength()
+            val buf = ByteArray(256 * 1024)
+            var done = 0L
+            body.byteStream().use { input ->
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    out.write(buf, 0, n)
+                    done += n
+                    onProgress(done, if (total > 0) total else done)
+                }
+            }
+        }
+    }
+
     override fun rename(from: String, to: String) {
         val req = request(url(from)).method("MOVE", null).header("Destination", url(to)).header("Overwrite", "F").build()
         check(http.newCall(req).execute()).close()
@@ -640,21 +728,13 @@ object NetComics {
         val dir = RemoteComics.downloadsDir(context)
         val target = java.io.File(dir, comic.fileName)
         val tmp = java.io.File(dir, comic.fileName + ".part")
-        BlockReader(client.open(NetUris.path(comic.uri)), blockSize = 1 shl 20, maxBlocks = 2).use { reader ->
-            val total = reader.length.coerceAtLeast(1)
-            reader.inputStream().use { input ->
-                tmp.outputStream().use { output ->
-                    val buf = ByteArray(256 * 1024)
-                    var done = 0L
-                    while (true) {
-                        val n = input.read(buf, 0, buf.size)
-                        if (n <= 0) break
-                        output.write(buf, 0, n)
-                        done += n
-                        onProgress(done / total.toFloat())
-                    }
-                }
+        try {
+            tmp.outputStream().buffered(1 shl 20).use { output ->
+                client.download(NetUris.path(comic.uri), output) { done, total -> onProgress(done / total.coerceAtLeast(1).toFloat()) }
             }
+        } catch (e: Exception) {
+            tmp.delete()
+            throw e
         }
         if (target.exists()) target.delete()
         if (!tmp.renameTo(target)) throw IOException(str(R.string.error_read_file))

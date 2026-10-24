@@ -146,6 +146,7 @@ class MainActivity : ComponentActivity() {
                         stats = { viewModel.stats.all() },
                         deleteComics = viewModel::deleteComics,
                         moveComics = viewModel::moveComics,
+                        downloadComics = viewModel::downloadComics,
                         downloadsUri = { viewModel.downloadsUri },
                         dismissFileMessage = viewModel::dismissFileMessage,
                         saveReport = { saveReport.launch(io.github.christiandonatti.fwip.data.Reports.fileName()) },
