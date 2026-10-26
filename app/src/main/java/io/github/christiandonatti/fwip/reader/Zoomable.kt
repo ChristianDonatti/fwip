@@ -26,6 +26,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -135,15 +136,23 @@ fun Zoomable(
     // Gesture handlers live as long as the pointer block; always call the latest callbacks.
     val tapHandler by androidx.compose.runtime.rememberUpdatedState(onTap)
     val doubleTapHandler by androidx.compose.runtime.rememberUpdatedState(onDoubleTap)
+    val gestures by androidx.compose.runtime.rememberUpdatedState(LocalPageGestures.current)
     Box(
         modifier
             .onSizeChanged { state.size = it }
             .pointerInput(state) {
                 awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
+                    val first = awaitFirstDown(requireUnconsumed = false)
+                    // A quick vertical swipe with one finger on an unzoomed page is a gesture of its own.
+                    var multi = state.isZoomed
+                    var last = first.position
+                    val startTime = first.uptimeMillis
+                    var endTime = startTime
                     do {
                         val event = awaitPointerEvent()
                         val fingers = event.changes.count { it.pressed }
+                        if (fingers >= 2) multi = true
+                        event.changes.firstOrNull { it.id == first.id }?.let { last = it.position; endTime = it.uptimeMillis }
                         if (fingers >= 2 || state.isZoomed) {
                             val zoom = event.calculateZoom()
                             val pan = event.calculatePan()
@@ -153,6 +162,15 @@ fun Zoomable(
                             event.changes.forEach { if (it.positionChanged()) it.consume() }
                         }
                     } while (event.changes.any { it.pressed })
+                    val g = gestures
+                    if (!multi && g != null) {
+                        val dy = last.y - first.position.y
+                        val dx = last.x - first.position.x
+                        val quick = endTime - startTime < 700
+                        if (kotlin.math.abs(dy) > 90.dp.toPx() && kotlin.math.abs(dy) > kotlin.math.abs(dx) * 2f && quick) {
+                            g.onSwipe(if (dy < 0) -1 else 1)
+                        }
+                    }
                     if (state.scale < 1.05f && state.scale != 1f) {
                         scope.launch { state.animateTo(1f) }
                     }
@@ -160,6 +178,7 @@ fun Zoomable(
             }
             .pointerInput(state) {
                 detectTapGestures(
+                    onLongPress = { pos -> gestures?.onLongPress?.invoke(pos) },
                     onDoubleTap = { pos ->
                         if (doubleTapHandler?.invoke(pos) != true) scope.launchZoomToggle(state, pos)
                     },
@@ -184,6 +203,11 @@ private fun CoroutineScope.launchZoomToggle(state: ZoomState, pos: Offset) {
         if (state.isZoomed) state.animateTo(1f) else state.animateTo(ZoomState.DOUBLE_TAP, pos)
     }
 }
+
+/** What a long press and vertical swipes on a page do; set by the reader around its pages. */
+class PageGestures(val onLongPress: ((Offset) -> Unit)?, val onSwipe: (direction: Int) -> Unit)
+
+val LocalPageGestures = androidx.compose.runtime.staticCompositionLocalOf<PageGestures?> { null }
 
 @Composable
 fun rememberZoomState(key: Any?): ZoomState = remember(key) { ZoomState() }

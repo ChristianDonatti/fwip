@@ -620,4 +620,17 @@
     <string name="turn_lift_hint">Quanto a ponta sobe quando um toque vira a página.</string>
     <string name="fold_shade">Sombra da dobra</string>
     <string name="fold_shade_hint">Sombra e brilho onde o papel dobra.</string>
+    <string name="section_gestures">Gestos</string>
+    <string name="gesture_double_tap">Toque duplo</string>
+    <string name="gesture_long_press">Toque longo</string>
+    <string name="gesture_swipe_up">Deslizar para cima</string>
+    <string name="gesture_swipe_down">Deslizar para baixo</string>
+    <string name="gesture_none">Nada</string>
+    <string name="gesture_zoom">Zoom</string>
+    <string name="gesture_controls">Mostrar controles</string>
+    <string name="gesture_pages">Visão das páginas</string>
+    <string name="gesture_bookmark">Marcador</string>
+    <string name="gesture_guided">Quadro a quadro</string>
+    <string name="gesture_settings">Ajustes de leitura</string>
+    <string name="gesture_close">Fechar a HQ</string>
 </resources>

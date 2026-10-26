@@ -52,6 +52,15 @@ enum class TurnSoundKind(@androidx.annotation.StringRes private val labelRes: In
     val label: String get() = str(labelRes)
 }
 
+/** What a gesture on the page does. [Zoom] only makes sense for a double tap. */
+enum class GestureAction(@androidx.annotation.StringRes private val labelRes: Int) {
+    None(R.string.gesture_none), Zoom(R.string.gesture_zoom), Controls(R.string.gesture_controls),
+    Pages(R.string.gesture_pages), Bookmark(R.string.gesture_bookmark), Guided(R.string.gesture_guided),
+    Settings(R.string.gesture_settings), Close(R.string.gesture_close);
+
+    val label: String get() = str(labelRes)
+}
+
 /** Reader looks read while drawing (outside composition), set from [ReaderSettings]. */
 object ReaderLook {
     /** Multiplies the length of turn animations. */
@@ -147,6 +156,17 @@ class ReaderSettings(context: Context) {
     var soundKind by mutableStateOf(runCatching { TurnSoundKind.valueOf(prefs.getString("soundKind", null) ?: "") }.getOrDefault(TurnSoundKind.Paper))
         private set
 
+    private fun gesture(key: String, default: GestureAction) =
+        runCatching { GestureAction.valueOf(prefs.getString(key, null) ?: "") }.getOrDefault(default)
+    var gestureDoubleTap by mutableStateOf(gesture("gDouble", GestureAction.Zoom))
+        private set
+    var gestureLongPress by mutableStateOf(gesture("gLong", GestureAction.None))
+        private set
+    var gestureSwipeUp by mutableStateOf(gesture("gUp", GestureAction.Pages))
+        private set
+    var gestureSwipeDown by mutableStateOf(gesture("gDown", GestureAction.Close))
+        private set
+
     /** The page bar as a strip of little pages (Panels style), or a slim line. */
     var filmStrip by mutableStateOf(prefs.getBoolean("filmStrip", true))
         private set
@@ -175,6 +195,10 @@ class ReaderSettings(context: Context) {
     fun updateTurnLift(value: Float) { turnLift = value; prefs.edit().putFloat("lift", value).apply() }
     fun updateFoldShade(value: Float) { foldShade = value; prefs.edit().putFloat("fold", value).apply() }
     fun updateSoundKind(value: TurnSoundKind) { soundKind = value; prefs.edit().putString("soundKind", value.name).apply() }
+    fun updateGestureDoubleTap(value: GestureAction) { gestureDoubleTap = value; prefs.edit().putString("gDouble", value.name).apply() }
+    fun updateGestureLongPress(value: GestureAction) { gestureLongPress = value; prefs.edit().putString("gLong", value.name).apply() }
+    fun updateGestureSwipeUp(value: GestureAction) { gestureSwipeUp = value; prefs.edit().putString("gUp", value.name).apply() }
+    fun updateGestureSwipeDown(value: GestureAction) { gestureSwipeDown = value; prefs.edit().putString("gDown", value.name).apply() }
     fun updateFilmStrip(value: Boolean) { filmStrip = value; prefs.edit().putBoolean("filmStrip", value).apply() }
     fun updateSplitWide(value: Boolean) { splitWide = value; prefs.edit().putBoolean("splitWide", value).apply() }
 
@@ -187,6 +211,7 @@ class ReaderSettings(context: Context) {
         .put("ground", ground.name).put("spine", spineShadow.toDouble()).put("texture", paperTexture)
         .put("fixColors", fixColors).put("denoise", denoise).put("sharp", sharpness.name).put("splitWide", splitWide).put("filmStrip", filmStrip)
         .put("speed", turnSpeed.name).put("lift", turnLift.toDouble()).put("fold", foldShade.toDouble()).put("soundKind", soundKind.name)
+        .put("gDouble", gestureDoubleTap.name).put("gLong", gestureLongPress.name).put("gUp", gestureSwipeUp.name).put("gDown", gestureSwipeDown.name)
 
     fun fromJson(o: org.json.JSONObject) {
         if (o.has("manga")) updateManga(o.getBoolean("manga"))
@@ -213,6 +238,10 @@ class ReaderSettings(context: Context) {
         if (o.has("lift")) updateTurnLift(o.getDouble("lift").toFloat())
         if (o.has("fold")) updateFoldShade(o.getDouble("fold").toFloat())
         runCatching { updateSoundKind(TurnSoundKind.valueOf(o.getString("soundKind"))) }
+        runCatching { updateGestureDoubleTap(GestureAction.valueOf(o.getString("gDouble"))) }
+        runCatching { updateGestureLongPress(GestureAction.valueOf(o.getString("gLong"))) }
+        runCatching { updateGestureSwipeUp(GestureAction.valueOf(o.getString("gUp"))) }
+        runCatching { updateGestureSwipeDown(GestureAction.valueOf(o.getString("gDown"))) }
     }
 }
 

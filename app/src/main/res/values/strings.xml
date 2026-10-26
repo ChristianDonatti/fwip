@@ -621,4 +621,17 @@
     <string name="turn_lift_hint">How high the corner rises when a tap turns the page.</string>
     <string name="fold_shade">Fold shading</string>
     <string name="fold_shade_hint">Shadow and shine where the paper bends.</string>
+    <string name="section_gestures">Gestures</string>
+    <string name="gesture_double_tap">Double tap</string>
+    <string name="gesture_long_press">Long press</string>
+    <string name="gesture_swipe_up">Swipe up</string>
+    <string name="gesture_swipe_down">Swipe down</string>
+    <string name="gesture_none">Nothing</string>
+    <string name="gesture_zoom">Zoom</string>
+    <string name="gesture_controls">Show controls</string>
+    <string name="gesture_pages">Page overview</string>
+    <string name="gesture_bookmark">Bookmark</string>
+    <string name="gesture_guided">Panel by panel</string>
+    <string name="gesture_settings">Reading settings</string>
+    <string name="gesture_close">Close the comic</string>
 </resources>

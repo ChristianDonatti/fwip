@@ -418,8 +418,30 @@ private fun Reader(
             }
         }
 
-        // Double tap on a balloon zooms right into it; anywhere else it is a normal zoom.
+        fun toggleBookmark() {
+            val pages = spreads.getOrNull(spread).orEmpty().map(pageMap::real)
+            if (pages.isEmpty()) return
+            marks = if (pages.any { it in marks }) marks - pages.toSet() else marks + pages.first()
+            bookmarkStore.set(comic.id, marks)
+        }
+
+        /** Runs what the user chose for a gesture. Returns false for "nothing" (and for zoom, done elsewhere). */
+        fun runGesture(action: GestureAction): Boolean {
+            when (action) {
+                GestureAction.None, GestureAction.Zoom -> return false
+                GestureAction.Controls -> chrome = !chrome
+                GestureAction.Pages -> showPages = true
+                GestureAction.Bookmark -> toggleBookmark()
+                GestureAction.Guided -> if (!scroll) setGuide(if (guide == GuideKind.Panels) null else GuideKind.Panels)
+                GestureAction.Settings -> showSettings = true
+                GestureAction.Close -> onClose()
+            }
+            return true
+        }
+
+        // Double tap on a balloon zooms right into it; anywhere else it is a normal zoom (or the chosen action).
         val onDoubleTap: (Offset, ZoomState) -> Boolean = handler@{ pos, z ->
+            if (settings.gestureDoubleTap != GestureAction.Zoom && !z.isZoomed) return@handler runGesture(settings.gestureDoubleTap) || true
             if (z.isZoomed) return@handler false
             val list = balloons ?: return@handler false
             val layoutPos = z.toLayout(pos)
@@ -445,9 +467,14 @@ private fun Reader(
             }
         }
 
+        val pageGestures = PageGestures(
+            onLongPress = if (settings.gestureLongPress == GestureAction.None) null else ({ _ -> runGesture(settings.gestureLongPress) }),
+            onSwipe = { d -> if (guide == null) runGesture(if (d < 0) settings.gestureSwipeUp else settings.gestureSwipeDown) },
+        )
         val flatZoom = remember { ZoomState() }
         // The paper reader follows layout changes itself; the others start over with them.
         val readerKey: Any = if (scroll || settings.turnStyle != TurnStyle.Curl) host else listOf(double, rtl, cache, wPx, hPx)
+        androidx.compose.runtime.CompositionLocalProvider(LocalPageGestures provides pageGestures) {
         key(readerKey, settings.turnStyle, scroll) {
             if (scroll) {
                 ScrollReader(
@@ -483,6 +510,7 @@ private fun Reader(
                     onEnd = { showEnd = true },
                 )
             }
+        }
         }
 
         // Warm night filter over the pages (the controls stay true to colour).
@@ -522,11 +550,7 @@ private fun Reader(
             onSettings = { showSettings = true },
             onGuide = { kind -> setGuide(if (guide == kind) null else kind) },
             bookmarked = spreads.getOrNull(spread)?.any { pageMap.real(it) in marks } == true,
-            onBookmark = {
-                val pages = spreads.getOrNull(spread).orEmpty().map(pageMap::real)
-                marks = if (pages.any { it in marks }) marks - pages.toSet() else marks + pages.first()
-                bookmarkStore.set(comic.id, marks)
-            },
+            onBookmark = ::toggleBookmark,
             onPages = { showPages = true },
             guidedAvailable = !scroll,
             scrubPreview = { s -> ScrubPreview(spreads.getOrNull(s).orEmpty(), cache, rtl) },

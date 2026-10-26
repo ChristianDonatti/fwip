@@ -552,6 +552,13 @@ internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
                     }
                 }
 
+                Section(str(R.string.section_gestures))
+                GestureRow(str(R.string.gesture_double_tap), settings.gestureDoubleTap, GestureAction.entries, settings::updateGestureDoubleTap)
+                val noZoom = GestureAction.entries - GestureAction.Zoom
+                GestureRow(str(R.string.gesture_long_press), settings.gestureLongPress, noZoom, settings::updateGestureLongPress)
+                GestureRow(str(R.string.gesture_swipe_up), settings.gestureSwipeUp, noZoom, settings::updateGestureSwipeUp)
+                GestureRow(str(R.string.gesture_swipe_down), settings.gestureSwipeDown, noZoom, settings::updateGestureSwipeDown)
+
                 Section(str(R.string.section_look))
                 ReaderLookSettings(settings)
 
@@ -785,6 +792,34 @@ internal fun ReaderLookSettings(settings: ReaderSettings) {
         Choice(str(R.string.turn_speed), TurnSpeed.entries, settings.turnSpeed, { it.label }, settings::updateTurnSpeed)
         LevelSlider(str(R.string.turn_lift), settings.turnLift, 0f..1f, settings::updateTurnLift, hint = str(R.string.turn_lift_hint))
         LevelSlider(str(R.string.fold_shade), settings.foldShade, 0f..1f, settings::updateFoldShade, hint = str(R.string.fold_shade_hint))
+    }
+}
+
+/** A gesture and what it does; tap to pick another action from a short menu. */
+@Composable
+private fun GestureRow(title: String, value: GestureAction, options: List<GestureAction>, onPick: (GestureAction) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .clickable { open = true }
+                .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+            Text(value.label, style = MaterialTheme.typography.labelLarge, color = FwipColors.Amber)
+            Text("  ▾", style = MaterialTheme.typography.labelLarge, color = FwipColors.TextMuted)
+        }
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEach { o ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(o.label, color = if (o == value) FwipColors.Amber else FwipColors.Text) },
+                    onClick = { open = false; onPick(o) },
+                )
+            }
+        }
     }
 }
 
