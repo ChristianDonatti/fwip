@@ -1,0 +1,439 @@
++ W=1920
++ H=1200
++ adb install -r app/build/outputs/apk/debug/app-debug.apk
+Performing Streamed Install
+Success
++ adb shell settings put system screen_off_timeout 1800000
++ adb shell settings put secure immersive_mode_confirmations confirmed
++ adb shell svc power stayon true
++ adb shell wm size 1920x1200
++ adb shell wm density 240
++ adb shell pm clear io.github.christiandonatti.fwip
+Success
++ adb shell 'run-as io.github.christiandonatti.fwip mkdir -p files/Baixadas shared_prefs'
++ python3 scripts/look_prefs.py welcomed=true
++ for k in 1 2 3
++ put /tmp/ui.xml shared_prefs/fwip_ui.xml
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_ui.xml'\'''
++ adb shell 'run-as io.github.christiandonatti.fwip cat shared_prefs/fwip_ui.xml'
++ grep -q welcomed
+cat: shared_prefs/fwip_ui.xml: No such file or directory
++ for k in 1 2 3
++ put /tmp/ui.xml shared_prefs/fwip_ui.xml
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_ui.xml'\'''
++ grep -q welcomed
++ adb shell 'run-as io.github.christiandonatti.fwip cat shared_prefs/fwip_ui.xml'
++ break
++ for f in comics/PepperCarrot_0[1-8].cbz
+++ basename comics/PepperCarrot_01.cbz
++ put comics/PepperCarrot_01.cbz files/Baixadas/PepperCarrot_01.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_01.cbz'\'''
++ for f in comics/PepperCarrot_0[1-8].cbz
+++ basename comics/PepperCarrot_02.cbz
++ put comics/PepperCarrot_02.cbz files/Baixadas/PepperCarrot_02.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_02.cbz'\'''
++ for f in comics/PepperCarrot_0[1-8].cbz
+++ basename comics/PepperCarrot_03.cbz
++ put comics/PepperCarrot_03.cbz files/Baixadas/PepperCarrot_03.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_03.cbz'\'''
++ for f in comics/PepperCarrot_0[1-8].cbz
+++ basename comics/PepperCarrot_04.cbz
++ put comics/PepperCarrot_04.cbz files/Baixadas/PepperCarrot_04.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_04.cbz'\'''
++ for f in comics/PepperCarrot_0[1-8].cbz
+++ basename comics/PepperCarrot_05.cbz
++ put comics/PepperCarrot_05.cbz files/Baixadas/PepperCarrot_05.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_05.cbz'\'''
++ for f in comics/PepperCarrot_0[1-8].cbz
+++ basename comics/PepperCarrot_06.cbz
++ put comics/PepperCarrot_06.cbz files/Baixadas/PepperCarrot_06.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_06.cbz'\'''
++ for f in comics/PepperCarrot_0[1-8].cbz
+++ basename comics/PepperCarrot_07.cbz
++ put comics/PepperCarrot_07.cbz files/Baixadas/PepperCarrot_07.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_07.cbz'\'''
++ for f in comics/PepperCarrot_0[1-8].cbz
+++ basename comics/PepperCarrot_08.cbz
++ put comics/PepperCarrot_08.cbz files/Baixadas/PepperCarrot_08.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_08.cbz'\'''
++ restart 25
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ sleep 25
++ openc PepperCarrot_01.cbz
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity -a io.github.christiandonatti.fwip.OPEN_COMIC --es comic file:///data/user/0/io.github.christiandonatti.fwip/files/Baixadas/PepperCarrot_01.cbz
+Starting: Intent { act=io.github.christiandonatti.fwip.OPEN_COMIC cmp=io.github.christiandonatti.fwip/.MainActivity (has extras) }
+Warning: Activity not started, intent has been delivered to currently running top-most instance.
++ sleep 8
++ for k in 1 2 3 4 5 6
++ timeout 20 adb shell input tap 1860 600
++ sleep 1.5
++ for k in 1 2 3 4 5 6
++ timeout 20 adb shell input tap 1860 600
++ sleep 1.5
++ for k in 1 2 3 4 5 6
++ timeout 20 adb shell input tap 1860 600
++ sleep 1.5
++ for k in 1 2 3 4 5 6
++ timeout 20 adb shell input tap 1860 600
++ sleep 1.5
++ for k in 1 2 3 4 5 6
++ timeout 20 adb shell input tap 1860 600
++ sleep 1.5
++ for k in 1 2 3 4 5 6
++ timeout 20 adb shell input tap 1860 600
++ sleep 1.5
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 2
++ openc PepperCarrot_02.cbz
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity -a io.github.christiandonatti.fwip.OPEN_COMIC --es comic file:///data/user/0/io.github.christiandonatti.fwip/files/Baixadas/PepperCarrot_02.cbz
+Starting: Intent { act=io.github.christiandonatti.fwip.OPEN_COMIC cmp=io.github.christiandonatti.fwip/.MainActivity (has extras) }
+Warning: Activity not started, intent has been delivered to currently running top-most instance.
++ sleep 8
++ for k in 1 2
++ timeout 20 adb shell input tap 1860 600
++ sleep 1.5
++ for k in 1 2
++ timeout 20 adb shell input tap 1860 600
++ sleep 1.5
++ timeout 20 adb shell input tap 960 600
++ shot r1-strip 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/r1-strip.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 136.0 MB/s (2720006 bytes in 0.019s)
++ note r1-strip
++ echo ::notice::r1-strip
+::notice::r1-strip
+++ find_xy '\|Pages$'
+++ timeout 60 python3 -c 'import sys; sys.path.insert(0,'\''scripts'\''); import ui; p=ui.find(sys.argv[1]); print(f'\''{p[0]} {p[1]}'\'' if p else '\'''\'')' '\|Pages$'
++ xy='183 1023'
++ '[' -n '183 1023' ']'
++ set -- 183 1023
++ bx=383
++ by=1023
++ timeout 20 adb shell input motionevent DOWN 383 1023
++ for k in 1 2 3 4 5
++ timeout 20 adb shell input motionevent MOVE 503 1023
++ for k in 1 2 3 4 5
++ timeout 20 adb shell input motionevent MOVE 623 1023
++ for k in 1 2 3 4 5
++ timeout 20 adb shell input motionevent MOVE 743 1023
++ for k in 1 2 3 4 5
++ timeout 20 adb shell input motionevent MOVE 863 1023
++ for k in 1 2 3 4 5
++ timeout 20 adb shell input motionevent MOVE 983 1023
++ shot r2-strip-drag 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/r2-strip-drag.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 142.0 MB/s (2843278 bytes in 0.019s)
++ note r2-strip-drag
++ echo ::notice::r2-strip-drag
+::notice::r2-strip-drag
++ timeout 20 adb shell input motionevent UP 983 1023
++ timeout 20 adb shell input tap 960 600
++ sleep 1
++ timeout 20 adb shell input swipe 960 900 960 240 250
++ shot r3-swipe-up 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/r3-swipe-up.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 142.4 MB/s (1009142 bytes in 0.007s)
++ note r3-swipe-up
++ echo ::notice::r3-swipe-up
+::notice::r3-swipe-up
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 1
++ timeout 20 adb shell input tap 960 600
++ sleep 1
++ ui '\|Reading settings$'
++ timeout 60 python3 scripts/ui.py '\|Reading settings$'
+not found: \|Reading settings$ ['|Page 4', '|Page 5']
++ sleep 2
++ for k in 1 2 3
++ timeout 20 adb shell input swipe 960 900 960 400 500
++ sleep 1
++ for k in 1 2 3
++ timeout 20 adb shell input swipe 960 900 960 400 500
++ sleep 1
++ for k in 1 2 3
++ timeout 20 adb shell input swipe 960 900 960 400 500
++ sleep 1
++ shot r4-gestures 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/r4-gestures.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 113.3 MB/s (1110980 bytes in 0.009s)
++ note r4-gestures
++ echo ::notice::r4-gestures
+::notice::r4-gestures
++ for k in 1 2
++ timeout 20 adb shell input swipe 960 900 960 400 500
++ sleep 1
++ for k in 1 2
++ timeout 20 adb shell input swipe 960 900 960 400 500
++ sleep 1
++ shot r5-look-turn 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/r5-look-turn.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 128.6 MB/s (1110980 bytes in 0.008s)
++ note r5-look-turn
++ echo ::notice::r5-look-turn
+::notice::r5-look-turn
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 1
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 3
++ ui '^Library\|'
++ timeout 60 python3 scripts/ui.py '^Library\|'
++ sleep 2
++ ui '^List\|'
++ timeout 60 python3 scripts/ui.py '^List\|'
++ shot l1-list 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/l1-list.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 118.5 MB/s (951485 bytes in 0.008s)
++ note l1-list
++ echo ::notice::l1-list
+::notice::l1-list
++ ui '^Covers\|'
++ timeout 60 python3 scripts/ui.py '^Covers\|'
++ sleep 1
++ ui '^Publishers\|'
++ timeout 60 python3 scripts/ui.py '^Publishers\|'
++ shot l2-publishers 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/l2-publishers.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 126.5 MB/s (891992 bytes in 0.007s)
++ note l2-publishers
++ echo ::notice::l2-publishers
+::notice::l2-publishers
++ ui '^All\|'
++ timeout 60 python3 scripts/ui.py '^All\|'
++ sleep 1
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ python3 scripts/look_prefs.py welcomed=true progressStyle=Ring startTab=Library tabServers=false
++ put /tmp/ui.xml shared_prefs/fwip_ui.xml
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_ui.xml'\'''
++ restart 15
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ sleep 15
++ shot l3-ring-start-library 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/l3-ring-start-library.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 165.6 MB/s (2148008 bytes in 0.012s)
++ note l3-ring-start-library
++ echo ::notice::l3-ring-start-library
+::notice::l3-ring-start-library
++ python3 scripts/look_prefs.py welcomed=true progressStyle=Percent
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ put /tmp/ui.xml shared_prefs/fwip_ui.xml
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_ui.xml'\'''
++ restart 15
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ sleep 15
++ ui '^Library\|'
++ timeout 60 python3 scripts/ui.py '^Library\|'
++ shot l4-percent 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/l4-percent.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 117.3 MB/s (2155637 bytes in 0.018s)
++ note l4-percent
++ echo ::notice::l4-percent
+::notice::l4-percent
++ ui '\|Settings$'
++ timeout 60 python3 scripts/ui.py '\|Settings$'
++ sleep 1
++ ui '^Appearance\|'
++ timeout 60 python3 scripts/ui.py '^Appearance\|'
++ sleep 2
++ ui '^Home\|'
++ timeout 60 python3 scripts/ui.py '^Home\|'
++ shot a1-home-tab 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/a1-home-tab.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 107.1 MB/s (773368 bytes in 0.007s)
++ note a1-home-tab
++ echo ::notice::a1-home-tab
+::notice::a1-home-tab
++ ui '^Covers\|'
++ timeout 60 python3 scripts/ui.py '^Covers\|'
++ sleep 1
++ swipe_up
++ timeout 20 adb shell input swipe 960 900 960 300 500
++ sleep 1
++ shot a2-covers-tab 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/a2-covers-tab.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 114.9 MB/s (740061 bytes in 0.006s)
++ note a2-covers-tab
++ echo ::notice::a2-covers-tab
+::notice::a2-covers-tab
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 2
++ cat
++ adb push /tmp/event.cbl /sdcard/Download/event.cbl
+/tmp/event.cbl: 1 file pushed, 0 skipped. 5.2 MB/s (369 bytes in 0.000s)
++ ui '^Collections\|'
++ timeout 60 python3 scripts/ui.py '^Collections\|'
++ sleep 2
++ ui '^Import a reading list\|'
++ timeout 60 python3 scripts/ui.py '^Import a reading list\|'
++ sleep 4
+++ find_xy '^event.cbl\|'
+++ timeout 60 python3 -c 'import sys; sys.path.insert(0,'\''scripts'\''); import ui; p=ui.find(sys.argv[1]); print(f'\''{p[0]} {p[1]}'\'' if p else '\'''\'')' '^event.cbl\|'
++ '[' -z '' ']'
++ ui '\|Show roots$'
++ timeout 60 python3 scripts/ui.py '\|Show roots$'
++ sleep 2
++ ui '^Downloads\|'
++ timeout 60 python3 scripts/ui.py '^Downloads\|'
++ sleep 3
++ ui '^event.cbl\|'
++ timeout 60 python3 scripts/ui.py '^event.cbl\|'
++ sleep 4
++ ui '^Create collection\|'
++ timeout 60 python3 scripts/ui.py '^Create collection\|'
++ sleep 3
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 2
++ adb shell appwidget grantbind --package io.github.christiandonatti.fwip --user 0
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.WidgetPreviewActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.WidgetPreviewActivity }
++ sleep 14
++ shot g1-widgets 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/g1-widgets.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 92.1 MB/s (304574 bytes in 0.003s)
++ note g1-widgets
++ echo ::notice::g1-widgets
+::notice::g1-widgets
++ for k in 1 2 3 4 5
++ timeout 20 adb shell input swipe 960 960 960 240 600
++ shot g2-widgets 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/g2-widgets.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 76.3 MB/s (236152 bytes in 0.003s)
++ note g2-widgets
++ echo ::notice::g2-widgets
+::notice::g2-widgets
++ for k in 1 2 3 4 5
++ timeout 20 adb shell input swipe 960 960 960 240 600
++ shot g3-widgets 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/g3-widgets.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 57.8 MB/s (152958 bytes in 0.003s)
++ note g3-widgets
++ echo ::notice::g3-widgets
+::notice::g3-widgets
++ for k in 1 2 3 4 5
++ timeout 20 adb shell input swipe 960 960 960 240 600
++ shot g4-widgets 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/g4-widgets.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 74.0 MB/s (153272 bytes in 0.002s)
++ note g4-widgets
++ echo ::notice::g4-widgets
+::notice::g4-widgets
++ for k in 1 2 3 4 5
++ timeout 20 adb shell input swipe 960 960 960 240 600
++ shot g5-widgets 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/g5-widgets.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 65.4 MB/s (153272 bytes in 0.002s)
++ note g5-widgets
++ echo ::notice::g5-widgets
+::notice::g5-widgets
++ for k in 1 2 3 4 5
++ timeout 20 adb shell input swipe 960 960 960 240 600
++ shot g6-widgets 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/g6-widgets.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 57.6 MB/s (152829 bytes in 0.003s)
++ note g6-widgets
++ echo ::notice::g6-widgets
+::notice::g6-widgets
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ adb shell wm size 1080x2400
++ adb shell wm density 420
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.WidgetPreviewActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.WidgetPreviewActivity }
++ sleep 14
++ shot q1-widgets-phone 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/q1-widgets-phone.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 98.5 MB/s (637948 bytes in 0.006s)
++ note q1-widgets-phone
++ echo ::notice::q1-widgets-phone
+::notice::q1-widgets-phone
++ for k in 1 2 3 4
++ timeout 20 adb shell input swipe 540 1900 540 500 600
++ shot q2-widgets-phone 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/q2-widgets-phone.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 166.0 MB/s (1361697 bytes in 0.008s)
++ note q2-widgets-phone
++ echo ::notice::q2-widgets-phone
+::notice::q2-widgets-phone
++ for k in 1 2 3 4
++ timeout 20 adb shell input swipe 540 1900 540 500 600
++ shot q3-widgets-phone 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/q3-widgets-phone.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 133.5 MB/s (1361812 bytes in 0.010s)
++ note q3-widgets-phone
++ echo ::notice::q3-widgets-phone
+::notice::q3-widgets-phone
++ for k in 1 2 3 4
++ timeout 20 adb shell input swipe 540 1900 540 500 600
++ shot q4-widgets-phone 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/q4-widgets-phone.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 105.8 MB/s (1366563 bytes in 0.012s)
++ note q4-widgets-phone
++ echo ::notice::q4-widgets-phone
+::notice::q4-widgets-phone
++ for k in 1 2 3 4
++ timeout 20 adb shell input swipe 540 1900 540 500 600
++ shot q5-widgets-phone 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/q5-widgets-phone.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 111.5 MB/s (1361812 bytes in 0.012s)
++ note q5-widgets-phone
++ echo ::notice::q5-widgets-phone
+::notice::q5-widgets-phone
++ adb shell wm size reset
++ adb shell wm density reset
++ timeout 20 adb logcat -d
++ grep ' Fwip \|AppWidget\|Glance' /tmp/log.txt
++ tail -80
++ timeout 30 adb logcat -d -b crash
+++ head -c 800 repro/crash.txt
+++ tr '\n' ' '
++ note 'crashes: '
++ echo '::notice::crashes: '
+::notice::crashes: 

@@ -1,0 +1,666 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test builds only: a page that hosts every Fwip widget, so the emulator check can photograph them. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="io.github.christiandonatti.fwip"
+    android:versionCode="300"
+    android:versionName="0.3.0" >
+
+    <uses-sdk
+        android:minSdkVersion="26"
+        android:targetSdkVersion="35" />
+    <!-- Only used to talk to comic servers and network folders the user adds (Komga, Kavita, OPDS, SMB, WebDAV). -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- The light tick on page turns (optional, in the reader settings). -->
+    <uses-permission android:name="android.permission.VIBRATE" /> <!-- Copying new comics to the NAS keeps going with the screen off (only when that is turned on). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" /> <!-- Optional: a notice when a new issue of a series being read reaches the library. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- Wi-Fi only uploads. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <permission
+        android:name="io.github.christiandonatti.fwip.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="io.github.christiandonatti.fwip.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+
+    <application
+        android:name="io.github.christiandonatti.fwip.FwipApp"
+        android:allowBackup="true"
+        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:debuggable="true"
+        android:extractNativeLibs="false"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:largeHeap="true"
+        android:localeConfig="@xml/locales_config"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Fwip"
+        android:usesCleartextTraffic="true" >
+        <activity
+            android:name="io.github.christiandonatti.fwip.WidgetPreviewActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Fwip" />
+        <activity
+            android:name="io.github.christiandonatti.fwip.MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_2b2b2b"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_2b2b2b"
+            android:roundIcon="@mipmap/ic_launcher_a_2b2b2b"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_3a4ba0"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_3a4ba0"
+            android:roundIcon="@mipmap/ic_launcher_a_3a4ba0"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_d7263d"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_d7263d"
+            android:roundIcon="@mipmap/ic_launcher_a_d7263d"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_ff8c42"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_ff8c42"
+            android:roundIcon="@mipmap/ic_launcher_a_ff8c42"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_3ec1d3"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_3ec1d3"
+            android:roundIcon="@mipmap/ic_launcher_a_3ec1d3"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_e63946"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_e63946"
+            android:roundIcon="@mipmap/ic_launcher_a_e63946"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_ffd23f"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_ffd23f"
+            android:roundIcon="@mipmap/ic_launcher_a_ffd23f"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_ff5fc8"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_ff5fc8"
+            android:roundIcon="@mipmap/ic_launcher_a_ff5fc8"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_b6f04a"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_b6f04a"
+            android:roundIcon="@mipmap/ic_launcher_a_b6f04a"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_4fd8e8"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_4fd8e8"
+            android:roundIcon="@mipmap/ic_launcher_a_4fd8e8"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_86304a"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_86304a"
+            android:roundIcon="@mipmap/ic_launcher_a_86304a"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_a8741a"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_a8741a"
+            android:roundIcon="@mipmap/ic_launcher_a_a8741a"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_4f7a3a"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_4f7a3a"
+            android:roundIcon="@mipmap/ic_launcher_a_4f7a3a"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_2f5c8a"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_2f5c8a"
+            android:roundIcon="@mipmap/ic_launcher_a_2f5c8a"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_b8452b"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_b8452b"
+            android:roundIcon="@mipmap/ic_launcher_a_b8452b"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_ff86bc"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_ff86bc"
+            android:roundIcon="@mipmap/ic_launcher_a_ff86bc"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_b394ff"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_b394ff"
+            android:roundIcon="@mipmap/ic_launcher_a_b394ff"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_5dd39e"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_5dd39e"
+            android:roundIcon="@mipmap/ic_launcher_a_5dd39e"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_ff7a6b"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_ff7a6b"
+            android:roundIcon="@mipmap/ic_launcher_a_ff7a6b"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_6aa8ff"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_6aa8ff"
+            android:roundIcon="@mipmap/ic_launcher_a_6aa8ff"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_a_f2b544"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_a_f2b544"
+            android:roundIcon="@mipmap/ic_launcher_a_f2b544"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_manga"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_manga"
+            android:roundIcon="@mipmap/ic_launcher_manga"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_comic"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_comic"
+            android:roundIcon="@mipmap/ic_launcher_comic"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_oled"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_oled"
+            android:roundIcon="@mipmap/ic_launcher_oled"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_paper"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_paper"
+            android:roundIcon="@mipmap/ic_launcher_paper"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_night"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_night"
+            android:roundIcon="@mipmap/ic_launcher_night"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias> <!-- Launcher icons (generated by scripts/gen_icons.py): exactly one is enabled. -->
+        <activity-alias
+            android:name="io.github.christiandonatti.fwip.Icon_amber"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_amber"
+            android:roundIcon="@mipmap/ic_launcher_amber"
+            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias> <!-- /Launcher icons -->
+        <receiver
+            android:name="io.github.christiandonatti.fwip.widget.ContinueReadingReceiver"
+            android:exported="true"
+            android:label="@string/widget_title" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/continue_reading_widget" />
+        </receiver>
+        <receiver
+            android:name="io.github.christiandonatti.fwip.widget.UpNextReceiver"
+            android:exported="true"
+            android:label="@string/widget_up_next" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/up_next_widget" />
+        </receiver>
+        <receiver
+            android:name="io.github.christiandonatti.fwip.widget.CollectionReceiver"
+            android:exported="true"
+            android:label="@string/widget_collection" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/collection_widget" />
+        </receiver>
+        <receiver
+            android:name="io.github.christiandonatti.fwip.widget.StatsReceiver"
+            android:exported="true"
+            android:label="@string/widget_stats" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/stats_widget" />
+        </receiver>
+        <receiver
+            android:name="io.github.christiandonatti.fwip.widget.NewArrivalsReceiver"
+            android:exported="true"
+            android:label="@string/widget_new" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/new_arrivals_widget" />
+        </receiver>
+        <receiver
+            android:name="io.github.christiandonatti.fwip.widget.ShortcutsReceiver"
+            android:exported="true"
+            android:label="@string/widget_shortcuts" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/shortcuts_widget" />
+        </receiver>
+
+        <activity
+            android:name="io.github.christiandonatti.fwip.widget.CollectionWidgetConfig"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/widget_collection" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:directBootAware="false"
+            android:enabled="@bool/enable_system_foreground_service_default"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <activity
+            android:name="androidx.glance.appwidget.action.ActionTrampolineActivity"
+            android:enabled="true"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoDisplay" />
+        <activity
+            android:name="androidx.glance.appwidget.action.InvisibleActionTrampolineActivity"
+            android:enabled="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:noHistory="true"
+            android:taskAffinity="androidx.glance.appwidget.ListAdapterCallbackTrampoline"
+            android:theme="@style/Widget.Glance.AppWidget.CallbackTrampoline" />
+
+        <receiver
+            android:name="androidx.glance.appwidget.action.ActionCallbackBroadcastReceiver"
+            android:enabled="true"
+            android:exported="false" />
+        <receiver
+            android:name="androidx.glance.appwidget.UnmanagedSessionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+        <receiver
+            android:name="androidx.glance.appwidget.MyPackageReplacedReceiver"
+            android:enabled="true"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name="androidx.glance.appwidget.GlanceRemoteViewsService"
+            android:exported="true"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="io.github.christiandonatti.fwip.androidx-startup"
+            android:exported="false" >
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup" />
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                android:value="androidx.startup" />
+            <meta-data
+                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+                android:value="androidx.startup" />
+            <meta-data
+                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+                android:value="androidx.startup" />
+        </provider>
+
+        <service
+            android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
+            android:directBootAware="false"
+            android:enabled="@bool/enable_system_alarm_service_default"
+            android:exported="false" />
+        <service
+            android:name="androidx.work.impl.background.systemjob.SystemJobService"
+            android:directBootAware="false"
+            android:enabled="@bool/enable_system_job_service_default"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver
+            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
+            android:directBootAware="false"
+            android:enabled="true"
+            android:exported="false" />
+        <receiver
+            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
+            android:directBootAware="false"
+            android:enabled="false"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
+            android:directBootAware="false"
+            android:enabled="false"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.BATTERY_OKAY" />
+                <action android:name="android.intent.action.BATTERY_LOW" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
+            android:directBootAware="false"
+            android:enabled="false"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.DEVICE_STORAGE_LOW" />
+                <action android:name="android.intent.action.DEVICE_STORAGE_OK" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
+            android:directBootAware="false"
+            android:enabled="false"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
+            android:directBootAware="false"
+            android:enabled="false"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver"
+            android:directBootAware="false"
+            android:enabled="@bool/enable_system_alarm_service_default"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+            android:directBootAware="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.DUMP" >
+            <intent-filter>
+                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name="androidx.core.widget.RemoteViewsCompatService"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+        <service
+            android:name="androidx.room.MultiInstanceInvalidationService"
+            android:directBootAware="true"
+            android:exported="false" />
+
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            android:directBootAware="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.DUMP" >
+            <intent-filter>
+                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

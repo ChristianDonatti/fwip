@@ -1,0 +1,334 @@
+[
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_5dd39e.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_5dd39e.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_5dd39e.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_5dd39e.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_amber.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_amber.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_b394ff.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_b394ff.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_b6f04a.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_b6f04a.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_a8741a.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_a8741a.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_b6f04a.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_b6f04a.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/raw_page_comic.wav.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/raw/page_comic.wav"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_b394ff.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_b394ff.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/font_bangers_400.ttf.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/font/bangers_400.ttf"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/xml_continue_reading_widget.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/xml/continue_reading_widget.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_3a4ba0.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_3a4ba0.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_ff5fc8.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_ff5fc8.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_b8452b.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_b8452b.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_4fd8e8.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_4fd8e8.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_2f5c8a.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_2f5c8a.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_ff86bc.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_ff86bc.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_6aa8ff.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_6aa8ff.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_night.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_night.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_ff7a6b.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_ff7a6b.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_3ec1d3.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_3ec1d3.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_e63946.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_e63946.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_3ec1d3.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_3ec1d3.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/xml_data_extraction_rules.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_stat_balloon.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_stat_balloon.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_manga.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_manga.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_2f5c8a.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_2f5c8a.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/xml_new_arrivals_widget.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/xml/new_arrivals_widget.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_oled.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_oled.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_b8452b.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_b8452b.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_4fd8e8.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_4fd8e8.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_4f7a3a.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_4f7a3a.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_ffd23f.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_ffd23f.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_f2b544.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_f2b544.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_monochrome.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_monochrome.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/font_unbounded_500.ttf.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/font/unbounded_500.ttf"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_comic.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_comic.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/font_fraunces_700.ttf.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/font/fraunces_700.ttf"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_amber.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_amber.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/font_unbounded_600.ttf.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/font/unbounded_600.ttf"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/font_fraunces_600.ttf.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/font/fraunces_600.ttf"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/raw_page_turn.wav.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/raw/page_turn.wav"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/font_unbounded_700.ttf.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/font/unbounded_700.ttf"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/xml_locales_config.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/xml/locales_config.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/font_manrope_600.ttf.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/font/manrope_600.ttf"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/font_manrope_700.ttf.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/font/manrope_700.ttf"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_ff8c42.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_ff8c42.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_f2b544.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_f2b544.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_manga.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_manga.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_paper.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_paper.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/font_manrope_400.ttf.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/font/manrope_400.ttf"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/font_manrope_500.ttf.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/font/manrope_500.ttf"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/xml_collection_widget.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/xml/collection_widget.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/raw_page_thin.wav.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/raw/page_thin.wav"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_4f7a3a.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_4f7a3a.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/xml_stats_widget.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/xml/stats_widget.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/raw_page_thick.wav.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/raw/page_thick.wav"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_2b2b2b.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_2b2b2b.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_2b2b2b.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_2b2b2b.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_d7263d.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_d7263d.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_fwip_mark.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/fwip_mark.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_ff86bc.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_ff86bc.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_d7263d.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_d7263d.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_ff7a6b.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_ff7a6b.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_86304a.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_86304a.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/xml_up_next_widget.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/xml/up_next_widget.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/xml_shortcuts_widget.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/xml/shortcuts_widget.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/xml_backup_rules.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_6aa8ff.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_6aa8ff.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_ffd23f.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_ffd23f.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_86304a.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_86304a.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_stat_upload.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_stat_upload.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_oled.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_oled.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_e63946.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_e63946.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_3a4ba0.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_3a4ba0.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_night.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_night.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_ff8c42.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_ff8c42.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_a_a8741a.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_a_a8741a.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/drawable_ic_launcher_fg_comic.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/drawable/ic_launcher_fg_comic.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_paper.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_paper.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "io.github.christiandonatti.fwip.app-debug-64:/mipmap-anydpi-v26_ic_launcher_a_ff5fc8.xml.flat",
+        "source": "io.github.christiandonatti.fwip.app-main-66:/mipmap-anydpi-v26/ic_launcher_a_ff5fc8.xml"
+    }
+]

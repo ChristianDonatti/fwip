@@ -1,0 +1,1266 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<!-- Test builds only: a page that hosts every Fwip widget, so the emulator check can photograph them. -->
+3<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+4    package="io.github.christiandonatti.fwip"
+5    android:versionCode="300"
+6    android:versionName="0.3.0" >
+7
+8    <uses-sdk
+9        android:minSdkVersion="26"
+10        android:targetSdkVersion="35" />
+11    <!-- Only used to talk to comic servers and network folders the user adds (Komga, Kavita, OPDS, SMB, WebDAV). -->
+12    <uses-permission android:name="android.permission.INTERNET" /> <!-- The light tick on page turns (optional, in the reader settings). -->
+12-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:6:5-67
+12-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:6:22-64
+13    <uses-permission android:name="android.permission.VIBRATE" /> <!-- Copying new comics to the NAS keeps going with the screen off (only when that is turned on). -->
+13-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:8:5-66
+13-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:8:22-63
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+14-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:10:5-77
+14-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:10:22-74
+15    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" /> <!-- Optional: a notice when a new issue of a series being read reaches the library. -->
+15-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:11:5-87
+15-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:11:22-84
+16    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- Wi-Fi only uploads. -->
+16-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:13:5-77
+16-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:13:22-74
+17    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+17-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:15:5-79
+17-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:15:22-76
+18    <uses-permission android:name="android.permission.WAKE_LOCK" />
+18-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:23:5-68
+18-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:23:22-65
+19    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+19-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:25:5-81
+19-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:25:22-78
+20
+21    <permission
+21-->[androidx.core:core:1.15.0] /home/runner/.gradle/caches/8.14.3/transforms/77f7b0fda5b9ab8f1517f502bebbfb16/transformed/core-1.15.0/AndroidManifest.xml:22:5-24:47
+22        android:name="io.github.christiandonatti.fwip.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+22-->[androidx.core:core:1.15.0] /home/runner/.gradle/caches/8.14.3/transforms/77f7b0fda5b9ab8f1517f502bebbfb16/transformed/core-1.15.0/AndroidManifest.xml:23:9-81
+23        android:protectionLevel="signature" />
+23-->[androidx.core:core:1.15.0] /home/runner/.gradle/caches/8.14.3/transforms/77f7b0fda5b9ab8f1517f502bebbfb16/transformed/core-1.15.0/AndroidManifest.xml:24:9-44
+24
+25    <uses-permission android:name="io.github.christiandonatti.fwip.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+25-->[androidx.core:core:1.15.0] /home/runner/.gradle/caches/8.14.3/transforms/77f7b0fda5b9ab8f1517f502bebbfb16/transformed/core-1.15.0/AndroidManifest.xml:26:5-97
+25-->[androidx.core:core:1.15.0] /home/runner/.gradle/caches/8.14.3/transforms/77f7b0fda5b9ab8f1517f502bebbfb16/transformed/core-1.15.0/AndroidManifest.xml:26:22-94
+26
+27    <application
+27-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:17:5-446:19
+28        android:name="io.github.christiandonatti.fwip.FwipApp"
+28-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:18:9-32
+29        android:allowBackup="true"
+29-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:19:9-35
+30        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+30-->[androidx.core:core:1.15.0] /home/runner/.gradle/caches/8.14.3/transforms/77f7b0fda5b9ab8f1517f502bebbfb16/transformed/core-1.15.0/AndroidManifest.xml:28:18-86
+31        android:dataExtractionRules="@xml/data_extraction_rules"
+31-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:21:9-65
+32        android:debuggable="true"
+33        android:extractNativeLibs="false"
+34        android:fullBackupContent="@xml/backup_rules"
+34-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:20:9-54
+35        android:icon="@mipmap/ic_launcher"
+35-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:22:9-43
+36        android:label="@string/app_name"
+36-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:24:9-41
+37        android:largeHeap="true"
+37-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:25:9-33
+38        android:localeConfig="@xml/locales_config"
+38-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:26:9-51
+39        android:roundIcon="@mipmap/ic_launcher"
+39-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:23:9-48
+40        android:supportsRtl="true"
+40-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:27:9-35
+41        android:theme="@style/Theme.Fwip"
+41-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:29:9-42
+42        android:usesCleartextTraffic="true" >
+42-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:28:9-44
+43        <activity
+43-->/home/runner/work/fwip/fwip/app/src/debug/AndroidManifest.xml:5:9-8:49
+44            android:name="io.github.christiandonatti.fwip.WidgetPreviewActivity"
+44-->/home/runner/work/fwip/fwip/app/src/debug/AndroidManifest.xml:6:13-50
+45            android:exported="true"
+45-->/home/runner/work/fwip/fwip/app/src/debug/AndroidManifest.xml:7:13-36
+46            android:theme="@style/Theme.Fwip" />
+46-->/home/runner/work/fwip/fwip/app/src/debug/AndroidManifest.xml:8:13-46
+47        <activity
+47-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:31:9-36:58
+48            android:name="io.github.christiandonatti.fwip.MainActivity"
+48-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:32:13-41
+49            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+49-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:35:13-106
+50            android:exported="true"
+50-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:33:13-36
+51            android:launchMode="singleTask"
+51-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:34:13-44
+52            android:windowSoftInputMode="adjustResize" />
+52-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:36:13-55
+53
+54        <activity-alias
+54-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:351:9-362:26
+55            android:name="io.github.christiandonatti.fwip.Icon_a_2b2b2b"
+55-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:352:13-42
+56            android:enabled="false"
+56-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:355:13-36
+57            android:exported="true"
+57-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:354:13-36
+58            android:icon="@mipmap/ic_launcher_a_2b2b2b"
+58-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:356:13-56
+59            android:roundIcon="@mipmap/ic_launcher_a_2b2b2b"
+59-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:357:13-61
+60            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+60-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:353:13-51
+61            <intent-filter>
+61-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+62                <action android:name="android.intent.action.MAIN" />
+62-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+62-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+63
+64                <category android:name="android.intent.category.LAUNCHER" />
+64-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+64-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+65            </intent-filter>
+66        </activity-alias>
+67        <activity-alias
+67-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:339:9-350:26
+68            android:name="io.github.christiandonatti.fwip.Icon_a_3a4ba0"
+68-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:340:13-42
+69            android:enabled="false"
+69-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:343:13-36
+70            android:exported="true"
+70-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:342:13-36
+71            android:icon="@mipmap/ic_launcher_a_3a4ba0"
+71-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:344:13-56
+72            android:roundIcon="@mipmap/ic_launcher_a_3a4ba0"
+72-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:345:13-61
+73            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+73-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:341:13-51
+74            <intent-filter>
+74-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+75                <action android:name="android.intent.action.MAIN" />
+75-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+75-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+76
+77                <category android:name="android.intent.category.LAUNCHER" />
+77-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+77-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+78            </intent-filter>
+79        </activity-alias>
+80        <activity-alias
+80-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:327:9-338:26
+81            android:name="io.github.christiandonatti.fwip.Icon_a_d7263d"
+81-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:328:13-42
+82            android:enabled="false"
+82-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:331:13-36
+83            android:exported="true"
+83-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:330:13-36
+84            android:icon="@mipmap/ic_launcher_a_d7263d"
+84-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:332:13-56
+85            android:roundIcon="@mipmap/ic_launcher_a_d7263d"
+85-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:333:13-61
+86            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+86-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:329:13-51
+87            <intent-filter>
+87-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+88                <action android:name="android.intent.action.MAIN" />
+88-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+88-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+89
+90                <category android:name="android.intent.category.LAUNCHER" />
+90-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+90-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+91            </intent-filter>
+92        </activity-alias>
+93        <activity-alias
+93-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:315:9-326:26
+94            android:name="io.github.christiandonatti.fwip.Icon_a_ff8c42"
+94-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:316:13-42
+95            android:enabled="false"
+95-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:319:13-36
+96            android:exported="true"
+96-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:318:13-36
+97            android:icon="@mipmap/ic_launcher_a_ff8c42"
+97-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:320:13-56
+98            android:roundIcon="@mipmap/ic_launcher_a_ff8c42"
+98-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:321:13-61
+99            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+99-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:317:13-51
+100            <intent-filter>
+100-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+101                <action android:name="android.intent.action.MAIN" />
+101-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+101-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+102
+103                <category android:name="android.intent.category.LAUNCHER" />
+103-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+103-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+104            </intent-filter>
+105        </activity-alias>
+106        <activity-alias
+106-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:303:9-314:26
+107            android:name="io.github.christiandonatti.fwip.Icon_a_3ec1d3"
+107-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:304:13-42
+108            android:enabled="false"
+108-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:307:13-36
+109            android:exported="true"
+109-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:306:13-36
+110            android:icon="@mipmap/ic_launcher_a_3ec1d3"
+110-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:308:13-56
+111            android:roundIcon="@mipmap/ic_launcher_a_3ec1d3"
+111-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:309:13-61
+112            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+112-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:305:13-51
+113            <intent-filter>
+113-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+114                <action android:name="android.intent.action.MAIN" />
+114-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+114-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+115
+116                <category android:name="android.intent.category.LAUNCHER" />
+116-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+116-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+117            </intent-filter>
+118        </activity-alias>
+119        <activity-alias
+119-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:291:9-302:26
+120            android:name="io.github.christiandonatti.fwip.Icon_a_e63946"
+120-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:292:13-42
+121            android:enabled="false"
+121-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:295:13-36
+122            android:exported="true"
+122-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:294:13-36
+123            android:icon="@mipmap/ic_launcher_a_e63946"
+123-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:296:13-56
+124            android:roundIcon="@mipmap/ic_launcher_a_e63946"
+124-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:297:13-61
+125            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+125-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:293:13-51
+126            <intent-filter>
+126-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+127                <action android:name="android.intent.action.MAIN" />
+127-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+127-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+128
+129                <category android:name="android.intent.category.LAUNCHER" />
+129-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+129-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+130            </intent-filter>
+131        </activity-alias>
+132        <activity-alias
+132-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:279:9-290:26
+133            android:name="io.github.christiandonatti.fwip.Icon_a_ffd23f"
+133-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:280:13-42
+134            android:enabled="false"
+134-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:283:13-36
+135            android:exported="true"
+135-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:282:13-36
+136            android:icon="@mipmap/ic_launcher_a_ffd23f"
+136-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:284:13-56
+137            android:roundIcon="@mipmap/ic_launcher_a_ffd23f"
+137-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:285:13-61
+138            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+138-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:281:13-51
+139            <intent-filter>
+139-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+140                <action android:name="android.intent.action.MAIN" />
+140-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+140-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+141
+142                <category android:name="android.intent.category.LAUNCHER" />
+142-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+142-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+143            </intent-filter>
+144        </activity-alias>
+145        <activity-alias
+145-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:267:9-278:26
+146            android:name="io.github.christiandonatti.fwip.Icon_a_ff5fc8"
+146-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:268:13-42
+147            android:enabled="false"
+147-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:271:13-36
+148            android:exported="true"
+148-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:270:13-36
+149            android:icon="@mipmap/ic_launcher_a_ff5fc8"
+149-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:272:13-56
+150            android:roundIcon="@mipmap/ic_launcher_a_ff5fc8"
+150-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:273:13-61
+151            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+151-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:269:13-51
+152            <intent-filter>
+152-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+153                <action android:name="android.intent.action.MAIN" />
+153-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+153-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+154
+155                <category android:name="android.intent.category.LAUNCHER" />
+155-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+155-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+156            </intent-filter>
+157        </activity-alias>
+158        <activity-alias
+158-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:255:9-266:26
+159            android:name="io.github.christiandonatti.fwip.Icon_a_b6f04a"
+159-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:256:13-42
+160            android:enabled="false"
+160-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:259:13-36
+161            android:exported="true"
+161-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:258:13-36
+162            android:icon="@mipmap/ic_launcher_a_b6f04a"
+162-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:260:13-56
+163            android:roundIcon="@mipmap/ic_launcher_a_b6f04a"
+163-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:261:13-61
+164            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+164-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:257:13-51
+165            <intent-filter>
+165-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+166                <action android:name="android.intent.action.MAIN" />
+166-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+166-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+167
+168                <category android:name="android.intent.category.LAUNCHER" />
+168-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+168-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+169            </intent-filter>
+170        </activity-alias>
+171        <activity-alias
+171-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:243:9-254:26
+172            android:name="io.github.christiandonatti.fwip.Icon_a_4fd8e8"
+172-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:244:13-42
+173            android:enabled="false"
+173-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:247:13-36
+174            android:exported="true"
+174-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:246:13-36
+175            android:icon="@mipmap/ic_launcher_a_4fd8e8"
+175-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:248:13-56
+176            android:roundIcon="@mipmap/ic_launcher_a_4fd8e8"
+176-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:249:13-61
+177            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+177-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:245:13-51
+178            <intent-filter>
+178-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+179                <action android:name="android.intent.action.MAIN" />
+179-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+179-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+180
+181                <category android:name="android.intent.category.LAUNCHER" />
+181-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+181-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+182            </intent-filter>
+183        </activity-alias>
+184        <activity-alias
+184-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:231:9-242:26
+185            android:name="io.github.christiandonatti.fwip.Icon_a_86304a"
+185-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:232:13-42
+186            android:enabled="false"
+186-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:235:13-36
+187            android:exported="true"
+187-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:234:13-36
+188            android:icon="@mipmap/ic_launcher_a_86304a"
+188-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:236:13-56
+189            android:roundIcon="@mipmap/ic_launcher_a_86304a"
+189-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:237:13-61
+190            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+190-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:233:13-51
+191            <intent-filter>
+191-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+192                <action android:name="android.intent.action.MAIN" />
+192-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+192-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+193
+194                <category android:name="android.intent.category.LAUNCHER" />
+194-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+194-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+195            </intent-filter>
+196        </activity-alias>
+197        <activity-alias
+197-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:219:9-230:26
+198            android:name="io.github.christiandonatti.fwip.Icon_a_a8741a"
+198-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:220:13-42
+199            android:enabled="false"
+199-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:223:13-36
+200            android:exported="true"
+200-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:222:13-36
+201            android:icon="@mipmap/ic_launcher_a_a8741a"
+201-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:224:13-56
+202            android:roundIcon="@mipmap/ic_launcher_a_a8741a"
+202-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:225:13-61
+203            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+203-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:221:13-51
+204            <intent-filter>
+204-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+205                <action android:name="android.intent.action.MAIN" />
+205-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+205-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+206
+207                <category android:name="android.intent.category.LAUNCHER" />
+207-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+207-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+208            </intent-filter>
+209        </activity-alias>
+210        <activity-alias
+210-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:207:9-218:26
+211            android:name="io.github.christiandonatti.fwip.Icon_a_4f7a3a"
+211-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:208:13-42
+212            android:enabled="false"
+212-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:211:13-36
+213            android:exported="true"
+213-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:210:13-36
+214            android:icon="@mipmap/ic_launcher_a_4f7a3a"
+214-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:212:13-56
+215            android:roundIcon="@mipmap/ic_launcher_a_4f7a3a"
+215-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:213:13-61
+216            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+216-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:209:13-51
+217            <intent-filter>
+217-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+218                <action android:name="android.intent.action.MAIN" />
+218-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+218-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+219
+220                <category android:name="android.intent.category.LAUNCHER" />
+220-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+220-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+221            </intent-filter>
+222        </activity-alias>
+223        <activity-alias
+223-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:195:9-206:26
+224            android:name="io.github.christiandonatti.fwip.Icon_a_2f5c8a"
+224-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:196:13-42
+225            android:enabled="false"
+225-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:199:13-36
+226            android:exported="true"
+226-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:198:13-36
+227            android:icon="@mipmap/ic_launcher_a_2f5c8a"
+227-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:200:13-56
+228            android:roundIcon="@mipmap/ic_launcher_a_2f5c8a"
+228-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:201:13-61
+229            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+229-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:197:13-51
+230            <intent-filter>
+230-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+231                <action android:name="android.intent.action.MAIN" />
+231-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+231-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+232
+233                <category android:name="android.intent.category.LAUNCHER" />
+233-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+233-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+234            </intent-filter>
+235        </activity-alias>
+236        <activity-alias
+236-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:183:9-194:26
+237            android:name="io.github.christiandonatti.fwip.Icon_a_b8452b"
+237-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:184:13-42
+238            android:enabled="false"
+238-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:187:13-36
+239            android:exported="true"
+239-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:186:13-36
+240            android:icon="@mipmap/ic_launcher_a_b8452b"
+240-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:188:13-56
+241            android:roundIcon="@mipmap/ic_launcher_a_b8452b"
+241-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:189:13-61
+242            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+242-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:185:13-51
+243            <intent-filter>
+243-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+244                <action android:name="android.intent.action.MAIN" />
+244-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+244-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+245
+246                <category android:name="android.intent.category.LAUNCHER" />
+246-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+246-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+247            </intent-filter>
+248        </activity-alias>
+249        <activity-alias
+249-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:171:9-182:26
+250            android:name="io.github.christiandonatti.fwip.Icon_a_ff86bc"
+250-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:172:13-42
+251            android:enabled="false"
+251-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:175:13-36
+252            android:exported="true"
+252-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:174:13-36
+253            android:icon="@mipmap/ic_launcher_a_ff86bc"
+253-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:176:13-56
+254            android:roundIcon="@mipmap/ic_launcher_a_ff86bc"
+254-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:177:13-61
+255            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+255-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:173:13-51
+256            <intent-filter>
+256-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+257                <action android:name="android.intent.action.MAIN" />
+257-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+257-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+258
+259                <category android:name="android.intent.category.LAUNCHER" />
+259-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+259-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+260            </intent-filter>
+261        </activity-alias>
+262        <activity-alias
+262-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:159:9-170:26
+263            android:name="io.github.christiandonatti.fwip.Icon_a_b394ff"
+263-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:160:13-42
+264            android:enabled="false"
+264-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:163:13-36
+265            android:exported="true"
+265-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:162:13-36
+266            android:icon="@mipmap/ic_launcher_a_b394ff"
+266-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:164:13-56
+267            android:roundIcon="@mipmap/ic_launcher_a_b394ff"
+267-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:165:13-61
+268            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+268-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:161:13-51
+269            <intent-filter>
+269-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+270                <action android:name="android.intent.action.MAIN" />
+270-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+270-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+271
+272                <category android:name="android.intent.category.LAUNCHER" />
+272-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+272-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+273            </intent-filter>
+274        </activity-alias>
+275        <activity-alias
+275-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:147:9-158:26
+276            android:name="io.github.christiandonatti.fwip.Icon_a_5dd39e"
+276-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:148:13-42
+277            android:enabled="false"
+277-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:151:13-36
+278            android:exported="true"
+278-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:150:13-36
+279            android:icon="@mipmap/ic_launcher_a_5dd39e"
+279-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:152:13-56
+280            android:roundIcon="@mipmap/ic_launcher_a_5dd39e"
+280-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:153:13-61
+281            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+281-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:149:13-51
+282            <intent-filter>
+282-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+283                <action android:name="android.intent.action.MAIN" />
+283-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+283-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+284
+285                <category android:name="android.intent.category.LAUNCHER" />
+285-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+285-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+286            </intent-filter>
+287        </activity-alias>
+288        <activity-alias
+288-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:135:9-146:26
+289            android:name="io.github.christiandonatti.fwip.Icon_a_ff7a6b"
+289-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:136:13-42
+290            android:enabled="false"
+290-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:139:13-36
+291            android:exported="true"
+291-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:138:13-36
+292            android:icon="@mipmap/ic_launcher_a_ff7a6b"
+292-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:140:13-56
+293            android:roundIcon="@mipmap/ic_launcher_a_ff7a6b"
+293-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:141:13-61
+294            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+294-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:137:13-51
+295            <intent-filter>
+295-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+296                <action android:name="android.intent.action.MAIN" />
+296-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+296-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+297
+298                <category android:name="android.intent.category.LAUNCHER" />
+298-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+298-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+299            </intent-filter>
+300        </activity-alias>
+301        <activity-alias
+301-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:123:9-134:26
+302            android:name="io.github.christiandonatti.fwip.Icon_a_6aa8ff"
+302-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:124:13-42
+303            android:enabled="false"
+303-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:127:13-36
+304            android:exported="true"
+304-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:126:13-36
+305            android:icon="@mipmap/ic_launcher_a_6aa8ff"
+305-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:128:13-56
+306            android:roundIcon="@mipmap/ic_launcher_a_6aa8ff"
+306-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:129:13-61
+307            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+307-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:125:13-51
+308            <intent-filter>
+308-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+309                <action android:name="android.intent.action.MAIN" />
+309-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+309-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+310
+311                <category android:name="android.intent.category.LAUNCHER" />
+311-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+311-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+312            </intent-filter>
+313        </activity-alias>
+314        <activity-alias
+314-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:111:9-122:26
+315            android:name="io.github.christiandonatti.fwip.Icon_a_f2b544"
+315-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:112:13-42
+316            android:enabled="false"
+316-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:115:13-36
+317            android:exported="true"
+317-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:114:13-36
+318            android:icon="@mipmap/ic_launcher_a_f2b544"
+318-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:116:13-56
+319            android:roundIcon="@mipmap/ic_launcher_a_f2b544"
+319-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:117:13-61
+320            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+320-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:113:13-51
+321            <intent-filter>
+321-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+322                <action android:name="android.intent.action.MAIN" />
+322-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+322-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+323
+324                <category android:name="android.intent.category.LAUNCHER" />
+324-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+324-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+325            </intent-filter>
+326        </activity-alias>
+327        <activity-alias
+327-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:99:9-110:26
+328            android:name="io.github.christiandonatti.fwip.Icon_manga"
+328-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:100:13-39
+329            android:enabled="false"
+329-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:103:13-36
+330            android:exported="true"
+330-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:102:13-36
+331            android:icon="@mipmap/ic_launcher_manga"
+331-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:104:13-53
+332            android:roundIcon="@mipmap/ic_launcher_manga"
+332-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:105:13-58
+333            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+333-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:101:13-51
+334            <intent-filter>
+334-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+335                <action android:name="android.intent.action.MAIN" />
+335-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+335-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+336
+337                <category android:name="android.intent.category.LAUNCHER" />
+337-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+337-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+338            </intent-filter>
+339        </activity-alias>
+340        <activity-alias
+340-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:87:9-98:26
+341            android:name="io.github.christiandonatti.fwip.Icon_comic"
+341-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:88:13-39
+342            android:enabled="false"
+342-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:91:13-36
+343            android:exported="true"
+343-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:90:13-36
+344            android:icon="@mipmap/ic_launcher_comic"
+344-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:92:13-53
+345            android:roundIcon="@mipmap/ic_launcher_comic"
+345-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:93:13-58
+346            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+346-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:89:13-51
+347            <intent-filter>
+347-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+348                <action android:name="android.intent.action.MAIN" />
+348-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+348-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+349
+350                <category android:name="android.intent.category.LAUNCHER" />
+350-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+350-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+351            </intent-filter>
+352        </activity-alias>
+353        <activity-alias
+353-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:75:9-86:26
+354            android:name="io.github.christiandonatti.fwip.Icon_oled"
+354-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:76:13-38
+355            android:enabled="false"
+355-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:79:13-36
+356            android:exported="true"
+356-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:78:13-36
+357            android:icon="@mipmap/ic_launcher_oled"
+357-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:80:13-52
+358            android:roundIcon="@mipmap/ic_launcher_oled"
+358-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:81:13-57
+359            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+359-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:77:13-51
+360            <intent-filter>
+360-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+361                <action android:name="android.intent.action.MAIN" />
+361-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+361-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+362
+363                <category android:name="android.intent.category.LAUNCHER" />
+363-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+363-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+364            </intent-filter>
+365        </activity-alias>
+366        <activity-alias
+366-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:63:9-74:26
+367            android:name="io.github.christiandonatti.fwip.Icon_paper"
+367-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:64:13-39
+368            android:enabled="false"
+368-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:67:13-36
+369            android:exported="true"
+369-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:66:13-36
+370            android:icon="@mipmap/ic_launcher_paper"
+370-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:68:13-53
+371            android:roundIcon="@mipmap/ic_launcher_paper"
+371-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:69:13-58
+372            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+372-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:65:13-51
+373            <intent-filter>
+373-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+374                <action android:name="android.intent.action.MAIN" />
+374-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+374-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+375
+376                <category android:name="android.intent.category.LAUNCHER" />
+376-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+376-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+377            </intent-filter>
+378        </activity-alias>
+379        <activity-alias
+379-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:51:9-62:26
+380            android:name="io.github.christiandonatti.fwip.Icon_night"
+380-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:52:13-39
+381            android:enabled="false"
+381-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:55:13-36
+382            android:exported="true"
+382-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:54:13-36
+383            android:icon="@mipmap/ic_launcher_night"
+383-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:56:13-53
+384            android:roundIcon="@mipmap/ic_launcher_night"
+384-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:57:13-58
+385            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+385-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:53:13-51
+386            <intent-filter>
+386-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+387                <action android:name="android.intent.action.MAIN" />
+387-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+387-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+388
+389                <category android:name="android.intent.category.LAUNCHER" />
+389-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+389-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+390            </intent-filter>
+391        </activity-alias> <!-- Launcher icons (generated by scripts/gen_icons.py): exactly one is enabled. -->
+392        <activity-alias
+392-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:39:9-50:26
+393            android:name="io.github.christiandonatti.fwip.Icon_amber"
+393-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:40:13-39
+394            android:enabled="true"
+394-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:43:13-35
+395            android:exported="true"
+395-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:42:13-36
+396            android:icon="@mipmap/ic_launcher_amber"
+396-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:44:13-53
+397            android:roundIcon="@mipmap/ic_launcher_amber"
+397-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:45:13-58
+398            android:targetActivity="io.github.christiandonatti.fwip.MainActivity" >
+398-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:41:13-51
+399            <intent-filter>
+399-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:46:13-49:29
+400                <action android:name="android.intent.action.MAIN" />
+400-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:17-69
+400-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:47:25-66
+401
+402                <category android:name="android.intent.category.LAUNCHER" />
+402-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:17-77
+402-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:48:27-74
+403            </intent-filter>
+404        </activity-alias> <!-- /Launcher icons -->
+405        <receiver
+405-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:365:9-375:20
+406            android:name="io.github.christiandonatti.fwip.widget.ContinueReadingReceiver"
+406-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:366:13-59
+407            android:exported="true"
+407-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:367:13-36
+408            android:label="@string/widget_title" >
+408-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:368:13-49
+409            <intent-filter>
+409-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:369:13-371:29
+410                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+410-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:17-84
+410-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:25-81
+411            </intent-filter>
+412
+413            <meta-data
+413-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:372:13-374:67
+414                android:name="android.appwidget.provider"
+414-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:373:17-58
+415                android:resource="@xml/continue_reading_widget" />
+415-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:374:17-64
+416        </receiver>
+417        <receiver
+417-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:377:9-387:20
+418            android:name="io.github.christiandonatti.fwip.widget.UpNextReceiver"
+418-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:378:13-50
+419            android:exported="true"
+419-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:379:13-36
+420            android:label="@string/widget_up_next" >
+420-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:380:13-51
+421            <intent-filter>
+421-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:369:13-371:29
+422                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+422-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:17-84
+422-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:25-81
+423            </intent-filter>
+424
+425            <meta-data
+425-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:372:13-374:67
+426                android:name="android.appwidget.provider"
+426-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:373:17-58
+427                android:resource="@xml/up_next_widget" />
+427-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:374:17-64
+428        </receiver>
+429        <receiver
+429-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:388:9-398:20
+430            android:name="io.github.christiandonatti.fwip.widget.CollectionReceiver"
+430-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:389:13-54
+431            android:exported="true"
+431-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:390:13-36
+432            android:label="@string/widget_collection" >
+432-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:391:13-54
+433            <intent-filter>
+433-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:369:13-371:29
+434                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+434-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:17-84
+434-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:25-81
+435            </intent-filter>
+436
+437            <meta-data
+437-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:372:13-374:67
+438                android:name="android.appwidget.provider"
+438-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:373:17-58
+439                android:resource="@xml/collection_widget" />
+439-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:374:17-64
+440        </receiver>
+441        <receiver
+441-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:399:9-409:20
+442            android:name="io.github.christiandonatti.fwip.widget.StatsReceiver"
+442-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:400:13-49
+443            android:exported="true"
+443-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:401:13-36
+444            android:label="@string/widget_stats" >
+444-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:402:13-49
+445            <intent-filter>
+445-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:369:13-371:29
+446                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+446-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:17-84
+446-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:25-81
+447            </intent-filter>
+448
+449            <meta-data
+449-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:372:13-374:67
+450                android:name="android.appwidget.provider"
+450-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:373:17-58
+451                android:resource="@xml/stats_widget" />
+451-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:374:17-64
+452        </receiver>
+453        <receiver
+453-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:410:9-420:20
+454            android:name="io.github.christiandonatti.fwip.widget.NewArrivalsReceiver"
+454-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:411:13-55
+455            android:exported="true"
+455-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:412:13-36
+456            android:label="@string/widget_new" >
+456-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:413:13-47
+457            <intent-filter>
+457-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:369:13-371:29
+458                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+458-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:17-84
+458-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:25-81
+459            </intent-filter>
+460
+461            <meta-data
+461-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:372:13-374:67
+462                android:name="android.appwidget.provider"
+462-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:373:17-58
+463                android:resource="@xml/new_arrivals_widget" />
+463-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:374:17-64
+464        </receiver>
+465        <receiver
+465-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:421:9-431:20
+466            android:name="io.github.christiandonatti.fwip.widget.ShortcutsReceiver"
+466-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:422:13-53
+467            android:exported="true"
+467-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:423:13-36
+468            android:label="@string/widget_shortcuts" >
+468-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:424:13-53
+469            <intent-filter>
+469-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:369:13-371:29
+470                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+470-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:17-84
+470-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:370:25-81
+471            </intent-filter>
+472
+473            <meta-data
+473-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:372:13-374:67
+474                android:name="android.appwidget.provider"
+474-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:373:17-58
+475                android:resource="@xml/shortcuts_widget" />
+475-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:374:17-64
+476        </receiver>
+477
+478        <activity
+478-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:432:9-440:20
+479            android:name="io.github.christiandonatti.fwip.widget.CollectionWidgetConfig"
+479-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:433:13-58
+480            android:excludeFromRecents="true"
+480-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:435:13-46
+481            android:exported="true"
+481-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:434:13-36
+482            android:label="@string/widget_collection" >
+482-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:436:13-54
+483            <intent-filter>
+483-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:437:13-439:29
+484                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+484-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:438:17-87
+484-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:438:25-84
+485            </intent-filter>
+486        </activity>
+487
+488        <service
+488-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:442:9-445:34
+489            android:name="androidx.work.impl.foreground.SystemForegroundService"
+489-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:443:13-81
+490            android:directBootAware="false"
+490-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:55:13-44
+491            android:enabled="@bool/enable_system_foreground_service_default"
+491-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:56:13-77
+492            android:exported="false"
+492-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:57:13-37
+493            android:foregroundServiceType="dataSync" />
+493-->/home/runner/work/fwip/fwip/app/src/main/AndroidManifest.xml:444:13-53
+494
+495        <activity
+495-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:23:9-28:62
+496            android:name="androidx.glance.appwidget.action.ActionTrampolineActivity"
+496-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:24:13-85
+497            android:enabled="true"
+497-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:25:13-35
+498            android:excludeFromRecents="true"
+498-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:26:13-46
+499            android:exported="false"
+499-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:27:13-37
+500            android:theme="@android:style/Theme.NoDisplay" />
+500-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:28:13-59
+501        <activity
+501-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:29:9-36:81
+502            android:name="androidx.glance.appwidget.action.InvisibleActionTrampolineActivity"
+502-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:30:13-94
+503            android:enabled="true"
+503-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:31:13-35
+504            android:exported="false"
+504-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:32:13-37
+505            android:launchMode="singleInstance"
+505-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:33:13-48
+506            android:noHistory="true"
+506-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:34:13-37
+507            android:taskAffinity="androidx.glance.appwidget.ListAdapterCallbackTrampoline"
+507-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:35:13-91
+508            android:theme="@style/Widget.Glance.AppWidget.CallbackTrampoline" />
+508-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:36:13-78
+509
+510        <receiver
+510-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:38:9-41:40
+511            android:name="androidx.glance.appwidget.action.ActionCallbackBroadcastReceiver"
+511-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:39:13-92
+512            android:enabled="true"
+512-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:40:13-35
+513            android:exported="false" />
+513-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:41:13-37
+514        <receiver
+514-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:42:9-45:40
+515            android:name="androidx.glance.appwidget.UnmanagedSessionReceiver"
+515-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:43:13-78
+516            android:enabled="true"
+516-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:44:13-35
+517            android:exported="false" />
+517-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:45:13-37
+518        <receiver
+518-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:46:9-53:20
+519            android:name="androidx.glance.appwidget.MyPackageReplacedReceiver"
+519-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:47:13-79
+520            android:enabled="true"
+520-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:48:13-35
+521            android:exported="false" >
+521-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:49:13-37
+522            <intent-filter>
+522-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:50:13-52:29
+523                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+523-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:51:17-84
+523-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:51:25-81
+524            </intent-filter>
+525        </receiver>
+526
+527        <service
+527-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:55:9-58:72
+528            android:name="androidx.glance.appwidget.GlanceRemoteViewsService"
+528-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:56:13-78
+529            android:exported="true"
+529-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:57:13-36
+530            android:permission="android.permission.BIND_REMOTEVIEWS" />
+530-->[androidx.glance:glance-appwidget:1.1.1] /home/runner/.gradle/caches/8.14.3/transforms/8cc1c5c6fb0bdb055572040cefe0dd6e/transformed/glance-appwidget-1.1.1/AndroidManifest.xml:58:13-69
+531
+532        <provider
+532-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:29:9-37:20
+533            android:name="androidx.startup.InitializationProvider"
+533-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:30:13-67
+534            android:authorities="io.github.christiandonatti.fwip.androidx-startup"
+534-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:31:13-68
+535            android:exported="false" >
+535-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:32:13-37
+536            <meta-data
+536-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:34:13-36:52
+537                android:name="androidx.work.WorkManagerInitializer"
+537-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:35:17-68
+538                android:value="androidx.startup" />
+538-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:36:17-49
+539            <meta-data
+539-->[androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.14.3/transforms/2d08f9dfbc3b1462164c87a1fee2b081/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+540                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+540-->[androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.14.3/transforms/2d08f9dfbc3b1462164c87a1fee2b081/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+541                android:value="androidx.startup" />
+541-->[androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.14.3/transforms/2d08f9dfbc3b1462164c87a1fee2b081/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+542            <meta-data
+542-->[androidx.lifecycle:lifecycle-process:2.8.7] /home/runner/.gradle/caches/8.14.3/transforms/6e43c7d51ec4d9e9539317cd3080cc03/transformed/lifecycle-process-2.8.7/AndroidManifest.xml:29:13-31:52
+543                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+543-->[androidx.lifecycle:lifecycle-process:2.8.7] /home/runner/.gradle/caches/8.14.3/transforms/6e43c7d51ec4d9e9539317cd3080cc03/transformed/lifecycle-process-2.8.7/AndroidManifest.xml:30:17-78
+544                android:value="androidx.startup" />
+544-->[androidx.lifecycle:lifecycle-process:2.8.7] /home/runner/.gradle/caches/8.14.3/transforms/6e43c7d51ec4d9e9539317cd3080cc03/transformed/lifecycle-process-2.8.7/AndroidManifest.xml:31:17-49
+545            <meta-data
+545-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+546                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+546-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+547                android:value="androidx.startup" />
+547-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+548        </provider>
+549
+550        <service
+550-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:39:9-45:35
+551            android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
+551-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:40:13-88
+552            android:directBootAware="false"
+552-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:41:13-44
+553            android:enabled="@bool/enable_system_alarm_service_default"
+553-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:42:13-72
+554            android:exported="false" />
+554-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:43:13-37
+555        <service
+555-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:46:9-52:35
+556            android:name="androidx.work.impl.background.systemjob.SystemJobService"
+556-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:47:13-84
+557            android:directBootAware="false"
+557-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:48:13-44
+558            android:enabled="@bool/enable_system_job_service_default"
+558-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:49:13-70
+559            android:exported="true"
+559-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:50:13-36
+560            android:permission="android.permission.BIND_JOB_SERVICE" />
+560-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:51:13-69
+561
+562        <receiver
+562-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:61:9-66:35
+563            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
+563-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:62:13-88
+564            android:directBootAware="false"
+564-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:63:13-44
+565            android:enabled="true"
+565-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:64:13-35
+566            android:exported="false" />
+566-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:65:13-37
+567        <receiver
+567-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:67:9-77:20
+568            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
+568-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:68:13-106
+569            android:directBootAware="false"
+569-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:69:13-44
+570            android:enabled="false"
+570-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:70:13-36
+571            android:exported="false" >
+571-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:71:13-37
+572            <intent-filter>
+572-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:73:13-76:29
+573                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+573-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:74:17-87
+573-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:74:25-84
+574                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+574-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:75:17-90
+574-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:75:25-87
+575            </intent-filter>
+576        </receiver>
+577        <receiver
+577-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:78:9-88:20
+578            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
+578-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:79:13-104
+579            android:directBootAware="false"
+579-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:80:13-44
+580            android:enabled="false"
+580-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:81:13-36
+581            android:exported="false" >
+581-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:82:13-37
+582            <intent-filter>
+582-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:84:13-87:29
+583                <action android:name="android.intent.action.BATTERY_OKAY" />
+583-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:85:17-77
+583-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:85:25-74
+584                <action android:name="android.intent.action.BATTERY_LOW" />
+584-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:86:17-76
+584-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:86:25-73
+585            </intent-filter>
+586        </receiver>
+587        <receiver
+587-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:89:9-99:20
+588            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
+588-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:90:13-104
+589            android:directBootAware="false"
+589-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:91:13-44
+590            android:enabled="false"
+590-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:92:13-36
+591            android:exported="false" >
+591-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:93:13-37
+592            <intent-filter>
+592-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:95:13-98:29
+593                <action android:name="android.intent.action.DEVICE_STORAGE_LOW" />
+593-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:96:17-83
+593-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:96:25-80
+594                <action android:name="android.intent.action.DEVICE_STORAGE_OK" />
+594-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:97:17-82
+594-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:97:25-79
+595            </intent-filter>
+596        </receiver>
+597        <receiver
+597-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:100:9-109:20
+598            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
+598-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:101:13-103
+599            android:directBootAware="false"
+599-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:102:13-44
+600            android:enabled="false"
+600-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:103:13-36
+601            android:exported="false" >
+601-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:104:13-37
+602            <intent-filter>
+602-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:106:13-108:29
+603                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+603-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:107:17-79
+603-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:107:25-76
+604            </intent-filter>
+605        </receiver>
+606        <receiver
+606-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:110:9-121:20
+607            android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
+607-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:111:13-88
+608            android:directBootAware="false"
+608-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:112:13-44
+609            android:enabled="false"
+609-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:113:13-36
+610            android:exported="false" >
+610-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:114:13-37
+611            <intent-filter>
+611-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:116:13-120:29
+612                <action android:name="android.intent.action.BOOT_COMPLETED" />
+612-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:117:17-79
+612-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:117:25-76
+613                <action android:name="android.intent.action.TIME_SET" />
+613-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:118:17-73
+613-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:118:25-70
+614                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+614-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:119:17-81
+614-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:119:25-78
+615            </intent-filter>
+616        </receiver>
+617        <receiver
+617-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:122:9-131:20
+618            android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver"
+618-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:123:13-99
+619            android:directBootAware="false"
+619-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:124:13-44
+620            android:enabled="@bool/enable_system_alarm_service_default"
+620-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:125:13-72
+621            android:exported="false" >
+621-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:126:13-37
+622            <intent-filter>
+622-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:128:13-130:29
+623                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
+623-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:129:17-98
+623-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:129:25-95
+624            </intent-filter>
+625        </receiver>
+626        <receiver
+626-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:132:9-142:20
+627            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+627-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:133:13-78
+628            android:directBootAware="false"
+628-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:134:13-44
+629            android:enabled="true"
+629-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:135:13-35
+630            android:exported="true"
+630-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:136:13-36
+631            android:permission="android.permission.DUMP" >
+631-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:137:13-57
+632            <intent-filter>
+632-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:139:13-141:29
+633                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
+633-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:140:17-88
+633-->[androidx.work:work-runtime:2.10.0] /home/runner/.gradle/caches/8.14.3/transforms/e12d34ba720c082cce2b7c4f59c0d96b/transformed/work-runtime-2.10.0/AndroidManifest.xml:140:25-85
+634            </intent-filter>
+635        </receiver>
+636
+637        <service
+637-->[androidx.core:core-remoteviews:1.1.0] /home/runner/.gradle/caches/8.14.3/transforms/e1b9282ed8fc0bb554f5d4b4c0ae02f5/transformed/core-remoteviews-1.1.0/AndroidManifest.xml:24:9-27:63
+638            android:name="androidx.core.widget.RemoteViewsCompatService"
+638-->[androidx.core:core-remoteviews:1.1.0] /home/runner/.gradle/caches/8.14.3/transforms/e1b9282ed8fc0bb554f5d4b4c0ae02f5/transformed/core-remoteviews-1.1.0/AndroidManifest.xml:25:13-73
+639            android:permission="android.permission.BIND_REMOTEVIEWS" />
+639-->[androidx.core:core-remoteviews:1.1.0] /home/runner/.gradle/caches/8.14.3/transforms/e1b9282ed8fc0bb554f5d4b4c0ae02f5/transformed/core-remoteviews-1.1.0/AndroidManifest.xml:26:13-69
+640        <service
+640-->[androidx.room:room-runtime:2.6.1] /home/runner/.gradle/caches/8.14.3/transforms/fc47d0ae71f658f815df8d8f21fad98f/transformed/room-runtime-2.6.1/AndroidManifest.xml:24:9-28:63
+641            android:name="androidx.room.MultiInstanceInvalidationService"
+641-->[androidx.room:room-runtime:2.6.1] /home/runner/.gradle/caches/8.14.3/transforms/fc47d0ae71f658f815df8d8f21fad98f/transformed/room-runtime-2.6.1/AndroidManifest.xml:25:13-74
+642            android:directBootAware="true"
+642-->[androidx.room:room-runtime:2.6.1] /home/runner/.gradle/caches/8.14.3/transforms/fc47d0ae71f658f815df8d8f21fad98f/transformed/room-runtime-2.6.1/AndroidManifest.xml:26:13-43
+643            android:exported="false" />
+643-->[androidx.room:room-runtime:2.6.1] /home/runner/.gradle/caches/8.14.3/transforms/fc47d0ae71f658f815df8d8f21fad98f/transformed/room-runtime-2.6.1/AndroidManifest.xml:27:13-37
+644
+645        <receiver
+645-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+646            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+646-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+647            android:directBootAware="false"
+647-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+648            android:enabled="true"
+648-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+649            android:exported="true"
+649-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+650            android:permission="android.permission.DUMP" >
+650-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+651            <intent-filter>
+651-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+652                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+652-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+652-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+653            </intent-filter>
+654            <intent-filter>
+654-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+655                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+655-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+655-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+656            </intent-filter>
+657            <intent-filter>
+657-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+658                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+658-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+658-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+659            </intent-filter>
+660            <intent-filter>
+660-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+661                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+661-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+661-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.14.3/transforms/ad1a538e4cc0a5e312976cab2560b701/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+662            </intent-filter>
+663        </receiver>
+664    </application>
+665
+666</manifest>
