@@ -606,4 +606,6 @@
     <string name="shelf_logo_hint">Shown at the top instead of the written name. A PNG with a transparent background looks best.</string>
     <string name="shelf_choose">Choose image</string>
     <string name="shelf_remove">Remove</string>
+    <string name="film_strip">Pages along the bar</string>
+    <string name="film_strip_hint">The page bar shows the pages in miniature, like Panels. Off, it is a slim line.</string>
 </resources>

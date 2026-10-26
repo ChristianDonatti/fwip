@@ -115,6 +115,10 @@ class ReaderSettings(context: Context) {
     var splitWide by mutableStateOf(prefs.getBoolean("splitWide", false))
         private set
 
+    /** The page bar as a strip of little pages (Panels style), or a slim line. */
+    var filmStrip by mutableStateOf(prefs.getBoolean("filmStrip", true))
+        private set
+
     val pageFilters: PageFilters get() = PageFilters(fixColors, denoise, sharpness)
 
     fun updateManga(value: Boolean) { mangaMode = value; prefs.edit().putBoolean("manga", value).apply() }
@@ -135,6 +139,7 @@ class ReaderSettings(context: Context) {
     fun updateFixColors(value: Boolean) { fixColors = value; prefs.edit().putBoolean("fixColors", value).apply() }
     fun updateDenoise(value: Boolean) { denoise = value; prefs.edit().putBoolean("denoise", value).apply() }
     fun updateSharpness(value: Sharpness) { sharpness = value; prefs.edit().putString("sharp", value.name).apply() }
+    fun updateFilmStrip(value: Boolean) { filmStrip = value; prefs.edit().putBoolean("filmStrip", value).apply() }
     fun updateSplitWide(value: Boolean) { splitWide = value; prefs.edit().putBoolean("splitWide", value).apply() }
 
     /** Everything worth carrying to another device in a backup. */
@@ -144,7 +149,7 @@ class ReaderSettings(context: Context) {
         .put("warmth", warmth.toDouble()).put("awake", keepScreenOn).put("rotation", rotation.name).put("taps", tapZones.name)
         .put("haptic", turnHaptic).put("sound", turnSound)
         .put("ground", ground.name).put("spine", spineShadow.toDouble()).put("texture", paperTexture)
-        .put("fixColors", fixColors).put("denoise", denoise).put("sharp", sharpness.name).put("splitWide", splitWide)
+        .put("fixColors", fixColors).put("denoise", denoise).put("sharp", sharpness.name).put("splitWide", splitWide).put("filmStrip", filmStrip)
 
     fun fromJson(o: org.json.JSONObject) {
         if (o.has("manga")) updateManga(o.getBoolean("manga"))
@@ -166,6 +171,7 @@ class ReaderSettings(context: Context) {
         if (o.has("denoise")) updateDenoise(o.getBoolean("denoise"))
         runCatching { updateSharpness(Sharpness.valueOf(o.getString("sharp"))) }
         if (o.has("splitWide")) updateSplitWide(o.getBoolean("splitWide"))
+        if (o.has("filmStrip")) updateFilmStrip(o.getBoolean("filmStrip"))
     }
 }
 

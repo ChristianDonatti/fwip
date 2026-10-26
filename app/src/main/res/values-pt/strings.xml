@@ -605,4 +605,6 @@
     <string name="shelf_logo_hint">Aparece no topo no lugar do nome escrito. Um PNG com fundo transparente fica melhor.</string>
     <string name="shelf_choose">Escolher imagem</string>
     <string name="shelf_remove">Remover</string>
+    <string name="film_strip">Páginas na barra</string>
+    <string name="film_strip_hint">A barra mostra as páginas em miniatura, como no Panels. Desligado, ela vira uma linha fina.</string>
 </resources>

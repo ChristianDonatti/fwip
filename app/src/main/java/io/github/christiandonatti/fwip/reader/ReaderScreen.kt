@@ -527,6 +527,7 @@ private fun Reader(
             onPages = { showPages = true },
             guidedAvailable = !scroll,
             scrubPreview = { s -> ScrubPreview(spreads.getOrNull(s).orEmpty(), cache, rtl) },
+            scrubThumb = if (settings.filmStrip) ({ s, m -> StripThumb(spreads.getOrNull(s).orEmpty(), cache, rtl, m) }) else null,
         )
 
         AnimatedVisibility(

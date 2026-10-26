@@ -284,6 +284,21 @@ private fun ScrubPage(page: Int, cache: PageCache) {
     }
 }
 
+/** A tiny picture of a spread's first page, for the strip along the page bar. */
+@Composable
+internal fun StripThumb(pages: List<Int>, cache: PageCache, rtl: Boolean, modifier: Modifier) {
+    val page = (if (rtl) pages.lastOrNull() else pages.firstOrNull()) ?: return Box(modifier)
+    val bitmap by produceState<Bitmap?>(cache.peek(page, STRIP_W, STRIP_H), page) {
+        if (value == null) value = cache.get(page, STRIP_W, STRIP_H)
+    }
+    Box(modifier.background(Color.White.copy(alpha = 0.06f))) {
+        bitmap?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+    }
+}
+
+private const val STRIP_W = 96
+private const val STRIP_H = 144
+
 /** Every page of a comic as thumbnails, to pick one (the cover chooser). */
 @Composable
 fun PagePickerDialog(comic: io.github.christiandonatti.fwip.data.Comic, title: String, onPick: (Int) -> Unit, onDismiss: () -> Unit) {

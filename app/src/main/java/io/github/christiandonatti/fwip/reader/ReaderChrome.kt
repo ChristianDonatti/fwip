@@ -56,6 +56,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -230,6 +233,8 @@ internal fun ReaderChrome(
     guidedAvailable: Boolean = true,
     /** What a spread looks like, shown above the finger while dragging the page bar. */
     scrubPreview: (@Composable (Int) -> Unit)? = null,
+    /** A small picture of a spread, for the strip of pages along the bar (Panels style); null for the slim bar. */
+    scrubThumb: (@Composable (Int, Modifier) -> Unit)? = null,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val roomy = maxWidth >= 600.dp
@@ -276,22 +281,35 @@ internal fun ReaderChrome(
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             var preview by remember { mutableStateOf<Int?>(null) }
+            val film = scrubThumb != null
+            val barShape = if (film) RoundedCornerShape(26.dp) else CircleShape
             Row(
                 Modifier
                     .windowInsetsPadding(WindowInsets.navigationBarsIgnoringVisibility)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .widthIn(max = 900.dp)
+                    .widthIn(max = if (film) 1100.dp else 900.dp)
                     .fillMaxWidth()
-                    .height(64.dp)
-                    .clip(CircleShape)
+                    .height(if (film) 92.dp else 64.dp)
+                    .clip(barShape)
                     .background(Color(0xE6121318))
-                    .border(1.dp, FwipColors.Stroke, CircleShape)
-                    .padding(start = 8.dp, end = 22.dp),
+                    .border(1.dp, FwipColors.Stroke, barShape)
+                    .padding(start = 8.dp, end = if (film) 16.dp else 22.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(if (film) 12.dp else 16.dp),
             ) {
                 DrawnIconButton(str(R.string.pages_title), onPages, size = 48.dp) { GridIcon(it) }
-                PageScrubber(
+                if (scrubThumb != null) {
+                    FilmScrubber(
+                        value = spreadIndex,
+                        count = spreadCount,
+                        rtl = rtl,
+                        onPreview = { preview = it },
+                        onSeek = onSeek,
+                        modifier = Modifier.weight(1f),
+                        previewContent = scrubPreview,
+                        thumb = scrubThumb,
+                    )
+                } else PageScrubber(
                     value = spreadIndex,
                     count = spreadCount,
                     rtl = rtl,
@@ -306,6 +324,97 @@ internal fun ReaderChrome(
                     color = FwipColors.TextSoft,
                 )
             }
+        }
+    }
+}
+
+/**
+ * The page bar as a strip of little pages, like Panels: the pages of the comic spread evenly
+ * along it, a bigger frame over the page you are on, and the big preview above the finger while
+ * dragging. Tap or drag anywhere to jump.
+ */
+@Composable
+private fun FilmScrubber(
+    value: Int,
+    count: Int,
+    rtl: Boolean,
+    onPreview: (Int?) -> Unit,
+    onSeek: (Int) -> Unit,
+    modifier: Modifier,
+    previewContent: (@Composable (Int) -> Unit)?,
+    thumb: @Composable (Int, Modifier) -> Unit,
+) {
+    val last = (count - 1).coerceAtLeast(1)
+    fun toIndex(f: Float) = ((if (rtl) 1f - f else f) * last).roundToInt().coerceIn(0, last)
+    fun toFraction(i: Int) = (i.toFloat() / last).let { if (rtl) 1f - it else it }
+
+    var drag by remember { mutableStateOf<Float?>(null) }
+    val fraction = drag ?: toFraction(value)
+    BoxWithConstraints(
+        modifier
+            .height(76.dp)
+            .pointerInput(count, rtl) {
+                detectTapGestures { pos -> onSeek(toIndex((pos.x / size.width).coerceIn(0f, 1f))) }
+            }
+            .pointerInput(count, rtl) {
+                detectHorizontalDragGestures(
+                    onDragStart = { pos -> drag = (pos.x / size.width).coerceIn(0f, 1f) },
+                    onHorizontalDrag = { change, _ ->
+                        val f = (change.position.x / size.width).coerceIn(0f, 1f)
+                        drag = f
+                        onPreview(toIndex(f))
+                    },
+                    onDragEnd = {
+                        drag?.let { onSeek(toIndex(it)) }
+                        drag = null
+                        onPreview(null)
+                    },
+                    onDragCancel = {
+                        drag = null
+                        onPreview(null)
+                    },
+                )
+            },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        // As many little pages as fit, about 34dp each, standing for evenly spaced spreads.
+        val cells = (maxWidth / 36.dp).toInt().coerceIn(2, count.coerceAtLeast(2))
+        Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            for (i in 0 until cells) {
+                val f = if (cells == 1) 0f else i / (cells - 1f)
+                val s = toIndex(f)
+                val done = if (rtl) f >= fraction else f <= fraction
+                thumb(
+                    s,
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(4.dp))
+                        .graphicsLayer { alpha = if (done) 0.95f else 0.5f },
+                )
+            }
+        }
+        val dragging = drag
+        if (dragging != null && previewContent != null) {
+            val gap = with(androidx.compose.ui.platform.LocalDensity.current) { 18.dp.roundToPx() }
+            androidx.compose.ui.window.Popup(
+                popupPositionProvider = remember(dragging, gap) { ScrubPopupPosition(dragging, gap) },
+            ) {
+                previewContent(toIndex(dragging))
+            }
+        }
+        // The page you are on: a bigger frame riding over the strip.
+        val lensW = 50.dp
+        Box(
+            Modifier
+                .offset(x = (maxWidth - lensW) * fraction)
+                .size(lensW, 74.dp)
+                .shadow(8.dp, RoundedCornerShape(7.dp))
+                .clip(RoundedCornerShape(7.dp))
+                .background(Color(0xFF1E1F27))
+                .border(2.dp, FwipColors.Amber, RoundedCornerShape(7.dp)),
+        ) {
+            thumb(toIndex(fraction), Modifier.fillMaxSize())
         }
     }
 }
@@ -419,6 +528,7 @@ internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
                 Toggle(str(R.string.crop_margins), str(R.string.crop_margins_hint), settings.cropMargins, settings::updateCrop)
 
                 Toggle(str(R.string.split_wide), str(R.string.split_wide_hint), settings.splitWide, settings::updateSplitWide)
+                Toggle(str(R.string.film_strip), str(R.string.film_strip_hint), settings.filmStrip, settings::updateFilmStrip)
 
                 Section(str(R.string.section_image))
                 Toggle(str(R.string.fix_colors), str(R.string.fix_colors_hint), settings.fixColors, settings::updateFixColors)
