@@ -66,6 +66,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -209,17 +210,30 @@ fun ShelfCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String = countLabel(items.size),
+    shelf: io.github.christiandonatti.fwip.data.Shelf? = null,
 ) {
+    val tint = shelf?.let(ShelfLooks::color)
+    val art = shelf?.let(ShelfLooks::cover)
     Column(
         modifier
             .clip(RoundedCornerShape(24.dp))
             .background(FwipColors.Surface)
-            .border(1.dp, FwipColors.Stroke, RoundedCornerShape(24.dp))
+            .then(if (tint != null) Modifier.background(Brush.verticalGradient(listOf(tint.copy(alpha = 0.32f), tint.copy(alpha = 0.08f)))) else Modifier)
+            .border(1.dp, tint?.copy(alpha = 0.6f) ?: FwipColors.Stroke, RoundedCornerShape(24.dp))
             .clickable(role = Role.Button, onClickLabel = title, onClick = onClick)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        CoverFan(items, Modifier.fillMaxWidth().aspectRatio(1.25f))
+        if (art != null) {
+            coil.compose.AsyncImage(
+                model = art,
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().aspectRatio(1.25f).clip(RoundedCornerShape(14.dp)),
+            )
+        } else {
+            CoverFan(items, Modifier.fillMaxWidth().aspectRatio(1.25f))
+        }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1)

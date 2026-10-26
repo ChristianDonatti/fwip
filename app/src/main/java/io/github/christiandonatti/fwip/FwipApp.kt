@@ -10,6 +10,7 @@ class FwipApp : Application() {
         instance = this
         io.github.christiandonatti.fwip.data.Reports.install(this)
         io.github.christiandonatti.fwip.data.NewIssues.schedule(this)
+        io.github.christiandonatti.fwip.ui.ShelfLooks.init(this)
     }
 
     companion object {

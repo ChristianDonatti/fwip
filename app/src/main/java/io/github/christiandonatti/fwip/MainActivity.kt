@@ -95,6 +95,16 @@ class MainActivity : ComponentActivity() {
                 }
                 val context = androidx.compose.ui.platform.LocalContext.current
                 val lookScope = androidx.compose.runtime.rememberCoroutineScope()
+                var shelfArtFor by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<String, Boolean>?>(null) }
+                val pickShelfArt = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                    val target = shelfArtFor
+                    shelfArtFor = null
+                    if (uri != null && target != null) lookScope.launch {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            io.github.christiandonatti.fwip.ui.ShelfLooks.setImage(context, target.first, uri, target.second)
+                        }
+                    }
+                }
                 val pickBackdrop = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
                     if (uri != null) lookScope.launch {
                         val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.christiandonatti.fwip.ui.Backdrops.set(context, uri) }
@@ -158,6 +168,7 @@ class MainActivity : ComponentActivity() {
                         saveReport = { saveReport.launch(io.github.christiandonatti.fwip.data.Reports.fileName()) },
                         pickBackdrop = { pickBackdrop.launch("image/*") },
                         importReadingList = { openReadingList.launch(arrayOf("*/*")) },
+                        pickShelfArt = { key, logo -> shelfArtFor = key to logo; pickShelfArt.launch("image/*") },
                         setAlerts = { on ->
                             io.github.christiandonatti.fwip.data.NewIssues.setEnabled(this, on)
                             if (on && android.os.Build.VERSION.SDK_INT >= 33 &&

@@ -598,4 +598,12 @@
     <string name="wifi_save_in">Save in</string>
     <string name="wifi_receiving">Receiving %1$s</string>
     <string name="wifi_received">%1$d received</string>
+    <string name="shelf_look">Make it yours</string>
+    <string name="shelf_color">Colour</string>
+    <string name="shelf_picture">Picture</string>
+    <string name="shelf_picture_hint">Shown on its card instead of the covers.</string>
+    <string name="shelf_logo">Logo</string>
+    <string name="shelf_logo_hint">Shown at the top instead of the written name. A PNG with a transparent background looks best.</string>
+    <string name="shelf_choose">Choose image</string>
+    <string name="shelf_remove">Remove</string>
 </resources>

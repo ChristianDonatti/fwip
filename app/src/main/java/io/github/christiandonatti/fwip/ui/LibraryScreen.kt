@@ -66,6 +66,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -83,6 +84,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
@@ -120,6 +122,8 @@ class LibraryActions(
     val moveComics: (List<String>, Uri) -> Unit,
     /** Copies comics from the NAS to this device (the NAS copy stays). */
     val downloadComics: (List<String>) -> Unit = {},
+    /** Picks a picture for a shelf: its cover, or (logo = true) its logo. */
+    val pickShelfArt: (key: String, logo: Boolean) -> Unit = { _, _ -> },
     /** Notices about new issues of series being read (asks for permission when turned on). */
     val setAlerts: (Boolean) -> Unit = {},
     /** Picks a ComicRack .cbl reading list; the match comes back in the state. */
@@ -793,7 +797,7 @@ private fun LibraryTab(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             matchingSeries.take(20).forEach { (shelf, list) ->
-                                ShelfCard(shelf.title, list, onClick = { openShelf(shelf) }, modifier = Modifier.width(if (wide) 280.dp else 220.dp), subtitle = seriesSubtitle(list))
+                                ShelfCard(shelf.title, list, onClick = { openShelf(shelf) }, modifier = Modifier.width(if (wide) 280.dp else 220.dp), subtitle = seriesSubtitle(list), shelf = shelf)
                             }
                         }
                     }
@@ -833,11 +837,11 @@ private fun LibraryTab(
                     }
                 }
                 items(series, key = { it.first.key }) { (shelf, list) ->
-                    ShelfCard(shelf.title, list, onClick = { openShelf(shelf) }, subtitle = seriesSubtitle(list))
+                    ShelfCard(shelf.title, list, onClick = { openShelf(shelf) }, subtitle = seriesSubtitle(list), shelf = shelf)
                 }
             }
             Filter.Folders -> items(state.folderShelves, key = { "f:" + it.first.name }) { (shelf, list) ->
-                ShelfCard(shelf.title, list, onClick = { openShelf(shelf) })
+                ShelfCard(shelf.title, list, onClick = { openShelf(shelf) }, shelf = shelf)
             }
             else -> {
                 val list = when (filter) {
@@ -985,7 +989,7 @@ private fun CollectionsTab(
         item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle(str(R.string.your_collections)) }
         items(state.collections, key = { it.id }) { c ->
             val shelf = Shelf.Custom(c.id, c.name)
-            ShelfCard(c.name, state.itemsOf(shelf), onClick = { openShelf(shelf) })
+            ShelfCard(c.name, state.itemsOf(shelf), onClick = { openShelf(shelf) }, shelf = shelf)
         }
         item(key = "new") {
             Column(
@@ -1094,6 +1098,10 @@ private fun ShelfScreen(
     var renaming by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var reordering by remember { mutableStateOf(false) }
+    var looking by remember { mutableStateOf(false) }
+    val tint = ShelfLooks.color(shelf)
+    val art = ShelfLooks.cover(shelf)
+    val logo = ShelfLooks.logo(shelf)
     val openHere: (LibraryItem) -> Unit = { if (collection != null) actions.openIn(it, collection.id) else actions.open(it) }
     val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
     val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
@@ -1110,6 +1118,15 @@ private fun ShelfScreen(
         Modifier.fillMaxWidth().height(if (wide) 460.dp else 380.dp),
         alpha = backdropFade,
     )
+    if (tint != null) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(if (wide) 460.dp else 380.dp)
+                .graphicsLayer { alpha = backdropFade }
+                .background(Brush.verticalGradient(listOf(tint.copy(alpha = 0.38f), Color.Transparent)))
+        )
+    }
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Adaptive((if (wide) 160.dp else 104.dp) * ui.coverScale),
@@ -1123,13 +1140,23 @@ private fun ShelfScreen(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
                     Spacer(Modifier.weight(1f))
+                    if (ShelfLooks.keyOf(shelf) != null) {
+                        CircleIconButton(Icons.Filled.Star, str(R.string.shelf_look), { looking = true }, size = 44.dp)
+                    }
                     if (collection != null) {
                         CircleIconButton(Icons.Filled.Edit, str(R.string.rename_collection), { renaming = true }, size = 44.dp)
                         CircleIconButton(Icons.Filled.Delete, str(R.string.delete_collection), { confirmDelete = true }, size = 44.dp)
                     }
                 }
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    if (wide && list.isNotEmpty()) CoverFan(list, Modifier.size(200.dp, 150.dp))
+                    if (wide && art != null) {
+                        coil.compose.AsyncImage(
+                            model = art,
+                            contentDescription = null,
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            modifier = Modifier.size(200.dp, 150.dp).clip(RoundedCornerShape(18.dp)),
+                        )
+                    } else if (wide && list.isNotEmpty()) CoverFan(list, Modifier.size(200.dp, 150.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             when (shelf) {
@@ -1141,7 +1168,17 @@ private fun ShelfScreen(
                             style = MaterialTheme.typography.labelSmall,
                             color = FwipColors.TextSoft,
                         )
-                        Text(title, style = if (wide) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        if (logo != null) {
+                            coil.compose.AsyncImage(
+                                model = logo,
+                                contentDescription = title,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                                alignment = Alignment.CenterStart,
+                                modifier = Modifier.height(if (wide) 120.dp else 88.dp).widthIn(max = 460.dp),
+                            )
+                        } else {
+                            Text(title, style = if (wide) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
                         val years = list.mapNotNull { it.meta?.year }
                         val publisher = list.firstNotNullOfOrNull { it.meta?.publisher }
                         Text(
@@ -1223,6 +1260,9 @@ private fun ShelfScreen(
         )
     }
 
+    if (looking) {
+        ShelfLookDialog(shelf, title, onPick = { logoPick -> ShelfLooks.keyOf(shelf)?.let { actions.pickShelfArt(it, logoPick) } }, onDismiss = { looking = false })
+    }
     if (renaming && collection != null) {
         NameDialog(
             title = str(R.string.rename_collection),
@@ -1435,6 +1475,59 @@ internal fun ListGlyph(color: Color, modifier: Modifier = Modifier.size(22.dp)) 
             val y = w * (0.25f + i * 0.25f)
             drawCircle(color, radius = stroke * 0.75f, center = androidx.compose.ui.geometry.Offset(w * 0.16f, y))
             drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.34f, y), androidx.compose.ui.geometry.Offset(w * 0.88f, y), stroke, androidx.compose.ui.graphics.StrokeCap.Round)
+        }
+    }
+}
+
+
+/** A shelf's own colour, picture and logo. */
+@Composable
+private fun ShelfLookDialog(shelf: Shelf, title: String, onPick: (logo: Boolean) -> Unit, onDismiss: () -> Unit) {
+    val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
+    val theme = ui.resolved(androidx.compose.foundation.isSystemInDarkTheme())
+    val current = ShelfLooks.color(shelf)
+    val art = ShelfLooks.cover(shelf)
+    val logo = ShelfLooks.logo(shelf)
+    FwipDialog(onDismiss, tint = current) {
+        DialogTitle(title, onDismiss)
+        Text(str(R.string.shelf_color), style = MaterialTheme.typography.labelLarge)
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            // "Automatic": the colour of the first cover, as before.
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .border(if (current == null) 3.dp else 1.dp, if (current == null) FwipColors.Text else FwipColors.Stroke, CircleShape)
+                    .clickable(role = Role.RadioButton) { ShelfLooks.setColor(shelf, null) },
+                contentAlignment = Alignment.Center,
+            ) { Text("A", style = MaterialTheme.typography.labelLarge, color = FwipColors.TextSoft) }
+            (theme.accents.map { it.color } + listOf(Color(0xFF8E8E99), Color(0xFF2F5C8A), Color(0xFF86304A))).distinct().forEach { c ->
+                val on = current == c
+                Box(
+                    Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .border(if (on) 3.dp else 1.dp, if (on) FwipColors.Text else FwipColors.Stroke, CircleShape)
+                        .padding(if (on) 6.dp else 4.dp)
+                        .clip(CircleShape)
+                        .background(c)
+                        .clickable(role = Role.RadioButton) { ShelfLooks.setColor(shelf, c) },
+                )
+            }
+        }
+        Text(str(R.string.shelf_picture), style = MaterialTheme.typography.labelLarge)
+        Text(str(R.string.shelf_picture_hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PillButton(str(R.string.shelf_choose), { onPick(false) }, style = PillStyle.Ghost, height = 44.dp)
+            if (art != null) PillButton(str(R.string.shelf_remove), { ShelfLooks.clearCover(shelf) }, style = PillStyle.Ghost, height = 44.dp)
+        }
+        if (shelf !is Shelf.Folder) {
+            Text(str(R.string.shelf_logo), style = MaterialTheme.typography.labelLarge)
+            Text(str(R.string.shelf_logo_hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PillButton(str(R.string.shelf_choose), { onPick(true) }, style = PillStyle.Ghost, height = 44.dp)
+                if (logo != null) PillButton(str(R.string.shelf_remove), { ShelfLooks.clearLogo(shelf) }, style = PillStyle.Ghost, height = 44.dp)
+            }
         }
     }
 }

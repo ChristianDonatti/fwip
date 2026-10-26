@@ -597,4 +597,12 @@
     <string name="wifi_save_in">Salvar em</string>
     <string name="wifi_receiving">Recebendo %1$s</string>
     <string name="wifi_received">%1$d recebidas</string>
+    <string name="shelf_look">Personalizar</string>
+    <string name="shelf_color">Cor</string>
+    <string name="shelf_picture">Imagem</string>
+    <string name="shelf_picture_hint">Aparece no cartão no lugar das capas.</string>
+    <string name="shelf_logo">Logo</string>
+    <string name="shelf_logo_hint">Aparece no topo no lugar do nome escrito. Um PNG com fundo transparente fica melhor.</string>
+    <string name="shelf_choose">Escolher imagem</string>
+    <string name="shelf_remove">Remover</string>
 </resources>

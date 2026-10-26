@@ -201,7 +201,8 @@ private fun shelfKey(s: Shelf): String = when (s) {
 /** One shelf: a little stack of covers, its name, how much of it is read. */
 @Composable
 private fun ShelfStripCard(shelf: Shelf, list: List<LibraryItem>, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val glow = list.firstOrNull()?.glowColor() ?: FwipColors.Glow
+    val glow = ShelfLooks.color(shelf) ?: list.firstOrNull()?.glowColor() ?: FwipColors.Glow
+    val art = ShelfLooks.cover(shelf)
     val read = list.count { it.progress?.finished == true }
     Row(
         modifier
@@ -216,13 +217,20 @@ private fun ShelfStripCard(shelf: Shelf, list: List<LibraryItem>, modifier: Modi
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(Modifier.width(84.dp).fillMaxHeight()) {
-            if (list.isEmpty()) {
+            if (art != null) {
+                coil.compose.AsyncImage(
+                    model = art,
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                )
+            } else if (list.isEmpty()) {
                 Box(
                     Modifier.size(56.dp, 84.dp).align(Alignment.Center).clip(RoundedCornerShape(8.dp)).border(1.dp, FwipColors.Stroke, RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center,
                 ) { StackIcon(FwipColors.TextMuted) }
             }
-            list.take(3).reversed().forEachIndexed { i, it ->
+            if (art == null) list.take(3).reversed().forEachIndexed { i, it ->
                 val depth = list.take(3).size - 1 - i
                 CoverImage(
                     it,
