@@ -169,6 +169,7 @@ class MainActivity : ComponentActivity() {
                         pickBackdrop = { pickBackdrop.launch("image/*") },
                         importReadingList = { openReadingList.launch(arrayOf("*/*")) },
                         pickShelfArt = { key, logo -> shelfArtFor = key to logo; pickShelfArt.launch("image/*") },
+                        screenShown = viewModel::screenShown,
                         setAlerts = { on ->
                             io.github.christiandonatti.fwip.data.NewIssues.setEnabled(this, on)
                             if (on && android.os.Build.VERSION.SDK_INT >= 33 &&
@@ -293,8 +294,14 @@ class MainActivity : ComponentActivity() {
 
     /** A home screen shortcut or the widget asked for a specific comic. */
     private fun handleOpenIntent(intent: android.content.Intent?) {
-        if (intent?.action != io.github.christiandonatti.fwip.widget.ACTION_OPEN_COMIC) return
-        intent.getStringExtra(io.github.christiandonatti.fwip.widget.EXTRA_COMIC)?.let(viewModel::openById)
+        when (intent?.action) {
+            io.github.christiandonatti.fwip.widget.ACTION_OPEN_COMIC -> intent.getStringExtra(io.github.christiandonatti.fwip.widget.EXTRA_COMIC)?.let {
+                viewModel.openById(it, intent.getStringExtra(io.github.christiandonatti.fwip.widget.EXTRA_CONTEXT))
+            }
+            io.github.christiandonatti.fwip.widget.ACTION_RANDOM -> viewModel.openRandom()
+            io.github.christiandonatti.fwip.widget.ACTION_SHOW -> viewModel.requestScreen(intent.getStringExtra(io.github.christiandonatti.fwip.widget.EXTRA_SCREEN))
+            else -> return
+        }
         intent.action = null
     }
 

@@ -53,10 +53,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Opens a comic straight from a shortcut or the widget. */
-fun openComicIntent(context: Context, comicId: String): Intent =
+fun openComicIntent(context: Context, comicId: String, collection: String? = null): Intent =
     Intent(context, MainActivity::class.java)
         .setAction(ACTION_OPEN_COMIC)
         .putExtra(EXTRA_COMIC, comicId)
+        .apply { if (collection != null) putExtra(EXTRA_CONTEXT, collection) }
+        // Each comic its own intent, so widget buttons for different comics stay apart.
+        .setData(android.net.Uri.parse("fwip://comic/" + android.net.Uri.encode(comicId) + "?c=" + (collection ?: "")))
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
 const val ACTION_OPEN_COMIC = "io.github.christiandonatti.fwip.OPEN_COMIC"
@@ -113,80 +116,3 @@ object ReadingShortcuts {
     }
 }
 
-/** Home screen widget: the comics in progress, tap one to jump back in. */
-class ContinueReadingWidget : GlanceAppWidget() {
-    override val sizeMode: SizeMode = SizeMode.Exact
-
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val items = withContext(Dispatchers.IO) { loadReading(context, 5) }
-        provideContent { Content(context, items) }
-    }
-
-    @Composable
-    private fun Content(context: Context, items: List<Reading>) {
-        val size = LocalSize.current
-        val ink = ColorProvider(Color(0xFF0B0C10))
-        val text = ColorProvider(Color(0xFFF2F2F5))
-        val muted = ColorProvider(Color(0xFFA3A6B4))
-        val amber = ColorProvider(Color(0xFFF2B544))
-        Column(
-            GlanceModifier.fillMaxSize().background(ink).cornerRadius(24.dp).padding(14.dp),
-        ) {
-            Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Image(ImageProvider(R.drawable.fwip_mark), null, GlanceModifier.width(22.dp).height(20.dp))
-                Spacer(GlanceModifier.width(8.dp))
-                Text(str(R.string.widget_title), style = TextStyle(color = text, fontSize = 14.sp, fontWeight = FontWeight.Bold))
-            }
-            Spacer(GlanceModifier.height(10.dp))
-            if (items.isEmpty()) {
-                Box(
-                    GlanceModifier.fillMaxSize().clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(str(R.string.widget_empty), style = TextStyle(color = muted, fontSize = 13.sp))
-                }
-                return@Column
-            }
-            // As many covers as fit side by side, about 84dp each.
-            val count = ((size.width.value - 28f) / 92f).toInt().coerceIn(1, items.size)
-            Row(GlanceModifier.fillMaxSize()) {
-                items.take(count).forEachIndexed { i, r ->
-                    if (i > 0) Spacer(GlanceModifier.width(10.dp))
-                    Column(GlanceModifier.defaultWeight().fillMaxSize().clickable(actionStartActivity(openComicIntent(context, r.id)))) {
-                        if (r.cover != null) {
-                            Image(
-                                ImageProvider(r.cover),
-                                r.title,
-                                GlanceModifier.fillMaxWidth().defaultWeight().cornerRadius(10.dp),
-                                contentScale = ContentScale.Crop,
-                            )
-                        } else {
-                            Box(GlanceModifier.fillMaxWidth().defaultWeight().background(ColorProvider(Color(0xFF1E1F27))).cornerRadius(10.dp).padding(6.dp)) {
-                                Text(r.title, style = TextStyle(color = text, fontSize = 11.sp), maxLines = 4)
-                            }
-                        }
-                        Spacer(GlanceModifier.height(6.dp))
-                        LinearProgressIndicator(
-                            progress = r.fraction,
-                            modifier = GlanceModifier.fillMaxWidth().height(4.dp),
-                            color = amber,
-                            backgroundColor = ColorProvider(Color(0x33FFFFFF)),
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    companion object {
-        /** Refreshes every placed widget and the icon shortcuts. */
-        suspend fun refresh(context: Context) {
-            withContext(Dispatchers.IO) { ReadingShortcuts.update(context) }
-            runCatching { ContinueReadingWidget().updateAll(context) }
-        }
-    }
-}
-
-class ContinueReadingReceiver : GlanceAppWidgetReceiver() {
-    override val glanceAppWidget: GlanceAppWidget = ContinueReadingWidget()
-}

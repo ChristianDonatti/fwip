@@ -61,6 +61,8 @@ data class LibraryState(
     val fileMessage: String? = null,
     /** Copies not shown (the same comic on the NAS) to the copy shown in their place. */
     val aliases: Map<String, String> = emptyMap(),
+    /** A screen a widget asked to open. */
+    val requestedScreen: String? = null,
     /** A reading list just read from a .cbl file, waiting to become a collection. */
     val readingList: io.github.christiandonatti.fwip.data.CblMatch? = null,
 ) {
@@ -240,10 +242,31 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         updateCollections { list -> list.map { if (it.id == id) it.copy(comicIds = comicIds) else it } }
 
     /** From a shortcut or the widget. */
-    fun openById(id: String) {
+    fun openById(id: String, context: String? = null) {
         val comic = _state.value.item(id)?.comic ?: repository.cachedComics().firstOrNull { it.id == id } ?: return
-        _state.update { it.copy(openComicId = comic.id, outsideComic = if (it.item(id) == null) comic else null) }
+        _state.update { it.copy(openComicId = comic.id, openContext = context, outsideComic = if (it.item(id) == null) comic else null) }
     }
+
+    /** "Surprise me": an unread comic picked at random (a first issue or the next one of a series, preferably). */
+    fun openRandom() {
+        val s = _state.value
+        val unread = s.items.filter { it.progress?.started != true && it.progress?.finished != true }
+        if (unread.isEmpty()) return
+        // Prefer comics that can be read without missing earlier issues.
+        val bySeries = s.series.associate { (shelf, list) -> shelf.key to list }
+        val good = unread.filter { item ->
+            val list = bySeries[io.github.christiandonatti.fwip.data.seriesKey(item.series.name)].orEmpty()
+            val before = list.takeWhile { it.comic.id != item.comic.id }
+            before.all { it.progress?.finished == true }
+        }
+        val pick = (good.ifEmpty { unread }).random()
+        _state.update { it.copy(openComicId = pick.comic.id, openContext = null) }
+    }
+
+    /** A screen asked for from outside (a widget): "wifi", "stats" or "new"; read once by the library screen. */
+    fun requestScreen(screen: String?) = _state.update { it.copy(requestedScreen = screen) }
+
+    fun screenShown() = _state.update { it.copy(requestedScreen = null) }
 
     /** Home screen widget and icon shortcuts follow what is being read. */
     private fun refreshHomeScreen() {

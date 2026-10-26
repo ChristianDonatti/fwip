@@ -122,6 +122,8 @@ class LibraryActions(
     val moveComics: (List<String>, Uri) -> Unit,
     /** Copies comics from the NAS to this device (the NAS copy stays). */
     val downloadComics: (List<String>) -> Unit = {},
+    /** A widget's request to open a screen was handled. */
+    val screenShown: () -> Unit = {},
     /** Picks a picture for a shelf: its cover, or (logo = true) its logo. */
     val pickShelfArt: (key: String, logo: Boolean) -> Unit = { _, _ -> },
     /** Notices about new issues of series being read (asks for permission when turned on). */
@@ -217,6 +219,16 @@ fun LibraryScreen(
     var alertsOn by remember { mutableStateOf(io.github.christiandonatti.fwip.data.NewIssues.enabled(appContext)) }
     var showUpdateNotes by remember { mutableStateOf(false) }
     var libraryFilter by rememberSaveable { mutableStateOf(Filter.All) }
+    // Widgets can open a screen directly.
+    LaunchedEffect(state.requestedScreen) {
+        when (state.requestedScreen) {
+            "wifi" -> showWifi = true
+            "stats" -> showStats = true
+            "new" -> { libraryFilter = Filter.All; tab = Tab.Library }
+            null -> return@LaunchedEffect
+        }
+        actions.screenShown()
+    }
     // "See all" under the home shelf jumps to the matching list.
     val seeAll: (ShelfKind) -> Unit = { kind ->
         when (kind) {
