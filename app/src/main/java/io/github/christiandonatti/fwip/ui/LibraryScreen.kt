@@ -137,6 +137,13 @@ class LibraryActions(
     val pickBackdrop: () -> Unit = {},
 )
 
+/** The tabs the user keeps; Home and Library always stay. */
+@Composable
+private fun visibleTabs(): List<Tab> {
+    val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
+    return Tab.entries.filter { (it != Tab.Collections || ui.showCollectionsTab) && (it != Tab.Servers || ui.showServersTab) }
+}
+
 private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
     Home(R.string.tab_home), Library(R.string.tab_library), Collections(R.string.tab_collections), Servers(R.string.tab_servers);
 
@@ -144,7 +151,7 @@ private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
 }
 
 internal enum class Filter(@androidx.annotation.StringRes val labelRes: Int) {
-    All(R.string.filter_all), Series(R.string.filter_series), Folders(R.string.filter_folders), Want(R.string.smart_want), Unread(R.string.smart_unread), Finished(R.string.smart_read);
+    All(R.string.filter_all), Series(R.string.filter_series), Publishers(R.string.filter_publishers), Folders(R.string.filter_folders), Want(R.string.smart_want), Unread(R.string.smart_unread), Finished(R.string.smart_read);
 
     val label: String get() = str(labelRes)
 }
@@ -154,6 +161,7 @@ private fun Shelf.toToken(): String = when (this) {
     is Shelf.Series -> "s:$key\u0000$title"
     is Shelf.Folder -> "f:$name"
     is Shelf.Custom -> "c:$id\u0000$title"
+    is Shelf.Publisher -> "p:$name"
     is Shelf.Smart -> "m:${kind.name}"
 }
 
@@ -164,6 +172,7 @@ private fun shelfFromToken(t: String?): Shelf? {
         's' -> body.split('\u0000', limit = 2).let { parts -> Shelf.Series(parts[0], parts.getOrElse(1) { parts[0] }) }
         'f' -> Shelf.Folder(body)
         'c' -> body.split('\u0000', limit = 2).let { parts -> Shelf.Custom(parts[0], parts.getOrElse(1) { "" }) }
+        'p' -> Shelf.Publisher(body)
         'm' -> runCatching { Shelf.Smart(SmartKind.valueOf(body)) }.getOrNull()
         else -> null
     }
@@ -177,7 +186,8 @@ fun LibraryScreen(
     syncActions: SyncActions,
     metaActions: MetaActions,
 ) {
-    var tab by rememberSaveable { mutableStateOf(Tab.Home) }
+    val startUi = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
+    var tab by rememberSaveable { mutableStateOf(runCatching { Tab.valueOf(startUi.startTab) }.getOrDefault(Tab.Home)) }
     var shelfToken by rememberSaveable { mutableStateOf<String?>(null) }
     val shelf = shelfFromToken(shelfToken)
     var showFolders by remember { mutableStateOf(false) }
@@ -212,6 +222,7 @@ fun LibraryScreen(
         when (kind) {
             ShelfKind.Collections -> tab = Tab.Collections
             ShelfKind.Folders -> { libraryFilter = Filter.Folders; tab = Tab.Library }
+            ShelfKind.Publishers -> { libraryFilter = Filter.Publishers; tab = Tab.Library }
             else -> { libraryFilter = Filter.Series; tab = Tab.Library }
         }
     }
@@ -558,7 +569,7 @@ private fun Header(
         )
         Spacer(Modifier.weight(1f))
         if (wide) {
-            Segmented(Tab.entries, tab, { it.label }, onTab)
+            Segmented(visibleTabs(), tab, { it.label }, onTab)
             Spacer(Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(if (wide) 10.dp else 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -772,7 +783,13 @@ private fun LibraryTab(
     val bigTitles = wide || ui.coverScale > 1.35f
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(if (filter == Filter.Series || filter == Filter.Folders) shelfCell else minCell),
+        columns = GridCells.Adaptive(
+            when {
+                filter == Filter.Series || filter == Filter.Folders || filter == Filter.Publishers -> shelfCell
+                ui.libraryList -> if (wide) 380.dp else 300.dp
+                else -> minCell
+            }
+        ),
         contentPadding = PaddingValues(start = gutter, end = gutter, top = 4.dp, bottom = if (wide) 32.dp else 110.dp),
         horizontalArrangement = Arrangement.spacedBy(if (wide) 22.dp else 12.dp),
         verticalArrangement = Arrangement.spacedBy(if (wide) 26.dp else 18.dp),
@@ -811,7 +828,8 @@ private fun LibraryTab(
                 )
             }
             items(results, key = { it.comic.id }) { it ->
-                CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
+                if (ui.libraryList) ComicRow(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, selection = selection)
+                else CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
             }
             return@LazyVerticalGrid
         }
@@ -822,9 +840,10 @@ private fun LibraryTab(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Filter.entries.forEach { f -> Chip(f.label, f == filter) { onFilter(f) } }
-                if (filter != Filter.Series && filter != Filter.Folders) {
+                if (filter != Filter.Series && filter != Filter.Folders && filter != Filter.Publishers) {
                     Spacer(Modifier.width(8.dp))
                     Chip(str(R.string.sort_by, sort.label), false) { sort = SortOrder.entries[(sort.ordinal + 1) % SortOrder.entries.size] }
+                    Chip(if (ui.libraryList) str(R.string.view_grid) else str(R.string.view_list), false) { ui.updateLibraryList(!ui.libraryList) }
                 }
             }
         }
@@ -843,6 +862,15 @@ private fun LibraryTab(
             Filter.Folders -> items(state.folderShelves, key = { "f:" + it.first.name }) { (shelf, list) ->
                 ShelfCard(shelf.title, list, onClick = { openShelf(shelf) }, shelf = shelf)
             }
+            Filter.Publishers -> {
+                val pubs = state.publisherShelves
+                if (pubs.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) { Hint(str(R.string.publishers_hint)) }
+                }
+                items(pubs, key = { "p:" + it.first.name }) { (shelf, list) ->
+                    ShelfCard(shelf.title, list, onClick = { openShelf(shelf) }, subtitle = seriesSubtitle(list), shelf = shelf)
+                }
+            }
             else -> {
                 val list = when (filter) {
                     Filter.Unread -> state.items.filter { it.matches(SmartKind.Unread) }
@@ -856,7 +884,8 @@ private fun LibraryTab(
                     }
                 }
                 items(list, key = { it.comic.id }) { it ->
-                    CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
+                    if (ui.libraryList) ComicRow(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, selection = selection)
+                    else CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
                 }
             }
         }
@@ -1163,6 +1192,7 @@ private fun ShelfScreen(
                                 is Shelf.Series -> str(R.string.kind_series)
                                 is Shelf.Folder -> str(R.string.kind_folder)
                                 is Shelf.Custom -> str(R.string.kind_collection)
+                                is Shelf.Publisher -> str(R.string.kind_publisher)
                                 is Shelf.Smart -> str(R.string.kind_smart)
                             },
                             style = MaterialTheme.typography.labelSmall,
@@ -1304,7 +1334,7 @@ private fun PhoneTabBar(tab: Tab, onTab: (Tab) -> Unit, modifier: Modifier = Mod
             .background(FwipColors.Panel.copy(alpha = 0.92f))
             .border(1.dp, FwipColors.Stroke, RoundedCornerShape(26.dp)),
     ) {
-        Tab.entries.forEach { t ->
+        visibleTabs().forEach { t ->
             val on = t == tab
             Box(
                 Modifier

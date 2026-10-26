@@ -471,6 +471,11 @@ private fun CoversTab(ui: UiSettings) {
     Toggle(str(R.string.cover_shadow), str(R.string.cover_shadow_hint), ui.coverShadow, ui::updateCoverShadow)
     Toggle(str(R.string.cover_titles), str(R.string.cover_titles_hint), ui.coverTitles, ui::updateCoverTitles)
 
+    Heading(str(R.string.progress_title), str(R.string.progress_hint))
+    OptionPills(ProgressStyle.entries, ui.progressStyle, { it.label }, ui::updateProgressStyle)
+    Heading(str(R.string.library_view_title))
+    OptionPills(listOf(false, true), ui.libraryList, { if (it) str(R.string.view_list_name) else str(R.string.view_grid_name) }, ui::updateLibraryList)
+
     Heading(str(R.string.read_mark_title))
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         ReadMark.entries.forEach { m ->
@@ -576,6 +581,18 @@ private fun CarouselThumb(style: CarouselStyle, modifier: Modifier) {
 @Composable
 private fun HomeTab(ui: UiSettings, state: LibraryState) {
     var picking by remember { mutableStateOf<HomePart?>(null) }
+    Heading(str(R.string.start_tab_title), str(R.string.start_tab_hint))
+    val tabs = listOf("Home" to str(R.string.tab_home), "Library" to str(R.string.tab_library), "Collections" to str(R.string.tab_collections), "Servers" to str(R.string.tab_servers))
+        .filter { (k, _) -> (k != "Collections" || ui.showCollectionsTab) && (k != "Servers" || ui.showServersTab) }
+    OptionPills(tabs.map { it.first }, ui.startTab, { k -> tabs.first { it.first == k }.second }, ui::updateStartTab)
+    Toggle(str(R.string.show_tab_collections), str(R.string.show_tab_hint), ui.showCollectionsTab) { on ->
+        ui.updateShowCollectionsTab(on)
+        if (!on && ui.startTab == "Collections") ui.updateStartTab("Home")
+    }
+    Toggle(str(R.string.show_tab_servers), str(R.string.show_tab_servers_hint), ui.showServersTab) { on ->
+        ui.updateShowServersTab(on)
+        if (!on && ui.startTab == "Servers") ui.updateStartTab("Home")
+    }
     Heading(str(R.string.home_parts_title), str(R.string.home_parts_hint))
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         ui.sections.forEachIndexed { i, s ->
@@ -749,4 +766,34 @@ private fun ReaderTab(ui: UiSettings) {
     Heading(str(R.string.look_tab_reader), str(R.string.reader_look_hint))
     ReaderLookSettings(settings)
     Toggle(str(R.string.cover_animation), str(R.string.cover_animation_hint), ui.coverAnimation, ui::updateCoverAnimation)
+}
+
+
+/** A row of pill buttons, one chosen. */
+@Composable
+private fun <T> OptionPills(options: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit) {
+    Row(
+        Modifier
+            .horizontalScroll(rememberScrollState())
+            .clip(CircleShape)
+            .background(FwipColors.Surface)
+            .border(1.dp, FwipColors.Stroke, CircleShape)
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        options.forEach { o ->
+            val on = o == selected
+            Box(
+                Modifier
+                    .height(38.dp)
+                    .clip(CircleShape)
+                    .background(if (on) FwipColors.Text else Color.Transparent)
+                    .clickable(role = Role.RadioButton) { onPick(o) }
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label(o), style = MaterialTheme.typography.labelMedium, color = if (on) FwipColors.Ink else FwipColors.TextSoft, maxLines = 1)
+            }
+        }
+    }
 }

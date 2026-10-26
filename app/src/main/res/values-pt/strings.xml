@@ -633,4 +633,24 @@
     <string name="gesture_guided">Quadro a quadro</string>
     <string name="gesture_settings">Ajustes de leitura</string>
     <string name="gesture_close">Fechar a HQ</string>
+    <string name="progress_bar">Barra</string>
+    <string name="progress_ring">Anel</string>
+    <string name="progress_percent">Porcentagem</string>
+    <string name="progress_none">Nada</string>
+    <string name="progress_title">Progresso nas capas</string>
+    <string name="progress_hint">Como a HQ que você está lendo mostra até onde você foi.</string>
+    <string name="library_view_title">Biblioteca</string>
+    <string name="view_grid_name">Capas</string>
+    <string name="view_list_name">Lista</string>
+    <string name="view_grid">Capas</string>
+    <string name="view_list">Lista</string>
+    <string name="start_tab_title">Abrir em</string>
+    <string name="start_tab_hint">A aba que aparece quando o app abre.</string>
+    <string name="show_tab_collections">Aba Coleções</string>
+    <string name="show_tab_hint">Desligada, as coleções continuam na estante do início.</string>
+    <string name="show_tab_servers">Aba Servidores</string>
+    <string name="show_tab_servers_hint">Desligada, as pastas de rede continuam nos ajustes.</string>
+    <string name="kind_publisher">Editora</string>
+    <string name="filter_publishers">Editoras</string>
+    <string name="publishers_hint">As editoras vêm das informações das HQs (ComicInfo.xml) ou de \"Editar informações\".</string>
 </resources>

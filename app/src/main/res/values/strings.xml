@@ -634,4 +634,24 @@
     <string name="gesture_guided">Panel by panel</string>
     <string name="gesture_settings">Reading settings</string>
     <string name="gesture_close">Close the comic</string>
+    <string name="progress_bar">Bar</string>
+    <string name="progress_ring">Ring</string>
+    <string name="progress_percent">Percentage</string>
+    <string name="progress_none">None</string>
+    <string name="progress_title">Progress on covers</string>
+    <string name="progress_hint">How a comic you are reading shows how far you got.</string>
+    <string name="library_view_title">Library</string>
+    <string name="view_grid_name">Covers</string>
+    <string name="view_list_name">List</string>
+    <string name="view_grid">Covers</string>
+    <string name="view_list">List</string>
+    <string name="start_tab_title">Opens on</string>
+    <string name="start_tab_hint">The tab you see when the app starts.</string>
+    <string name="show_tab_collections">Collections tab</string>
+    <string name="show_tab_hint">Off, collections are still on the home shelf.</string>
+    <string name="show_tab_servers">Servers tab</string>
+    <string name="show_tab_servers_hint">Off, network folders are still added from the settings.</string>
+    <string name="kind_publisher">Publisher</string>
+    <string name="filter_publishers">Publishers</string>
+    <string name="publishers_hint">Publishers come from the comics\' information (ComicInfo.xml) or from \"Edit info\".</string>
 </resources>

@@ -24,6 +24,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 
+/** "DC Comics", "dc comics " and "DC Comics, Inc." count as one publisher. */
+fun publisherKey(name: String?): String = name.orEmpty().lowercase()
+    .replace(Regex(",?\\s*(inc|llc|ltd)\\.?$"), "")
+    .replace(Regex("[^\\p{L}\\p{N}]+"), " ").trim()
+
 /** What the sync screen shows. */
 data class SyncInfo(
     val place: Uri? = null,
@@ -108,6 +113,16 @@ data class LibraryState(
             .filter { (_, list) -> list.size >= 2 || list.any { it.progress?.started == true } }
             .sortedByDescending { (_, list) -> list.maxOf { it.progress?.lastRead ?: 0L } }
 
+    /** Publishers with their comics, the biggest first ("DC Comics" and "DC" kept apart only if written apart). */
+    val publisherShelves: List<Pair<Shelf.Publisher, List<LibraryItem>>>
+        get() = items.filter { !it.meta?.publisher.isNullOrBlank() }
+            .groupBy { publisherKey(it.meta?.publisher) }
+            .map { (_, list) ->
+                val name = list.groupingBy { it.meta!!.publisher!!.trim() }.eachCount().maxBy { it.value }.key
+                Shelf.Publisher(name) to list.sortedFor(SortOrder.Title)
+            }
+            .sortedByDescending { it.second.size }
+
     val folderShelves: List<Pair<Shelf.Folder, List<LibraryItem>>>
         get() = items.groupBy { it.comic.folder }
             .map { (name, list) -> Shelf.Folder(name) to list.sortedFor(SortOrder.Title) }
@@ -116,6 +131,7 @@ data class LibraryState(
     fun itemsOf(shelf: Shelf, order: SortOrder = SortOrder.Title): List<LibraryItem> = when (shelf) {
         is Shelf.Series -> items.filter { seriesKey(it.series.name) == shelf.key }.sortedFor(SortOrder.Title)
         is Shelf.Folder -> items.filter { it.comic.folder == shelf.name }.sortedFor(order)
+        is Shelf.Publisher -> items.filter { publisherKey(it.meta?.publisher) == publisherKey(shelf.name) }.sortedFor(SortOrder.Title)
         is Shelf.Custom -> collections.firstOrNull { it.id == shelf.id }?.comicIds.orEmpty().mapNotNull(::item).distinctBy { it.comic.id }
         is Shelf.Smart -> when (shelf.kind) {
             SmartKind.Recent -> items.sortedFor(SortOrder.Added).take(30)
@@ -339,13 +355,14 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Series, number, title and year typed in by the user. */
-    fun saveManual(id: String, series: String, number: String, title: String, year: String) {
+    fun saveManual(id: String, series: String, number: String, title: String, year: String, publisher: String = "") {
         saveEdited(id) {
             it.copy(
                 series = series.trim().ifBlank { null },
                 number = number.trim().ifBlank { null },
                 title = title.trim().ifBlank { null },
                 year = year.trim().toIntOrNull(),
+                publisher = publisher.trim().ifBlank { null },
             )
         }
         refreshItems(listOf(id))
@@ -356,7 +373,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
      * Puts these comics in one series (renaming it, or joining comics the file names split up).
      * Each keeps its own issue number; [startYear] tells relaunches apart ("Batman (2016)").
      */
-    fun renameSeries(ids: List<String>, name: String, startYear: String) {
+    fun renameSeries(ids: List<String>, name: String, startYear: String, publisher: String = "") {
         val year = startYear.trim().toIntOrNull()?.takeIf { it > 1900 }
         ids.forEach { id ->
             val item = _state.value.item(id) ?: return@forEach
@@ -366,6 +383,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                     volume = year,
                     // Keep the number the file name gave, so the issues stay in order.
                     number = it.issue ?: item.issueNumber,
+                    publisher = publisher.trim().ifBlank { it.publisher ?: item.meta?.publisher },
                 )
             }
         }

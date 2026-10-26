@@ -78,7 +78,7 @@ import java.time.LocalDate
 
 /** Which shelves the home strip shows. */
 internal enum class ShelfKind(@androidx.annotation.StringRes private val labelRes: Int) {
-    All(R.string.filter_all), Series(R.string.filter_series), Collections(R.string.tab_collections), Folders(R.string.filter_folders);
+    All(R.string.filter_all), Series(R.string.filter_series), Publishers(R.string.filter_publishers), Collections(R.string.tab_collections), Folders(R.string.filter_folders);
 
     val label: String get() = str(labelRes)
 }
@@ -97,6 +97,7 @@ private fun shelvesOf(state: LibraryState, kind: ShelfKind): List<Pair<Shelf, Li
             state.collections.map { c -> Shelf.Custom(c.id, c.name).let { it to state.itemsOf(it) } }
     }
     ShelfKind.Folders -> state.folderShelves
+    ShelfKind.Publishers -> state.publisherShelves
 }
 
 /**
@@ -195,6 +196,7 @@ private fun shelfKey(s: Shelf): String = when (s) {
     is Shelf.Series -> "s:" + s.key
     is Shelf.Folder -> "f:" + s.name
     is Shelf.Custom -> "c:" + s.id
+    is Shelf.Publisher -> "p:" + s.name
     is Shelf.Smart -> "m:" + s.kind.name
 }
 
@@ -254,6 +256,7 @@ private fun ShelfStripCard(shelf: Shelf, list: List<LibraryItem>, modifier: Modi
                     is Shelf.Series -> str(R.string.kind_series)
                     is Shelf.Folder -> str(R.string.kind_folder)
                     is Shelf.Custom -> str(R.string.kind_collection)
+                    is Shelf.Publisher -> str(R.string.kind_publisher)
                     is Shelf.Smart -> str(R.string.kind_smart)
                 },
                 style = MaterialTheme.typography.labelSmall,

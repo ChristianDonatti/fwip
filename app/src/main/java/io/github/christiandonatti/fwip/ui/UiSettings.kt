@@ -47,6 +47,13 @@ enum class ReadMark(@StringRes private val labelRes: Int) {
     val label: String get() = str(labelRes)
 }
 
+/** How a comic being read shows its progress on the cover. */
+enum class ProgressStyle(@StringRes private val labelRes: Int) {
+    Bar(R.string.progress_bar), Ring(R.string.progress_ring), Percent(R.string.progress_percent), None(R.string.progress_none);
+
+    val label: String get() = str(labelRes)
+}
+
 enum class CarouselStyle(@StringRes private val labelRes: Int, @StringRes private val descRes: Int) {
     Flat(R.string.carousel_flat, R.string.carousel_flat_desc),
     Tilt(R.string.carousel_tilt, R.string.carousel_tilt_desc),
@@ -92,6 +99,18 @@ class UiSettings private constructor(context: Context) {
     var readMark by mutableStateOf(enumPref("readMark", ReadMark.Badge))
         private set
     var showCarousel by mutableStateOf(prefs.getBoolean("showCarousel", true))
+        private set
+    var progressStyle by mutableStateOf(enumPref("progressStyle", ProgressStyle.Bar))
+        private set
+    /** Comics in the library as a compact list instead of a grid of covers. */
+    var libraryList by mutableStateOf(prefs.getBoolean("libraryList", false))
+        private set
+    /** The tab the app opens on: Home, Library, Collections or Servers. */
+    var startTab by mutableStateOf(prefs.getString("startTab", "Home") ?: "Home")
+        private set
+    var showCollectionsTab by mutableStateOf(prefs.getBoolean("tabCollections", true))
+        private set
+    var showServersTab by mutableStateOf(prefs.getBoolean("tabServers", true))
         private set
     var carousel by mutableStateOf(enumPref("carousel", CarouselStyle.Flat))
         private set
@@ -157,6 +176,11 @@ class UiSettings private constructor(context: Context) {
     fun updateCoverShadow(value: Boolean) { coverShadow = value; prefs.edit().putBoolean("coverShadow", value).apply() }
     fun updateCoverTitles(value: Boolean) { coverTitles = value; prefs.edit().putBoolean("coverTitles", value).apply() }
     fun updateReadMark(value: ReadMark) { readMark = value; prefs.edit().putString("readMark", value.name).apply() }
+    fun updateProgressStyle(value: ProgressStyle) { progressStyle = value; prefs.edit().putString("progressStyle", value.name).apply() }
+    fun updateLibraryList(value: Boolean) { libraryList = value; prefs.edit().putBoolean("libraryList", value).apply() }
+    fun updateStartTab(value: String) { startTab = value; prefs.edit().putString("startTab", value).apply() }
+    fun updateShowCollectionsTab(value: Boolean) { showCollectionsTab = value; prefs.edit().putBoolean("tabCollections", value).apply() }
+    fun updateShowServersTab(value: Boolean) { showServersTab = value; prefs.edit().putBoolean("tabServers", value).apply() }
     fun updateShowCarousel(value: Boolean) { showCarousel = value; prefs.edit().putBoolean("showCarousel", value).apply() }
     fun updateCarousel(value: CarouselStyle) { carousel = value; prefs.edit().putString("carousel", value.name).apply() }
     fun updateName(value: String) { name = value.take(40); prefs.edit().putString("name", name).apply() }

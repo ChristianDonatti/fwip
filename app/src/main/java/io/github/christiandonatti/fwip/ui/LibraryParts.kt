@@ -148,6 +148,7 @@ fun CoverTile(
                     Icon(Icons.Filled.Check, str(R.string.read_badge), tint = FwipColors.AmberInk, modifier = Modifier.size(16.dp))
                 }
             }
+            if (!selecting) CoverProgress(item, ui.progressStyle)
             if (item.isNew && !selecting) {
                 Box(
                     Modifier
@@ -184,8 +185,103 @@ fun CoverTile(
         }
         if (ui.coverTitles) Text(item.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
         val p = item.progress
-        if (p != null && p.started && !p.finished) {
+        if (p != null && p.started && !p.finished && ui.progressStyle == ProgressStyle.Bar) {
             ProgressBar(p.fraction, item.glowColor(), Modifier.fillMaxWidth())
+        }
+    }
+}
+
+/** Progress drawn over the cover itself, for the ring and percentage styles. */
+@Composable
+internal fun androidx.compose.foundation.layout.BoxScope.CoverProgress(item: LibraryItem, style: ProgressStyle) {
+    val p = item.progress ?: return
+    if (!p.started || p.finished) return
+    when (style) {
+        ProgressStyle.Ring -> Box(
+            Modifier
+                .align(Alignment.BottomEnd)
+                .padding(8.dp)
+                .size(30.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.55f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            val color = item.glowColor()
+            Canvas(Modifier.size(22.dp)) {
+                val stroke = 3.dp.toPx()
+                drawArc(Color.White.copy(alpha = 0.25f), 0f, 360f, false, style = Stroke(stroke))
+                drawArc(color, -90f, 360f * p.fraction, false, style = Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+            }
+        }
+        ProgressStyle.Percent -> Box(
+            Modifier
+                .align(Alignment.BottomStart)
+                .padding(8.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black.copy(alpha = 0.6f))
+                .padding(horizontal = 7.dp, vertical = 3.dp),
+        ) {
+            Text("${(p.fraction * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = Color.White)
+        }
+        else -> {}
+    }
+}
+
+/** A comic as one line of a list: small cover, name, where it belongs and how far along it is. */
+@Composable
+fun ComicRow(
+    item: LibraryItem,
+    onOpen: () -> Unit,
+    onMenu: () -> Unit,
+    modifier: Modifier = Modifier,
+    selection: Selection? = null,
+) {
+    val selecting = selection?.active == true
+    val selected = selection?.contains(item.comic.id) == true
+    val p = item.progress
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(if (selected) FwipColors.Amber.copy(alpha = 0.18f) else FwipColors.Surface)
+            .border(1.dp, if (selected) FwipColors.Amber else FwipColors.Stroke, RoundedCornerShape(18.dp))
+            .combinedClickable(
+                role = Role.Button,
+                onClickLabel = item.title,
+                onLongClick = { if (selecting) selection?.toggle(item.comic.id) else onMenu() },
+                onClick = { if (selecting) selection?.toggle(item.comic.id) else onOpen() },
+            )
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        CoverImage(item, Modifier.size(52.dp, 78.dp), corner = 8.dp, titleSize = 8)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (item.isNew) {
+                    Text(
+                        str(R.string.new_badge),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = FwipColors.AmberInk,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(FwipColors.Amber).padding(horizontal = 5.dp, vertical = 1.dp),
+                    )
+                }
+                Text(item.title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            val bits = listOfNotNull(
+                item.meta?.publisher,
+                item.meta?.year?.toString(),
+                p?.pageCount?.takeIf { it > 0 }?.let { str(R.string.n_pages, it) },
+            ).ifEmpty { listOf(item.comic.folder) }
+            Text(bits.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            when {
+                p?.finished == true -> Text(str(R.string.smart_read), style = MaterialTheme.typography.labelSmall, color = FwipColors.Amber)
+                p != null && p.started -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ProgressBar(p.fraction, item.glowColor(), Modifier.weight(1f))
+                    Text("${(p.fraction * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
+                }
+                else -> {}
+            }
         }
     }
 }
@@ -214,6 +310,7 @@ fun ShelfCard(
 ) {
     val tint = shelf?.let(ShelfLooks::color)
     val art = shelf?.let(ShelfLooks::cover)
+    val logo = shelf?.let(ShelfLooks::logo)
     Column(
         modifier
             .clip(RoundedCornerShape(24.dp))
@@ -231,6 +328,18 @@ fun ShelfCard(
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 modifier = Modifier.fillMaxWidth().aspectRatio(1.25f).clip(RoundedCornerShape(14.dp)),
             )
+        } else if (logo != null) {
+            Box(
+                Modifier.fillMaxWidth().aspectRatio(1.25f).clip(RoundedCornerShape(14.dp)).background((tint ?: FwipColors.Text).copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                coil.compose.AsyncImage(
+                    model = logo,
+                    contentDescription = title,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize().padding(18.dp),
+                )
+            }
         } else {
             CoverFan(items, Modifier.fillMaxWidth().aspectRatio(1.25f))
         }

@@ -48,8 +48,8 @@ import kotlinx.coroutines.launch
 
 /** What the name, series and cover screens can ask the app to do. */
 class MetaActions(
-    val saveManual: (id: String, series: String, number: String, title: String, year: String) -> Unit,
-    val renameSeries: (ids: List<String>, name: String, startYear: String) -> Unit,
+    val saveManual: (id: String, series: String, number: String, title: String, year: String, publisher: String) -> Unit,
+    val renameSeries: (ids: List<String>, name: String, startYear: String, publisher: String) -> Unit,
     val clear: (List<String>) -> Unit,
     val coverFromPage: (id: String, page: Int) -> Unit,
     val coverFromImage: (id: String, uri: android.net.Uri) -> Unit,
@@ -64,6 +64,7 @@ fun EditInfoDialog(item: LibraryItem, actions: MetaActions, onDismiss: () -> Uni
     var number by remember { mutableStateOf(meta?.issue ?: item.parsed.number.orEmpty()) }
     var title by remember { mutableStateOf(meta?.title ?: item.parsed.title.orEmpty()) }
     var year by remember { mutableStateOf((meta?.year ?: item.parsed.year)?.toString().orEmpty()) }
+    var publisher by remember { mutableStateOf(meta?.publisher.orEmpty()) }
     FwipDialog(onDismiss) {
         DialogTitle(str(R.string.edit_info), onDismiss)
         Text(item.comic.fileName, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -73,12 +74,13 @@ fun EditInfoDialog(item: LibraryItem, actions: MetaActions, onDismiss: () -> Uni
             Box(Modifier.weight(1f)) { Field(str(R.string.info_year), year, { year = it.filter(Char::isDigit).take(4) }, "2016", keyboard = KeyboardType.Number) }
         }
         Field(str(R.string.info_title), title, { title = it }, str(R.string.optional))
+        Field(str(R.string.kind_publisher), publisher, { publisher = it }, "Marvel")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             PillButton(str(R.string.info_reset), { actions.clear(listOf(item.comic.id)); onDismiss() }, style = PillStyle.Ghost, height = 46.dp)
             Spacer(Modifier.weight(1f))
             PillButton(
                 str(R.string.save),
-                { actions.saveManual(item.comic.id, series, number, title, year); onDismiss() },
+                { actions.saveManual(item.comic.id, series, number, title, year, publisher); onDismiss() },
                 style = PillStyle.Amber,
                 height = 46.dp,
                 enabled = series.isNotBlank(),
@@ -96,17 +98,19 @@ fun SeriesEditDialog(items: List<LibraryItem>, actions: MetaActions, onDismiss: 
     val first = items.first()
     var name by remember { mutableStateOf(first.meta?.series ?: first.parsed.series) }
     var year by remember { mutableStateOf(first.meta?.volume?.takeIf { it > 1900 }?.toString().orEmpty()) }
+    var publisher by remember { mutableStateOf(items.firstNotNullOfOrNull { it.meta?.publisher }.orEmpty()) }
     FwipDialog(onDismiss) {
         DialogTitle(str(R.string.series_edit), onDismiss)
         Text(str(R.string.series_edit_hint, items.size), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
         Field(str(R.string.info_series), name, { name = it }, "Batman")
         Field(str(R.string.series_start_year), year, { year = it.filter(Char::isDigit).take(4) }, str(R.string.optional), keyboard = KeyboardType.Number)
+        Field(str(R.string.kind_publisher), publisher, { publisher = it }, "Marvel")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             PillButton(str(R.string.info_reset), { actions.clear(items.map { it.comic.id }); onDismiss() }, style = PillStyle.Ghost, height = 46.dp)
             Spacer(Modifier.weight(1f))
             PillButton(
                 str(R.string.save),
-                { actions.renameSeries(items.map { it.comic.id }, name, year); onDismiss() },
+                { actions.renameSeries(items.map { it.comic.id }, name, year, publisher); onDismiss() },
                 style = PillStyle.Amber,
                 height = 46.dp,
                 enabled = name.isNotBlank(),

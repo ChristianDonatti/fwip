@@ -43,6 +43,7 @@ object ShelfLooks {
         is Shelf.Series -> "s:" + seriesKey(shelf.key)
         is Shelf.Folder -> "f:" + shelf.name
         is Shelf.Custom -> "c:" + shelf.id
+        is Shelf.Publisher -> "p:" + io.github.christiandonatti.fwip.publisherKey(shelf.name)
         is Shelf.Smart -> null
     }
 

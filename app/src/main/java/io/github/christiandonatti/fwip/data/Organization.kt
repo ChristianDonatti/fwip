@@ -40,6 +40,10 @@ sealed interface Shelf {
         override val title: String get() = name.ifBlank { str(R.string.main_folder) }
     }
     data class Custom(val id: String, override val title: String) : Shelf
+    /** Everything from one publisher (from ComicInfo.xml or typed in). */
+    data class Publisher(val name: String) : Shelf {
+        override val title: String get() = name
+    }
     data class Smart(val kind: SmartKind) : Shelf {
         override val title: String get() = kind.title
     }
