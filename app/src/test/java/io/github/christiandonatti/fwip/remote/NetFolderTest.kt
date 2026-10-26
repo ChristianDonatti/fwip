@@ -135,6 +135,31 @@ class NetFolderTest {
         c.delete("Up/Batman/Batman 001.cbz")
     }
 
+    /** A big comic comes down over two connections at once, each a half, and lands whole. */
+    @Test
+    fun downloadsOverTwoConnections() {
+        assumeTrue(address != null)
+        val c = client()
+        val data = ByteArray(40_000_123) { (it * 7 % 253).toByte() }
+        c.upload("Big.cbz", data.size.toLong(), data.inputStream())
+        for (n in listOf(2, 1)) {
+            SmbTuning.connections = n
+            val file = java.io.File.createTempFile("fwip", ".cbz")
+            file.writeBytes(ByteArray(50_000_000))
+            var last = 0L
+            c.downloadTo("Big.cbz", file) { done, total -> last = done; assertEquals(data.size.toLong(), total) }
+            assertEquals(data.size.toLong(), last)
+            assertArrayEquals("$n connections", data, file.readBytes())
+            file.delete()
+        }
+        SmbTuning.connections = 2
+        // Measuring reads without keeping anything.
+        val smb = c as SmbNet
+        assertTrue(smb.measure("Big.cbz", 2, 2.0) > 0.0)
+        assertEquals("Big.cbz", smb.biggestFile()?.name)
+        c.delete("Big.cbz")
+    }
+
     @Test
     fun writesSyncFiles() {
         assumeTrue(address != null)

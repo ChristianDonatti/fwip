@@ -689,4 +689,18 @@
     <string name="widget_sync">Sincronizar</string>
     <string name="widget_sync_off">Configure a sincronização no app</string>
     <string name="widget_sync_last">Última às %1$s · toque para sincronizar</string>
+    <string name="speed_test">Testar velocidade</string>
+    <string name="speed_title">Velocidade da rede</string>
+    <string name="speed_finding">Procurando um arquivo grande para ler…</string>
+    <string name="speed_one">Medindo com 1 conexão…</string>
+    <string name="speed_two">Medindo com 2 conexões…</string>
+    <string name="speed_result_one">1 conexão: %1$s MB/s</string>
+    <string name="speed_result_two">2 conexões: %1$s MB/s</string>
+    <string name="speed_with">Lido de %1$s, sem salvar nada. O Fwip baixa HQs grandes com 2 conexões.</string>
+    <string name="net_speed_slow">Abaixo de uns 15 MB/s o limite costuma ser o Wi-Fi: veja se o aparelho está na rede 5 GHz (ou 6 GHz) e perto do roteador.</string>
+    <string name="speed_no_file">Nenhum arquivo encontrado para ler neste servidor.</string>
+    <string name="speed_again">Testar de novo</string>
+    <string name="download_detail">%1$s de %2$s · %3$s MB/s</string>
+    <string name="download_detail_n">%1$s de %2$s · %3$s MB/s · HQ %4$d de %5$d</string>
+    <string name="widget_in_series">A seguir na série</string>
 </resources>

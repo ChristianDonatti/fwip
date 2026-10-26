@@ -41,7 +41,7 @@ data class SyncInfo(
 )
 
 /** Files being deleted or moved. */
-data class FileWork(val label: String, val progress: Float)
+data class FileWork(val label: String, val progress: Float, val detail: String? = null)
 
 data class LibraryState(
     val items: List<LibraryItem> = emptyList(),
@@ -732,15 +732,23 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                 val label = str(R.string.downloading_named, comic.fileName)
                 _state.update { it.copy(fileWork = FileWork(label, i / comics.size.toFloat())) }
                 var lastShown = 0L
+                // Speed over the last few seconds, so it follows the network as it changes.
+                val samples = ArrayDeque<Pair<Long, Long>>()
                 runCatching {
                     io.github.christiandonatti.fwip.remote.NetComics.download(getApplication(), comic) { p ->
                         val now = System.nanoTime()
                         if (now - lastShown < 250_000_000L && p < 1f) return@download
                         lastShown = now
-                        // Average speed so far, so a slow network or NAS shows up right away.
-                        val mbs = (before + p * comic.size) / 1e6 / ((now - start) / 1e9).coerceAtLeast(0.001)
-                        val shown = if (mbs >= 0.1) label + " · " + str(R.string.upload_speed, "%.1f".format(mbs)) else label
-                        _state.update { it.copy(fileWork = FileWork(shown, (i + p) / comics.size)) }
+                        val bytes = (p * comic.size).toLong()
+                        samples.addLast(now to bytes)
+                        while (samples.size > 2 && now - samples.first().first > 3_000_000_000L) samples.removeFirst()
+                        val (t0, b0) = samples.first()
+                        val mbs = if (now - t0 > 400_000_000L) (bytes - b0) / 1e6 / ((now - t0) / 1e9)
+                        else (before + bytes) / 1e6 / ((now - start) / 1e9).coerceAtLeast(0.001)
+                        val speed = "%.1f".format(mbs)
+                        val detail = if (comics.size > 1) str(R.string.download_detail_n, io.github.christiandonatti.fwip.ui.sizeLabel(bytes), io.github.christiandonatti.fwip.ui.sizeLabel(comic.size), speed, i + 1, comics.size)
+                        else str(R.string.download_detail, io.github.christiandonatti.fwip.ui.sizeLabel(bytes), io.github.christiandonatti.fwip.ui.sizeLabel(comic.size), speed)
+                        _state.update { it.copy(fileWork = FileWork(label, (i + p) / comics.size, detail)) }
                     }
                 }.onSuccess {
                     got++

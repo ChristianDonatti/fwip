@@ -61,6 +61,11 @@ interface NetClient {
             }
         }
     }
+
+    /** Copies the whole file at [path] into [file] (replacing it), maybe over several connections. */
+    fun downloadTo(path: String, file: java.io.File, onProgress: (Long, Long) -> Unit) {
+        file.outputStream().buffered(1 shl 20).use { download(path, it, onProgress) }
+    }
 }
 
 /** Network folder files are referenced as fwip-net://<server id>/<path>. */
@@ -255,6 +260,8 @@ internal object SmbTuning {
     /** Bytes per write request, and how many may wait for an answer at once. */
     const val chunk = 1 shl 20
     const val depth = 8
+    /** Network streams a big download is split over. */
+    @Volatile var connections = 2
 }
 
 internal class SmbNet(private val server: Server) : NetClient, Closeable {
@@ -313,7 +320,7 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
     }
 
     @Synchronized
-    private fun reset() {
+    internal fun reset() {
         runCatching { share?.close() }
         runCatching { session?.close() }
         runCatching { client?.close() }
@@ -369,58 +376,177 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
         }
     }
 
-    override fun download(path: String, out: java.io.OutputStream, onProgress: (Long, Long) -> Unit) {
-        // Not through withShare: half the file may already be written out.
-        share().openFile(
+    private fun openRead(path: String): com.hierynomus.smbj.share.File = withShare { sh ->
+        sh.openFile(
             full(path),
             java.util.EnumSet.of(com.hierynomus.msdtyp.AccessMask.GENERIC_READ),
             null,
             com.hierynomus.mssmb2.SMB2ShareAccess.ALL,
             com.hierynomus.mssmb2.SMB2CreateDisposition.FILE_OPEN,
             null,
-        ).use { f ->
-            val length = f.getFileInformation(com.hierynomus.msfscc.fileinformation.FileStandardInformation::class.java).endOfFile
-            if (!SmbTuning.pipelined) {
-                var pos = 0L
-                val buf = ByteArray(SmbTuning.chunk)
-                while (pos < length) {
-                    val n = f.read(buf, pos, 0, buf.size)
-                    if (n <= 0) break
-                    out.write(buf, 0, n)
-                    pos += n
-                    onProgress(pos, length)
-                }
-                return
+        )
+    }
+
+    private fun lengthOf(f: com.hierynomus.smbj.share.File): Long =
+        f.getFileInformation(com.hierynomus.msfscc.fileinformation.FileStandardInformation::class.java).endOfFile
+
+    /**
+     * Reads [from] until [to] of [f], handing each piece to [sink] in order (position, bytes, count)
+     * and the count to [moved]. Like sending: several pieces are asked for at once. Pieces never ask
+     * for more than the NAS answers in one go (old SMB 2.0 servers: 64 KB), and about 8 MB stay on
+     * the way whatever their size. After [deadline] (System.nanoTime) it stops asking and returns.
+     */
+    private fun readRange(
+        f: com.hierynomus.smbj.share.File,
+        from: Long,
+        to: Long,
+        deadline: Long = Long.MAX_VALUE,
+        moved: (Int) -> Unit,
+        sink: (Long, ByteArray, Int) -> Unit,
+    ) {
+        if (!SmbTuning.pipelined) {
+            var pos = from
+            val buf = ByteArray(SmbTuning.chunk)
+            while (pos < to && System.nanoTime() < deadline) {
+                val n = f.read(buf, pos, 0, minOf(buf.size.toLong(), to - pos).toInt())
+                if (n <= 0) break
+                sink(pos, buf, n)
+                pos += n
+                moved(n)
             }
-            // Like sending: several pieces requested at once, written out in order as they arrive.
-            // Pieces never ask for more than the NAS answers in one go (old SMB 2.0 servers: 64 KB),
-            // and about 8 MB stay on the way whatever their size.
-            val chunk = minOf(SmbTuning.chunk, com.hierynomus.smbj.share.FwipReads.readSize(f).coerceAtLeast(64 * 1024))
-            val depth = (SmbTuning.depth * SmbTuning.chunk / chunk).coerceIn(SmbTuning.depth, 64)
-            val inFlight = ArrayDeque<Triple<java.util.concurrent.Future<com.hierynomus.mssmb2.messages.SMB2ReadResponse>, Long, Int>>()
-            var next = 0L
+            return
+        }
+        val chunk = minOf(SmbTuning.chunk, com.hierynomus.smbj.share.FwipReads.readSize(f).coerceAtLeast(64 * 1024))
+        val depth = (SmbTuning.depth * SmbTuning.chunk / chunk).coerceIn(SmbTuning.depth, 64)
+        val inFlight = ArrayDeque<Triple<java.util.concurrent.Future<com.hierynomus.mssmb2.messages.SMB2ReadResponse>, Long, Int>>()
+        var next = from
+        while (inFlight.isNotEmpty() || next < to) {
+            while (inFlight.size < depth && next < to && System.nanoTime() < deadline) {
+                val n = minOf(chunk.toLong(), to - next).toInt()
+                inFlight.addLast(Triple(com.hierynomus.smbj.share.FwipReads.readAsync(f, next, n), next, n))
+                next += n
+            }
+            if (inFlight.isEmpty()) break
+            val (future, at, asked) = inFlight.removeFirst()
+            val data = future.get(60, java.util.concurrent.TimeUnit.SECONDS).data
+            if (data.isEmpty()) throw IOException(str(R.string.error_read_file))
+            sink(at, data, data.size)
+            moved(data.size)
+            var got = data.size
+            // A short answer (rare): fetch the rest of that piece before moving on.
+            while (got < asked) {
+                val rest = ByteArray(asked - got)
+                val n = f.read(rest, at + got, 0, rest.size)
+                if (n <= 0) throw IOException(str(R.string.error_read_file))
+                sink(at + got, rest, n)
+                moved(n)
+                got += n
+            }
+        }
+    }
+
+    override fun download(path: String, out: java.io.OutputStream, onProgress: (Long, Long) -> Unit) {
+        // Not through withShare: half the file may already be written out.
+        openRead(path).use { f ->
+            val length = lengthOf(f)
             var done = 0L
-            while (done < length) {
-                while (inFlight.size < depth && next < length) {
-                    val n = minOf(chunk.toLong(), length - next).toInt()
-                    inFlight.addLast(Triple(com.hierynomus.smbj.share.FwipReads.readAsync(f, next, n), next, n))
-                    next += n
+            readRange(f, 0, length, moved = { done += it; onProgress(done, length) }) { _, data, n -> out.write(data, 0, n) }
+        }
+    }
+
+    /** Extra connections to the same share, each its own network stream, for big downloads. */
+    private val helpers = mutableMapOf<Int, SmbNet>()
+
+    @Synchronized
+    private fun helper(k: Int): SmbNet = helpers.getOrPut(k) { SmbNet(server) }
+
+    /**
+     * Reads [path] over [connections] network streams at once, each a slice of the file. Wi-Fi often
+     * gives two streams more than twice what it gives one, and the NAS answers each on its own core.
+     * Slices whose connection fails are read again on the first one. Returns the file's length.
+     */
+    internal fun readParallel(
+        path: String,
+        connections: Int,
+        deadline: Long = Long.MAX_VALUE,
+        onProgress: (Long, Long) -> Unit,
+        sink: (Long, ByteArray, Int) -> Unit,
+    ): Long = openRead(path).use { f ->
+        val length = lengthOf(f)
+        val n = if (length < 24L shl 20) 1 else connections.coerceIn(1, 4)
+        val done = java.util.concurrent.atomic.AtomicLong()
+        val lock = Any()
+        fun report(k: Int) { val d = done.addAndGet(k.toLong()); synchronized(lock) { onProgress(d, length) } }
+        val step = ((length + n - 1) / n + SmbTuning.chunk - 1) / SmbTuning.chunk * SmbTuning.chunk
+        val slices = (0 until n).map { it * step to minOf(length, (it + 1) * step) }.filter { it.first < it.second }
+        if (slices.size == 1) {
+            readRange(f, 0, length, deadline, ::report, sink)
+            return@use length
+        }
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(slices.size - 1)
+        try {
+            val others = slices.drop(1).mapIndexed { i, (a, b) ->
+                pool.submit(java.util.concurrent.Callable<Long> {
+                    var moved = 0L
+                    try {
+                        helper(i + 1).openRead(path).use { g -> readRange(g, a, b, deadline, { moved += it; report(it) }, sink) }
+                        -1L
+                    } catch (e: Exception) {
+                        runCatching { android.util.Log.w("Fwip", "smb: extra connection failed, " + e) }
+                        runCatching { helper(i + 1).reset() }
+                        done.addAndGet(-moved)
+                        a
+                    }
+                })
+            }
+            readRange(f, slices[0].first, slices[0].second, deadline, ::report, sink)
+            others.forEachIndexed { i, fut ->
+                if (fut.get() >= 0) {
+                    val (a, b) = slices[i + 1]
+                    readRange(f, a, b, deadline, ::report, sink)
                 }
-                val (future, at, asked) = inFlight.removeFirst()
-                val data = future.get(60, java.util.concurrent.TimeUnit.SECONDS).data
-                if (data.isEmpty()) throw IOException(str(R.string.error_read_file))
-                out.write(data, 0, data.size)
-                var got = data.size
-                // A short answer (rare): fetch the rest of that piece before moving on.
-                while (got < asked) {
-                    val rest = ByteArray(asked - got)
-                    val n = f.read(rest, at + got, 0, rest.size)
-                    if (n <= 0) throw IOException(str(R.string.error_read_file))
-                    out.write(rest, 0, n)
-                    got += n
-                }
-                done += got
-                onProgress(done, length)
+            }
+        } finally {
+            pool.shutdownNow()
+        }
+        length
+    }
+
+    /**
+     * How fast this NAS sends to this device, in MB/s, over [connections] streams: reads [path]
+     * for about [seconds] and throws the bytes away, so the device's storage plays no part.
+     */
+    internal fun measure(path: String, connections: Int, seconds: Double): Double {
+        val start = System.nanoTime()
+        var bytes = 0L
+        readParallel(path, connections, start + (seconds * 1e9).toLong(), onProgress = { d, _ -> bytes = d }) { _, _, _ -> }
+        return bytes / 1e6 / ((System.nanoTime() - start) / 1e9).coerceAtLeast(0.001)
+    }
+
+    /** The biggest file in the first levels of the share (a good one to measure with). */
+    internal fun biggestFile(): NetEntry? {
+        var best: NetEntry? = null
+        var looked = 0
+        fun walk(path: String, depth: Int) {
+            if (looked > 400) return
+            val entries = runCatching { list(path) }.getOrDefault(emptyList())
+            looked += entries.size
+            entries.filter { !it.isDir }.maxByOrNull { it.size }?.let { if (it.size > (best?.size ?: 0)) best = it }
+            if ((best?.size ?: 0) >= 200L shl 20 || depth >= 3) return
+            entries.filter { it.isDir && !it.name.startsWith(".") && !it.name.startsWith("@") && !it.name.startsWith("#") }.take(12).forEach { walk(it.path, depth + 1) }
+        }
+        walk("", 0)
+        return best
+    }
+
+    override fun downloadTo(path: String, file: java.io.File, onProgress: (Long, Long) -> Unit) {
+        java.io.RandomAccessFile(file, "rw").use { raf ->
+            raf.setLength(0)
+            val channel = raf.channel
+            readParallel(path, SmbTuning.connections, onProgress = onProgress) { pos, data, n ->
+                val buf = java.nio.ByteBuffer.wrap(data, 0, n)
+                var at = pos
+                while (buf.hasRemaining()) at += channel.write(buf, at)
             }
         }
     }
@@ -507,7 +633,10 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
         }
     }
 
-    override fun close() = reset()
+    override fun close() {
+        reset()
+        synchronized(this) { helpers.values.forEach { runCatching { it.reset() } }; helpers.clear() }
+    }
 }
 
 // ---------------------------------------------------------------- WebDAV
@@ -734,9 +863,7 @@ object NetComics {
         val target = java.io.File(dir, comic.fileName)
         val tmp = java.io.File(dir, comic.fileName + ".part")
         try {
-            tmp.outputStream().buffered(1 shl 20).use { output ->
-                client.download(NetUris.path(comic.uri), output) { done, total -> onProgress(done / total.coerceAtLeast(1).toFloat()) }
-            }
+            client.downloadTo(NetUris.path(comic.uri), tmp) { done, total -> onProgress(done / total.coerceAtLeast(1).toFloat()) }
         } catch (e: Exception) {
             tmp.delete()
             throw e

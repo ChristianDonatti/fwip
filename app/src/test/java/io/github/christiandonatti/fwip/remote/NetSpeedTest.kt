@@ -40,6 +40,19 @@ class NetSpeedTest {
             val down = (System.nanoTime() - t) / 1e9
             println("SPEED $tag $share $label download: %.1f MB/s".format(data.size / 1e6 / down))
             assertArrayEquals(data, out.toByteArray())
+            if (label == "1MB x8 in flight") {
+                for (n in listOf(1, 2, 3)) {
+                    SmbTuning.connections = n
+                    val file = java.io.File.createTempFile("speed", ".bin")
+                    val t2 = System.nanoTime()
+                    c.downloadTo("speed.bin", file) { _, _ -> }
+                    val s2 = (System.nanoTime() - t2) / 1e9
+                    println("SPEED $tag $share to file, $n streams: %.1f MB/s".format(data.size / 1e6 / s2))
+                    assertArrayEquals(data, file.readBytes())
+                    file.delete()
+                }
+                SmbTuning.connections = 2
+            }
             c.delete("speed.bin")
         } catch (e: Exception) {
             println("SPEED $tag $share $label: failed: $e")

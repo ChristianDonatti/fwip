@@ -350,73 +350,78 @@ private fun FilmScrubber(
 
     var drag by remember { mutableStateOf<Float?>(null) }
     val fraction = drag ?: toFraction(value)
-    BoxWithConstraints(
-        modifier
-            .height(76.dp)
-            .pointerInput(count, rtl) {
-                detectTapGestures { pos -> onSeek(toIndex((pos.x / size.width).coerceIn(0f, 1f))) }
-            }
-            .pointerInput(count, rtl) {
-                detectHorizontalDragGestures(
-                    onDragStart = { pos -> drag = (pos.x / size.width).coerceIn(0f, 1f) },
-                    onHorizontalDrag = { change, _ ->
-                        val f = (change.position.x / size.width).coerceIn(0f, 1f)
-                        drag = f
-                        onPreview(toIndex(f))
-                    },
-                    onDragEnd = {
-                        drag?.let { onSeek(toIndex(it)) }
-                        drag = null
-                        onPreview(null)
-                    },
-                    onDragCancel = {
-                        drag = null
-                        onPreview(null)
-                    },
-                )
-            },
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        // As many little pages as fit, about 34dp each, standing for evenly spaced spreads.
+    BoxWithConstraints(modifier.height(76.dp), contentAlignment = Alignment.Center) {
+        // As many little pages as fit, about 36dp each, standing for evenly spaced spreads.
         val cells = (maxWidth / 36.dp).toInt().coerceIn(2, count.coerceAtLeast(2))
-        // Little pages keep a page's shape; with only a few they spread out along the bar.
-        val cellW = ((maxWidth - 2.dp * (cells - 1)) / cells).coerceAtMost(38.dp)
-        Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            for (i in 0 until cells) {
-                val f = if (cells == 1) 0f else i / (cells - 1f)
-                val s = toIndex(f)
-                val done = if (rtl) f >= fraction else f <= fraction
-                thumb(
-                    s,
-                    Modifier
-                        .width(cellW)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(4.dp))
-                        .graphicsLayer { alpha = if (done) 0.95f else 0.5f },
-                )
-            }
-        }
-        val dragging = drag
-        if (dragging != null && previewContent != null) {
-            val gap = with(androidx.compose.ui.platform.LocalDensity.current) { 18.dp.roundToPx() }
-            androidx.compose.ui.window.Popup(
-                popupPositionProvider = remember(dragging, gap) { ScrubPopupPosition(dragging, gap) },
-            ) {
-                previewContent(toIndex(dragging))
-            }
-        }
-        // The page you are on: a bigger frame riding over the strip.
-        val lensW = 50.dp
+        val gapW = 4.dp
+        val cellW = ((maxWidth - gapW * (cells - 1)) / cells).coerceAtMost(38.dp)
+        // A short comic gets a short strip in the middle, its pages side by side like in Panels.
+        val stripW = (cellW * cells + gapW * (cells - 1)).coerceAtMost(maxWidth)
         Box(
             Modifier
-                .offset(x = (maxWidth - lensW) * fraction)
-                .size(lensW, 74.dp)
-                .shadow(8.dp, RoundedCornerShape(7.dp))
-                .clip(RoundedCornerShape(7.dp))
-                .background(Color(0xFF1E1F27))
-                .border(2.dp, FwipColors.Amber, RoundedCornerShape(7.dp)),
+                .width(stripW)
+                .fillMaxHeight()
+                .pointerInput(count, rtl) {
+                    detectTapGestures { pos -> onSeek(toIndex((pos.x / size.width).coerceIn(0f, 1f))) }
+                }
+                .pointerInput(count, rtl) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { pos -> drag = (pos.x / size.width).coerceIn(0f, 1f) },
+                        onHorizontalDrag = { change, _ ->
+                            val f = (change.position.x / size.width).coerceIn(0f, 1f)
+                            drag = f
+                            onPreview(toIndex(f))
+                        },
+                        onDragEnd = {
+                            drag?.let { onSeek(toIndex(it)) }
+                            drag = null
+                            onPreview(null)
+                        },
+                        onDragCancel = {
+                            drag = null
+                            onPreview(null)
+                        },
+                    )
+                },
+            contentAlignment = Alignment.CenterStart,
         ) {
-            thumb(toIndex(fraction), Modifier.fillMaxSize())
+            Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                for (i in 0 until cells) {
+                    val f = if (cells == 1) 0f else i / (cells - 1f)
+                    val s = toIndex(f)
+                    val done = if (rtl) f >= fraction else f <= fraction
+                    thumb(
+                        s,
+                        Modifier
+                            .width(cellW)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(4.dp))
+                            .graphicsLayer { alpha = if (done) 0.95f else 0.5f },
+                    )
+                }
+            }
+            val dragging = drag
+            if (dragging != null && previewContent != null) {
+                val gap = with(androidx.compose.ui.platform.LocalDensity.current) { 18.dp.roundToPx() }
+                androidx.compose.ui.window.Popup(
+                    popupPositionProvider = remember(dragging, gap) { ScrubPopupPosition(dragging, gap) },
+                ) {
+                    previewContent(toIndex(dragging))
+                }
+            }
+            // The page you are on: a bigger frame riding over the strip.
+            val lensW = 50.dp
+            Box(
+                Modifier
+                    .offset(x = (stripW - lensW) * fraction)
+                    .size(lensW, 74.dp)
+                    .shadow(8.dp, RoundedCornerShape(7.dp))
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(Color(0xFF1E1F27))
+                    .border(2.dp, FwipColors.Amber, RoundedCornerShape(7.dp)),
+            ) {
+                thumb(toIndex(fraction), Modifier.fillMaxSize())
+            }
         }
     }
 }

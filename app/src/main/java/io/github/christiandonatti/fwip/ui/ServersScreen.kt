@@ -228,7 +228,13 @@ private fun ServerDialog(initial: Server?, onSave: (Server) -> Unit, onDelete: (
     var password by remember { mutableStateOf(initial?.password.orEmpty()) }
     var testing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var measuring by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    if (measuring && initial != null) {
+        SpeedTestDialog(initial) { measuring = false }
+        return
+    }
 
     FwipDialog(onDismiss) {
         DialogTitle(if (initial == null) str(R.string.add_server) else str(R.string.edit_server), onDismiss)
@@ -286,6 +292,9 @@ private fun ServerDialog(initial: Server?, onSave: (Server) -> Unit, onDelete: (
             Field(str(R.string.password), password, { password = it; error = null }, if (kind == ServerKind.Komga) "" else str(R.string.optional), password = true, keyboard = KeyboardType.Password)
         }
         error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = FwipColors.Danger) }
+        if (initial?.kind == ServerKind.Smb && kind == ServerKind.Smb) {
+            PillButton(str(R.string.speed_test), { measuring = true }, Modifier.fillMaxWidth(), style = PillStyle.Ghost, height = 44.dp)
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (onDelete != null) {
                 CircleIconButton(Icons.Filled.Delete, str(R.string.remove_server), onDelete, size = 48.dp)
@@ -330,6 +339,62 @@ private fun ServerDialog(initial: Server?, onSave: (Server) -> Unit, onDelete: (
                 style = PillStyle.Amber,
                 enabled = url.isNotBlank() && !testing,
             )
+        }
+    }
+}
+
+/**
+ * Measures how fast the NAS sends to this device, with one network stream and with two, reading a
+ * big file and saving nothing, so a slow download can be told apart: Wi-Fi, the NAS or the app.
+ */
+@Composable
+private fun SpeedTestDialog(server: Server, onDismiss: () -> Unit) {
+    var step by remember { mutableStateOf(str(R.string.speed_finding)) }
+    var one by remember { mutableStateOf<Double?>(null) }
+    var two by remember { mutableStateOf<Double?>(null) }
+    var file by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var running by remember { mutableStateOf(true) }
+    var round by remember { mutableStateOf(0) }
+    LaunchedEffect(round) {
+        running = true
+        one = null
+        two = null
+        error = null
+        step = str(R.string.speed_finding)
+        runCatching {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val client = io.github.christiandonatti.fwip.remote.NetClients.forServer(server) as io.github.christiandonatti.fwip.remote.SmbNet
+                val big = client.biggestFile() ?: throw java.io.IOException(str(R.string.speed_no_file))
+                file = big.name
+                step = str(R.string.speed_one)
+                one = client.measure(big.path, 1, 6.0)
+                step = str(R.string.speed_two)
+                two = client.measure(big.path, 2, 6.0)
+                android.util.Log.i("Fwip", "speed test: %s, 1 stream %.1f MB/s, 2 streams %.1f MB/s".format(java.util.Locale.US, big.name, one, two))
+            }
+        }.onFailure { error = errorText(it) }
+        running = false
+    }
+    FwipDialog(onDismiss) {
+        DialogTitle(str(R.string.speed_title), onDismiss)
+        if (running) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(Modifier.size(22.dp), color = FwipColors.Amber, strokeWidth = 2.dp)
+                Text(step, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
+            }
+        }
+        one?.let { Text(str(R.string.speed_result_one, "%.1f".format(it)), style = MaterialTheme.typography.titleMedium) }
+        two?.let { Text(str(R.string.speed_result_two, "%.1f".format(it)), style = MaterialTheme.typography.titleMedium) }
+        if (!running && error == null) {
+            file?.let { Text(str(R.string.speed_with, it), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted) }
+            if (maxOf(one ?: 0.0, two ?: 0.0) < 15.0) {
+                Text(str(R.string.net_speed_slow), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
+            }
+        }
+        error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = FwipColors.Danger) }
+        if (!running) {
+            PillButton(str(R.string.speed_again), { round++ }, Modifier.fillMaxWidth(), style = PillStyle.Ghost, height = 44.dp)
         }
     }
 }

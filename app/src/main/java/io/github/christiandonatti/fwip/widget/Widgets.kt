@@ -188,16 +188,19 @@ class ContinueReadingWidget : GlanceAppWidget() {
         val reading = lib.reading.take(4)
         val next = reading.firstOrNull()?.let { lib.nextIssue(it) }
         // With one comic in progress, the big size fills up with what comes next in other series.
-        val upNext = if (reading.size <= 1) lib.upNext.filter { it.comic.id != reading.firstOrNull()?.comic?.id }.take(4) else emptyList()
+        val others = if (reading.size <= 1) lib.upNext.filter { it.comic.id != reading.firstOrNull()?.comic?.id }.take(4) else emptyList()
+        // No other series going: the issues after this one, in order.
+        val inSeries = others.isEmpty()
+        val upNext = if (reading.size <= 1 && inSeries) generateSequence(next) { lib.nextIssue(it) }.take(4).toList() else others
         val covers = withContext(Dispatchers.IO) {
             reading.mapIndexed { i, r -> r.comic.id to lib.coverOf(r, if (i == 0) 220 else 90) }.toMap() +
                 upNext.associate { it.comic.id to lib.coverOf(it, 140) }
         }
-        provideContent { Content(context, colors, reading, covers, next, upNext) }
+        provideContent { Content(context, colors, reading, covers, next, upNext, inSeries) }
     }
 
     @Composable
-    private fun Content(context: Context, colors: WidgetColors, reading: List<LibraryItem>, covers: Map<String, Bitmap?>, next: LibraryItem?, upNext: List<LibraryItem>) {
+    private fun Content(context: Context, colors: WidgetColors, reading: List<LibraryItem>, covers: Map<String, Bitmap?>, next: LibraryItem?, upNext: List<LibraryItem>, inSeries: Boolean) {
         val size = LocalSize.current
         val current = reading.firstOrNull()
         if (current == null) {
@@ -254,7 +257,7 @@ class ContinueReadingWidget : GlanceAppWidget() {
             }
             if (size.height >= 200.dp && reading.size <= 1 && upNext.isNotEmpty()) {
                 Spacer(GlanceModifier.height(12.dp))
-                Label(str(R.string.widget_up_next), colors.soft, 11.sp, bold = true)
+                Label(if (inSeries) str(R.string.widget_in_series) else str(R.string.widget_up_next), colors.soft, 11.sp, bold = true)
                 Spacer(GlanceModifier.height(6.dp))
                 CoverRow(context, colors, upNext, covers, size.width.value - 24f) { item ->
                     item.series.number?.let { "#" + it.toString().removeSuffix(".0") } ?: ""

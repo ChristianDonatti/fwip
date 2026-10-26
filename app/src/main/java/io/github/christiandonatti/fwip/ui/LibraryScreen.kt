@@ -527,6 +527,7 @@ fun LibraryScreen(
         FwipDialog({}) {
             Text(work.label, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             ProgressBar(work.progress, FwipColors.Amber, Modifier.fillMaxWidth())
+            work.detail?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft) }
         }
     }
 

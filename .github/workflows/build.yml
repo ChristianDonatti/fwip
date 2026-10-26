@@ -145,6 +145,9 @@ jobs:
           speed wifi4ms
           sudo tc qdisc change dev lo root netem delay 10ms
           speed wifi20ms
+          # Wi-Fi that drops a few packets: where a second stream helps most.
+          sudo tc qdisc change dev lo root netem delay 3ms loss 0.2%
+          speed lossy
           # What signing costs, when the NAS asks for it.
           sudo tc qdisc change dev lo root netem delay 2ms
           sudo sed -i 's/^\[global\]/[global]\n   server signing = mandatory/' /etc/samba/smb.conf
