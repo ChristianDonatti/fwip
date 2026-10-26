@@ -92,13 +92,20 @@ class WidgetLibrary(val state: LibraryState, private val repo: LibraryRepository
 
     fun collection(id: String) = state.collections.firstOrNull { it.id == id }
 
-    fun coverOf(item: LibraryItem, height: Int = 260): Bitmap? = item.coverPath?.let { path ->
+    /**
+     * A cover small enough for a widget: home screens cap the pictures one widget may send
+     * (about a megabyte on some), so covers come at [height] pixels in 16-bit colour.
+     */
+    fun coverOf(item: LibraryItem, height: Int = 220): Bitmap? = item.coverPath?.let { path ->
         runCatching {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(path, bounds)
             var sample = 1
             while (bounds.outHeight / (sample * 2) >= height) sample *= 2
-            BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
+            val b = BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample; inPreferredConfig = Bitmap.Config.RGB_565 })
+                ?: return@runCatching null
+            if (b.height <= height) b
+            else Bitmap.createScaledBitmap(b, b.width * height / b.height, height, true).also { if (it !== b) b.recycle() }
         }.getOrNull()
     }
 

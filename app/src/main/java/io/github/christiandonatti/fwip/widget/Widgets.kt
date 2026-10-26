@@ -119,6 +119,42 @@ private fun Empty(colors: WidgetColors, text: String) {
     }
 }
 
+/** Covers side by side at a fixed size (as many as fit), each opening its comic. */
+@Composable
+private fun CoverRow(
+    context: Context,
+    colors: WidgetColors,
+    list: List<LibraryItem>,
+    covers: Map<String, Bitmap?>,
+    width: Float,
+    series: Boolean = false,
+    badge: Boolean = false,
+    caption: (LibraryItem) -> String,
+) {
+    val cell = 74f
+    val count = ((width + 8f) / (cell + 8f)).toInt().coerceIn(1, list.size.coerceAtLeast(1))
+    Row(GlanceModifier.fillMaxWidth()) {
+        list.take(count).forEachIndexed { i, item ->
+            if (i > 0) Spacer(GlanceModifier.width(8.dp))
+            Column(GlanceModifier.width(cell.dp).clickable(actionStartActivity(openComicIntent(context, item.comic.id)))) {
+                Box(GlanceModifier.width(cell.dp).height((cell * 1.5f).dp)) {
+                    Cover(covers[item.comic.id], item.title, colors, GlanceModifier.fillMaxSize())
+                    if (badge) {
+                        Box(GlanceModifier.padding(5.dp)) {
+                            Box(GlanceModifier.background(c(colors.accent)).cornerRadius(6.dp).padding(horizontal = 5.dp, vertical = 1.dp)) {
+                                Label(str(R.string.new_badge), colors.accentInk, 9.sp, bold = true)
+                            }
+                        }
+                    }
+                }
+                Spacer(GlanceModifier.height(4.dp))
+                if (series) Label(item.series.name, colors.text, 11.sp, bold = true)
+                Label(caption(item), if (item.progress?.started == true) colors.accent else colors.muted, 10.sp)
+            }
+        }
+    }
+}
+
 private fun percent(item: LibraryItem) = ((item.progress?.fraction ?: 0f) * 100).toInt()
 
 private val SMALL = DpSize(110.dp, 110.dp)
@@ -150,13 +186,18 @@ class ContinueReadingWidget : GlanceAppWidget() {
         val colors = WidgetColors.of(context)
         val lib = withContext(Dispatchers.IO) { WidgetLibrary.load(context) }
         val reading = lib.reading.take(4)
-        val covers = withContext(Dispatchers.IO) { reading.associate { it.comic.id to lib.coverOf(it) } }
         val next = reading.firstOrNull()?.let { lib.nextIssue(it) }
-        provideContent { Content(context, colors, reading, covers, next) }
+        // With one comic in progress, the big size fills up with what comes next in other series.
+        val upNext = if (reading.size <= 1) lib.upNext.filter { it.comic.id != reading.firstOrNull()?.comic?.id }.take(4) else emptyList()
+        val covers = withContext(Dispatchers.IO) {
+            reading.mapIndexed { i, r -> r.comic.id to lib.coverOf(r, if (i == 0) 220 else 90) }.toMap() +
+                upNext.associate { it.comic.id to lib.coverOf(it, 140) }
+        }
+        provideContent { Content(context, colors, reading, covers, next, upNext) }
     }
 
     @Composable
-    private fun Content(context: Context, colors: WidgetColors, reading: List<LibraryItem>, covers: Map<String, Bitmap?>, next: LibraryItem?) {
+    private fun Content(context: Context, colors: WidgetColors, reading: List<LibraryItem>, covers: Map<String, Bitmap?>, next: LibraryItem?, upNext: List<LibraryItem>) {
         val size = LocalSize.current
         val current = reading.firstOrNull()
         if (current == null) {
@@ -211,6 +252,14 @@ class ContinueReadingWidget : GlanceAppWidget() {
                     }
                 }
             }
+            if (size.height >= 200.dp && reading.size <= 1 && upNext.isNotEmpty()) {
+                Spacer(GlanceModifier.height(12.dp))
+                Label(str(R.string.widget_up_next), colors.soft, 11.sp, bold = true)
+                Spacer(GlanceModifier.height(6.dp))
+                CoverRow(context, colors, upNext, covers, size.width.value - 24f) { item ->
+                    item.series.number?.let { "#" + it.toString().removeSuffix(".0") } ?: ""
+                }
+            }
             if (size.height >= 200.dp && reading.size > 1) {
                 Spacer(GlanceModifier.height(10.dp))
                 Label(str(R.string.widget_also_reading), colors.soft, 11.sp, bold = true)
@@ -257,7 +306,7 @@ class UpNextWidget : GlanceAppWidget() {
         val colors = WidgetColors.of(context)
         val lib = withContext(Dispatchers.IO) { WidgetLibrary.load(context) }
         val list = lib.upNext.take(6)
-        val covers = withContext(Dispatchers.IO) { list.associate { it.comic.id to lib.coverOf(it) } }
+        val covers = withContext(Dispatchers.IO) { list.associate { it.comic.id to lib.coverOf(it, 150) } }
         provideContent {
             Frame(colors) {
                 Header(colors, str(R.string.widget_up_next))
@@ -266,20 +315,8 @@ class UpNextWidget : GlanceAppWidget() {
                     return@Frame
                 }
                 val size = LocalSize.current
-                val count = ((size.width.value - 24f) / 76f).toInt().coerceIn(1, list.size)
-                Row(GlanceModifier.fillMaxSize()) {
-                    list.take(count).forEachIndexed { i, item ->
-                        if (i > 0) Spacer(GlanceModifier.width(8.dp))
-                        Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(actionStartActivity(openComicIntent(context, item.comic.id)))) {
-                            Cover(covers[item.comic.id], item.title, colors, GlanceModifier.fillMaxWidth().defaultWeight())
-                            Spacer(GlanceModifier.height(4.dp))
-                            Label(item.series.name, colors.text, 11.sp, bold = true)
-                            Label(
-                                item.series.number?.let { "#" + it.toString().removeSuffix(".0") } ?: item.title,
-                                if (item.progress?.started == true) colors.accent else colors.muted, 10.sp,
-                            )
-                        }
-                    }
+                CoverRow(context, colors, list, covers, size.width.value - 24f, series = true) { item ->
+                    item.series.number?.let { "#" + it.toString().removeSuffix(".0") } ?: item.title
                 }
             }
         }
@@ -307,7 +344,9 @@ class CollectionWidget : GlanceAppWidget() {
             val all = lib.state.itemsOf(io.github.christiandonatti.fwip.data.Shelf.Custom(c.id, c.name))
             all.drop(all.indexOfFirst { it.comic.id == n.comic.id } + 1).filter { it.progress?.finished != true }.take(4)
         }.orEmpty()
-        val covers = withContext(Dispatchers.IO) { (listOfNotNull(progress?.next) + after).associate { it.comic.id to lib.coverOf(it) } }
+        val covers = withContext(Dispatchers.IO) {
+            listOfNotNull(progress?.next).associate { it.comic.id to lib.coverOf(it, 200) } + after.associate { it.comic.id to lib.coverOf(it, 110) }
+        }
         val configure = actionStartActivity(CollectionWidgetConfig.intent(context, widgetId))
         provideContent {
             if (progress == null) {
@@ -418,7 +457,7 @@ class NewArrivalsWidget : GlanceAppWidget() {
         val colors = WidgetColors.of(context)
         val lib = withContext(Dispatchers.IO) { WidgetLibrary.load(context) }
         val list = lib.fresh.take(6)
-        val covers = withContext(Dispatchers.IO) { list.associate { it.comic.id to lib.coverOf(it) } }
+        val covers = withContext(Dispatchers.IO) { list.associate { it.comic.id to lib.coverOf(it, 150) } }
         provideContent {
             Frame(colors) {
                 Header(colors, str(R.string.widget_new), if (lib.fresh.isNotEmpty()) lib.fresh.size.toString() else null, onClick = actionStartActivity(showScreenIntent(context, "new")))
@@ -427,24 +466,7 @@ class NewArrivalsWidget : GlanceAppWidget() {
                     return@Frame
                 }
                 val size = LocalSize.current
-                val count = ((size.width.value - 24f) / 76f).toInt().coerceIn(1, list.size)
-                Row(GlanceModifier.fillMaxSize()) {
-                    list.take(count).forEachIndexed { i, item ->
-                        if (i > 0) Spacer(GlanceModifier.width(8.dp))
-                        Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(actionStartActivity(openComicIntent(context, item.comic.id)))) {
-                            Box(GlanceModifier.fillMaxWidth().defaultWeight()) {
-                                Cover(covers[item.comic.id], item.title, colors, GlanceModifier.fillMaxSize())
-                                Box(GlanceModifier.padding(5.dp)) {
-                                    Box(GlanceModifier.background(c(colors.accent)).cornerRadius(6.dp).padding(horizontal = 5.dp, vertical = 1.dp)) {
-                                        Label(str(R.string.new_badge), colors.accentInk, 9.sp, bold = true)
-                                    }
-                                }
-                            }
-                            Spacer(GlanceModifier.height(4.dp))
-                            Label(item.title, colors.text, 11.sp, lines = 1)
-                        }
-                    }
-                }
+                CoverRow(context, colors, list, covers, size.width.value - 24f, badge = true) { it.title }
             }
         }
     }

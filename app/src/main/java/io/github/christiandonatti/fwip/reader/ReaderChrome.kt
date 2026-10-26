@@ -379,7 +379,9 @@ private fun FilmScrubber(
     ) {
         // As many little pages as fit, about 34dp each, standing for evenly spaced spreads.
         val cells = (maxWidth / 36.dp).toInt().coerceIn(2, count.coerceAtLeast(2))
-        Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        // Little pages keep a page's shape; with only a few they spread out along the bar.
+        val cellW = ((maxWidth - 2.dp * (cells - 1)) / cells).coerceAtMost(38.dp)
+        Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             for (i in 0 until cells) {
                 val f = if (cells == 1) 0f else i / (cells - 1f)
                 val s = toIndex(f)
@@ -387,7 +389,7 @@ private fun FilmScrubber(
                 thumb(
                     s,
                     Modifier
-                        .weight(1f)
+                        .width(cellW)
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(4.dp))
                         .graphicsLayer { alpha = if (done) 0.95f else 0.5f },
