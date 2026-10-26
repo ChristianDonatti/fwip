@@ -697,11 +697,13 @@
     <string name="speed_two">Measuring with 2 connections…</string>
     <string name="speed_result_one">1 connection: %1$s MB/s</string>
     <string name="speed_result_two">2 connections: %1$s MB/s</string>
-    <string name="speed_with">Read from %1$s, nothing saved. Fwip downloads big comics over 2 connections.</string>
+    <string name="speed_with">Read from %1$s, nothing saved.</string>
     <string name="net_speed_slow">Under about 15 MB/s the limit is usually the Wi-Fi: check that this device is on the 5 GHz (or 6 GHz) network and close to the router.</string>
     <string name="speed_no_file">No file found to read on this server.</string>
     <string name="speed_again">Test again</string>
     <string name="download_detail">%1$s of %2$s · %3$s MB/s</string>
     <string name="download_detail_n">%1$s of %2$s · %3$s MB/s · comic %4$d of %5$d</string>
     <string name="widget_in_series">Next in this series</string>
+    <string name="speed_using_two">Two streams did better here, so big downloads use two.</string>
+    <string name="speed_using_one">One stream does just as well here, so downloads use one.</string>
 </resources>

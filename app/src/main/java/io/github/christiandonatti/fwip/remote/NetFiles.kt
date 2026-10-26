@@ -264,6 +264,20 @@ internal object SmbTuning {
     @Volatile var connections = 2
 }
 
+/** Network choices kept between runs: how many streams downloads use, as the speed test found best. */
+object NetPrefs {
+    private fun prefs(context: Context) = context.getSharedPreferences("fwip_net", Context.MODE_PRIVATE)
+
+    fun load(context: Context) {
+        SmbTuning.connections = prefs(context).getInt("connections", 2).coerceIn(1, 4)
+    }
+
+    fun setConnections(context: Context, n: Int) {
+        SmbTuning.connections = n.coerceIn(1, 4)
+        prefs(context).edit().putInt("connections", SmbTuning.connections).apply()
+    }
+}
+
 internal class SmbNet(private val server: Server) : NetClient, Closeable {
     private val hostPort: String
     private val shareName: String

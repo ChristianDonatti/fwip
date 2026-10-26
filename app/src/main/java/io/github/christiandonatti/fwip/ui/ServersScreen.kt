@@ -356,6 +356,7 @@ private fun SpeedTestDialog(server: Server, onDismiss: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     var running by remember { mutableStateOf(true) }
     var round by remember { mutableStateOf(0) }
+    var chosen by remember { mutableStateOf(0) }
     LaunchedEffect(round) {
         running = true
         one = null
@@ -371,6 +372,11 @@ private fun SpeedTestDialog(server: Server, onDismiss: () -> Unit) {
                 one = client.measure(big.path, 1, 6.0)
                 step = str(R.string.speed_two)
                 two = client.measure(big.path, 2, 6.0)
+                // Downloads go on with whichever did better (two only when clearly better).
+                val o = one ?: 0.0
+                val t = two ?: 0.0
+                chosen = if (t > o * 1.08) 2 else 1
+                io.github.christiandonatti.fwip.remote.NetPrefs.setConnections(io.github.christiandonatti.fwip.FwipApp.instance, chosen)
                 android.util.Log.i("Fwip", "speed test: %s, 1 stream %.1f MB/s, 2 streams %.1f MB/s".format(java.util.Locale.US, big.name, one, two))
             }
         }.onFailure { error = errorText(it) }
@@ -388,6 +394,9 @@ private fun SpeedTestDialog(server: Server, onDismiss: () -> Unit) {
         two?.let { Text(str(R.string.speed_result_two, "%.1f".format(it)), style = MaterialTheme.typography.titleMedium) }
         if (!running && error == null) {
             file?.let { Text(str(R.string.speed_with, it), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted) }
+            if (chosen > 0) {
+                Text(if (chosen == 2) str(R.string.speed_using_two) else str(R.string.speed_using_one), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
+            }
             if (maxOf(one ?: 0.0, two ?: 0.0) < 15.0) {
                 Text(str(R.string.net_speed_slow), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
             }

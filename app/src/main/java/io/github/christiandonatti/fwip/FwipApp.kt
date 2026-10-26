@@ -11,6 +11,7 @@ class FwipApp : Application() {
         io.github.christiandonatti.fwip.data.Reports.install(this)
         io.github.christiandonatti.fwip.data.NewIssues.schedule(this)
         io.github.christiandonatti.fwip.ui.ShelfLooks.init(this)
+        io.github.christiandonatti.fwip.remote.NetPrefs.load(this)
     }
 
     companion object {
