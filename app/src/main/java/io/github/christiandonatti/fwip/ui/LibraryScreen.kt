@@ -1124,7 +1124,7 @@ private fun ShelfScreen(
                 .fillMaxWidth()
                 .height(if (wide) 460.dp else 380.dp)
                 .graphicsLayer { alpha = backdropFade }
-                .background(Brush.verticalGradient(listOf(tint.copy(alpha = 0.38f), Color.Transparent)))
+                .background(Brush.verticalGradient(listOf(tint.copy(alpha = 0.55f), tint.copy(alpha = 0.18f), Color.Transparent)))
         )
     }
     LazyVerticalGrid(
