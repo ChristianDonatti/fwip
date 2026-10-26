@@ -302,7 +302,8 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
             android.util.Log.i(
                 "Fwip",
                 "smb: ${connection.negotiatedProtocol.dialect}, signing ${if (s.isSigningRequired) "on" else "off"}, " +
-                    "encryption ${if (s.shouldEncryptData()) "on" else "off"}, max write ${connection.negotiatedProtocol.maxWriteSize shr 10} KB",
+                    "encryption ${if (s.shouldEncryptData()) "on" else "off"}, max read ${connection.negotiatedProtocol.maxReadSize shr 10} KB, " +
+                    "max write ${connection.negotiatedProtocol.maxWriteSize shr 10} KB",
             )
         }
         val sh = s.connectShare(shareName) as? com.hierynomus.smbj.share.DiskShare
@@ -392,12 +393,16 @@ internal class SmbNet(private val server: Server) : NetClient, Closeable {
                 return
             }
             // Like sending: several pieces requested at once, written out in order as they arrive.
+            // Pieces never ask for more than the NAS answers in one go (old SMB 2.0 servers: 64 KB),
+            // and about 8 MB stay on the way whatever their size.
+            val chunk = minOf(SmbTuning.chunk, com.hierynomus.smbj.share.FwipReads.readSize(f).coerceAtLeast(64 * 1024))
+            val depth = (SmbTuning.depth * SmbTuning.chunk / chunk).coerceIn(SmbTuning.depth, 64)
             val inFlight = ArrayDeque<Triple<java.util.concurrent.Future<com.hierynomus.mssmb2.messages.SMB2ReadResponse>, Long, Int>>()
             var next = 0L
             var done = 0L
             while (done < length) {
-                while (inFlight.size < SmbTuning.depth && next < length) {
-                    val n = minOf(SmbTuning.chunk.toLong(), length - next).toInt()
+                while (inFlight.size < depth && next < length) {
+                    val n = minOf(chunk.toLong(), length - next).toInt()
                     inFlight.addLast(Triple(com.hierynomus.smbj.share.FwipReads.readAsync(f, next, n), next, n))
                     next += n
                 }

@@ -72,10 +72,17 @@ class TurnFeedback(context: Context) {
                 lastSound = now
                 // Slightly different each time, like real paper.
                 val rate = 0.92f + (now % 17) / 100f
-                stream = pool.play(soundId, 0.85f, 0.85f, 1, 0, rate)
+                stream = pool.play(soundId, 1f, 1f, 1, 0, rate)
             }
         }
         Log.i("Fwip", "turn feedback haptic=$haptic (motor=${vibrator != null}, effect=${tick != null}) sound=$sound loaded=$loaded stream=$stream")
+    }
+
+    /** Plays the sound once (when it is switched on), so its volume can be checked right away. */
+    fun preview() {
+        if (loaded) pool.play(soundId, 1f, 1f, 1, 0, 1f)
+        else pool.setOnLoadCompleteListener { p, id, status -> loaded = status == 0; if (loaded) p.play(id, 1f, 1f, 1, 0, 1f) }
+        Log.i("Fwip", "turn sound preview loaded=$loaded")
     }
 
     fun release() = pool.release()

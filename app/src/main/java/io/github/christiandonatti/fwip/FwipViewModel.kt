@@ -675,14 +675,27 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             var got = 0
             var error: String? = null
+            val start = System.nanoTime()
+            var before = 0L
             for ((i, comic) in comics.withIndex()) {
                 val label = str(R.string.downloading_named, comic.fileName)
                 _state.update { it.copy(fileWork = FileWork(label, i / comics.size.toFloat())) }
+                var lastShown = 0L
                 runCatching {
                     io.github.christiandonatti.fwip.remote.NetComics.download(getApplication(), comic) { p ->
-                        _state.update { it.copy(fileWork = FileWork(label, (i + p) / comics.size)) }
+                        val now = System.nanoTime()
+                        if (now - lastShown < 250_000_000L && p < 1f) return@download
+                        lastShown = now
+                        // Average speed so far, so a slow network or NAS shows up right away.
+                        val mbs = (before + p * comic.size) / 1e6 / ((now - start) / 1e9).coerceAtLeast(0.001)
+                        val shown = if (mbs >= 0.1) label + " · " + str(R.string.upload_speed, "%.1f".format(mbs)) else label
+                        _state.update { it.copy(fileWork = FileWork(shown, (i + p) / comics.size)) }
                     }
-                }.onSuccess { got++ }.onFailure { error = io.github.christiandonatti.fwip.ui.errorText(it) }
+                }.onSuccess {
+                    got++
+                    android.util.Log.i("Fwip", "download: %s, %.1f MB, %.1f MB/s so far".format(java.util.Locale.US, comic.fileName, comic.size / 1e6, (before + comic.size) / 1e6 / ((System.nanoTime() - start) / 1e9)))
+                }.onFailure { error = io.github.christiandonatti.fwip.ui.errorText(it) }
+                before += comic.size
             }
             _state.update {
                 it.copy(

@@ -150,5 +150,9 @@ jobs:
           sudo sed -i 's/^\[global\]/[global]\n   server signing = mandatory/' /etc/samba/smb.conf
           sudo systemctl restart smbd
           speed signed4ms
+          # A NAS that only takes 64 KB per request (old SMB 2.0 settings).
+          sudo sed -i 's/^\[global\]/[global]\n   smb2 max read = 65536\n   smb2 max write = 65536/' /etc/samba/smb.conf
+          sudo systemctl restart smbd
+          speed small64k
           sudo tc qdisc del dev lo root || true
 

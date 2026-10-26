@@ -430,7 +430,11 @@ internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
                 TapZonePreview(settings.tapZones, settings.mangaMode)
                 Toggle(str(R.string.volume_keys), str(R.string.volume_keys_hint), settings.volumeKeys, settings::updateVolume)
                 Toggle(str(R.string.turn_haptic), str(R.string.turn_haptic_hint), settings.turnHaptic, settings::updateTurnHaptic)
-                Toggle(str(R.string.turn_sound), str(R.string.turn_sound_hint), settings.turnSound, settings::updateTurnSound)
+                val soundCheck = rememberTurnFeedback()
+                Toggle(str(R.string.turn_sound), str(R.string.turn_sound_hint), settings.turnSound) { on ->
+                    settings.updateTurnSound(on)
+                    if (on) soundCheck.preview()
+                }
 
                 Section(str(R.string.section_look))
                 ReaderLookSettings(settings)
