@@ -9,6 +9,7 @@ class FwipApp : Application() {
         super.onCreate()
         instance = this
         io.github.christiandonatti.fwip.data.Reports.install(this)
+        io.github.christiandonatti.fwip.data.NewIssues.schedule(this)
     }
 
     companion object {

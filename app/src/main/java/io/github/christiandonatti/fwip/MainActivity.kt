@@ -84,6 +84,9 @@ class MainActivity : ComponentActivity() {
                 val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                     if (uri != null) viewModel.importBackup(uri)
                 }
+                val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                    if (!granted) android.widget.Toast.makeText(this, getString(R.string.alerts_denied), android.widget.Toast.LENGTH_LONG).show()
+                }
                 val openReadingList = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                     if (uri != null) viewModel.importReadingList(uri)
                 }
@@ -155,6 +158,12 @@ class MainActivity : ComponentActivity() {
                         saveReport = { saveReport.launch(io.github.christiandonatti.fwip.data.Reports.fileName()) },
                         pickBackdrop = { pickBackdrop.launch("image/*") },
                         importReadingList = { openReadingList.launch(arrayOf("*/*")) },
+                        setAlerts = { on ->
+                            io.github.christiandonatti.fwip.data.NewIssues.setEnabled(this, on)
+                            if (on && android.os.Build.VERSION.SDK_INT >= 33 &&
+                                checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                            ) askNotifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        },
                         createFromReadingList = viewModel::createFromReadingList,
                         dismissReadingList = viewModel::dismissReadingList,
                         addFolder = { pickFolder.launch(null) },

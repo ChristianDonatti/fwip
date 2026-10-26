@@ -147,6 +147,18 @@ fun CoverTile(
                     Icon(Icons.Filled.Check, str(R.string.read_badge), tint = FwipColors.AmberInk, modifier = Modifier.size(16.dp))
                 }
             }
+            if (item.isNew && !selecting) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(FwipColors.Amber)
+                        .padding(horizontal = 7.dp, vertical = 3.dp),
+                ) {
+                    Text(str(R.string.new_badge), style = MaterialTheme.typography.labelSmall, color = FwipColors.AmberInk, maxLines = 1)
+                }
+            }
             if (selecting) {
                 Box(
                     Modifier

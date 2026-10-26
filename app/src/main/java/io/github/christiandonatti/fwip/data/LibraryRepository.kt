@@ -54,6 +54,39 @@ class LibraryRepository(private val context: Context) {
         }
     }
 
+    // ---------- When comics first showed up ----------
+
+    private val seenFile = File(context.filesDir, "seen.json")
+    private val seen: MutableMap<String, Long> by lazy {
+        runCatching {
+            val o = JSONObject(seenFile.readText())
+            o.keys().asSequence().associateWith { o.getLong(it) }.toMutableMap()
+        }.getOrDefault(mutableMapOf())
+    }
+
+    /** When [comic] first appeared in the library (0 for comics that were there before this was kept). */
+    fun firstSeen(comic: Comic): Long? = synchronized(SEEN_LOCK) { seen[comic.syncKey()] }
+
+    /**
+     * Notes comics never seen before and returns them. The very first time, everything already
+     * there counts as old, so the library does not light up as "new" all at once.
+     */
+    fun markSeen(comics: List<Comic>, now: Long = System.currentTimeMillis()): List<Comic> = synchronized(SEEN_LOCK) {
+        val first = !seenFile.exists()
+        // Another process (the background check) may have written meanwhile.
+        if (!first) runCatching {
+            val o = JSONObject(seenFile.readText())
+            o.keys().forEach { k -> if (k !in seen) seen[k] = o.getLong(k) }
+        }
+        val fresh = comics.filter { it.syncKey() !in seen }.distinctBy { it.syncKey() }
+        if (fresh.isEmpty() && !first) return emptyList()
+        fresh.forEach { seen[it.syncKey()] = if (first) 0L else now }
+        val o = JSONObject()
+        seen.forEach { (k, v) -> o.put(k, v) }
+        runCatching { seenFile.writeText(o.toString()) }
+        if (first) emptyList() else fresh
+    }
+
     // ---------- Comics ----------
 
     fun cachedComics(): List<Comic> {
@@ -489,6 +522,9 @@ class LibraryRepository(private val context: Context) {
     }.getOrDefault(mutableMapOf())
 
     companion object {
+        private val SEEN_LOCK = Any()
+        /** How long a comic shows as new. */
+        const val NEW_FOR_MS = 14L * 24 * 60 * 60 * 1000
         private const val KEY_FOLDERS = "folders"
         const val COVER_W = 480
         const val COVER_H = 720

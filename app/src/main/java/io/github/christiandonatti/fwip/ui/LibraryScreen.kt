@@ -120,6 +120,8 @@ class LibraryActions(
     val moveComics: (List<String>, Uri) -> Unit,
     /** Copies comics from the NAS to this device (the NAS copy stays). */
     val downloadComics: (List<String>) -> Unit = {},
+    /** Notices about new issues of series being read (asks for permission when turned on). */
+    val setAlerts: (Boolean) -> Unit = {},
     /** Picks a ComicRack .cbl reading list; the match comes back in the state. */
     val importReadingList: () -> Unit = {},
     val createFromReadingList: () -> String? = { null },
@@ -195,6 +197,10 @@ fun LibraryScreen(
     var showAppearance by rememberSaveable { mutableStateOf(false) }
     var showUpdates by rememberSaveable { mutableStateOf(false) }
     var showReport by rememberSaveable { mutableStateOf(false) }
+    var showStorage by rememberSaveable { mutableStateOf(false) }
+    var showWifi by rememberSaveable { mutableStateOf(false) }
+    val appContext = androidx.compose.ui.platform.LocalContext.current
+    var alertsOn by remember { mutableStateOf(io.github.christiandonatti.fwip.data.NewIssues.enabled(appContext)) }
     var showUpdateNotes by remember { mutableStateOf(false) }
     var libraryFilter by rememberSaveable { mutableStateOf(Filter.All) }
     // "See all" under the home shelf jumps to the matching list.
@@ -248,6 +254,10 @@ fun LibraryScreen(
                 )
             } else if (showAppearance) {
                 AppearanceScreen(state, gutter, wide, onPickImage = actions.pickBackdrop, onBack = { showAppearance = false })
+            } else if (showStorage) {
+                StorageScreen(state, gutter, onDelete = actions.deleteComics, onBack = { showStorage = false })
+            } else if (showWifi) {
+                WifiScreen(state.folders, state.servers, gutter, onReceived = actions.refresh, onBack = { showWifi = false })
             } else if (showStats) {
                 StatsScreen(state, actions.stats, gutter, wide, onBack = { showStats = false })
             } else if (showAbout) {
@@ -363,7 +373,10 @@ fun LibraryScreen(
             onAppearance = { showFolders = false; showAppearance = true },
             onUpdates = { showFolders = false; showUpdates = true },
             onReport = { showFolders = false; showReport = true },
-
+            alertsOn = alertsOn,
+            onAlerts = { on -> alertsOn = on; actions.setAlerts(on) },
+            onStorage = { showFolders = false; showStorage = true },
+            onWifi = { showFolders = false; showWifi = true },
             onRemove = actions.removeFolder,
             onDismiss = { showFolders = false },
         )
@@ -1319,6 +1332,10 @@ private fun FoldersDialog(
     onRemove: (Uri) -> Unit,
     onDismiss: () -> Unit,
     onAbout: () -> Unit,
+    alertsOn: Boolean = false,
+    onAlerts: (Boolean) -> Unit = {},
+    onStorage: () -> Unit = {},
+    onWifi: () -> Unit = {},
 ) {
     FwipDialog(onDismiss) {
         DialogTitle(str(R.string.app_settings), onDismiss)
@@ -1346,6 +1363,27 @@ private fun FoldersDialog(
         SheetButton(str(R.string.appearance), onAppearance)
         SheetButton(str(R.string.stats_title), onStats)
         SheetButton(str(R.string.sync_title), onSync)
+        SheetButton(str(R.string.wifi_title), onWifi)
+        SheetButton(str(R.string.storage_title), onStorage)
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(FwipColors.Surface)
+                .clickable(role = Role.Switch) { onAlerts(!alertsOn) }
+                .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(str(R.string.alerts_title), style = MaterialTheme.typography.labelLarge)
+                Text(str(R.string.alerts_hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+            }
+            androidx.compose.material3.Switch(
+                checked = alertsOn,
+                onCheckedChange = onAlerts,
+                colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = FwipColors.Amber, checkedThumbColor = FwipColors.AmberInk),
+            )
+        }
         if (io.github.christiandonatti.fwip.data.Updates.available != null) {
             SheetButton(str(R.string.updates), onUpdates, trailing = { Box(Modifier.size(10.dp).clip(CircleShape).background(FwipColors.Amber)) })
         } else {

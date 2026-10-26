@@ -9,6 +9,8 @@
     <!-- Copying new comics to the NAS keeps going with the screen off (only when that is turned on). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Optional: a notice when a new issue of a series being read reaches the library. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Wi-Fi only uploads. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 

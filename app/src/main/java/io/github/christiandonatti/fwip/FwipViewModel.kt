@@ -163,6 +163,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         meta = repository.metaFor(comic),
         wantedAt = repository.wantedAt(comic.id),
         alsoOnNas = comic.id in twins.onNas,
+        arrived = repository.firstSeen(comic)?.takeIf { it > 0 && System.currentTimeMillis() - it < LibraryRepository.NEW_FOR_MS },
     )
 
     fun addFolder(uri: Uri) {
@@ -195,6 +196,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 sync.afterScan(comics)
                 repository.alignTwins(comics, io.github.christiandonatti.fwip.data.BookmarkStore.get(getApplication()))
+                repository.markSeen(comics)
             }
             twins = io.github.christiandonatti.fwip.data.Twins.split(comics)
             _state.update { it.copy(items = twins.visible.map(::itemFor), aliases = twins.aliases, collections = repository.collections()) }
@@ -243,6 +245,13 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun closeReader() {
+        // A downloaded comic just finished, with its copy still on the NAS, can go if the user asked for that.
+        val closing = _state.value.openComicId?.let { id ->
+            _state.value.item(id)?.comic?.takeIf { c ->
+                c.uri.scheme == "file" && c.id in twins.onNas && repository.progressFor(c.id)?.finished == true &&
+                    io.github.christiandonatti.fwip.ui.StorageSettings.autoClean(getApplication())
+            }
+        }
         _state.update { s ->
             s.copy(
                 openComicId = null,
@@ -254,6 +263,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         scheduleSync(0)
         refreshHomeScreen()
         stats.stop()
+        closing?.let { deleteComics(listOf(it.id)) }
     }
 
     /** The app went to the background: reading time stops counting. */

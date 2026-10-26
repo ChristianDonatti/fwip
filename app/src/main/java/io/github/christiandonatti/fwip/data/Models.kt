@@ -53,8 +53,13 @@ data class LibraryItem(
     val wantedAt: Long? = null,
     /** On this device and, as a second copy, on the NAS. */
     val alsoOnNas: Boolean = false,
+    /** When the library first saw this comic, if that was recently; null otherwise. */
+    val arrived: Long? = null,
 ) {
     val wanted: Boolean get() = wantedAt != null
+
+    /** Arrived lately and not opened yet. */
+    val isNew: Boolean get() = arrived != null && progress?.started != true && progress?.finished != true
 
     /** What the file name says, for comics without metadata. */
     val parsed: ParsedName by lazy { parseFileName(comic.fileName) }
