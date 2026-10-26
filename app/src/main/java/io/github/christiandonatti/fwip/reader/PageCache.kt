@@ -24,6 +24,7 @@ class PageCache(
     private val source: ComicSource,
     private val cropMargins: Boolean = false,
     budget: Int = (Runtime.getRuntime().maxMemory() / 4).toInt(),
+    private val filters: PageFilters = PageFilters(),
 ) {
 
     private val cache = object : LruCache<String, Bitmap>(budget) {
@@ -65,7 +66,8 @@ class PageCache(
             locks.getOrPut(k) { Mutex() }.withLock {
                 peek(index, w, h) ?: runCatching {
                     val raw = source.decodePage(index, w, h)
-                    if (raw != null && cropMargins) MarginCrop.crop(raw).also { if (it !== raw) raw.recycle() } else raw
+                    val cropped = if (raw != null && cropMargins) MarginCrop.crop(raw).also { if (it !== raw) raw.recycle() } else raw
+                    if (cropped != null && filters.active) filters.apply(cropped).also { if (it !== cropped) cropped.recycle() } else cropped
                 }
                     .onFailure {
                         android.util.Log.w("Fwip", "Failed to decode page $index", it)

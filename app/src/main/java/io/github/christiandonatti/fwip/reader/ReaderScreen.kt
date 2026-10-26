@@ -174,8 +174,6 @@ private fun Reader(
     onProgress: (Int, Int) -> Unit,
 ) {
     val context = LocalContext.current
-    val cache = remember(source, settings.cropMargins) { PageCache(source, settings.cropMargins, PageCache.budgetFor(context)) }
-    DisposableEffect(cache) { onDispose { cache.clear() } }
 
     // Webtoons: pages much taller than wide always scroll vertically.
     var strips by remember(source) { mutableStateOf(false) }
@@ -217,9 +215,19 @@ private fun Reader(
             if (isActive) wideStore.save(comic.id, found, done = true)
         }
     }
-    val spreads = remember(source.pageCount, double, wide) { buildSpreads(source.pageCount, double, wide) }
+    // With one page on screen, wide pages can be shown a half at a time (as their own "pages").
+    val split = settings.splitWide && !double && !scroll
+    val pageMap = remember(source.pageCount, split, wide, rtl) { PageMap(source.pageCount, if (split) wide else emptySet(), rtl) }
+    val view: ComicSource = remember(source, pageMap) { if (pageMap.identity) source else SplitSource(source, pageMap) }
+    val shownWide = if (pageMap.identity) wide else emptySet()
 
-    // The first page in view, kept across layout changes (rotation, single/double).
+    val filters = settings.pageFilters
+    val cache = remember(view, settings.cropMargins, filters) { PageCache(view, settings.cropMargins, PageCache.budgetFor(context), filters) }
+    DisposableEffect(cache) { onDispose { cache.clear() } }
+
+    val spreads = remember(view.pageCount, double, shownWide) { buildSpreads(view.pageCount, double, shownWide) }
+
+    // The first page in view (a real page number), kept across layout changes (rotation, single/double, split).
     var lastPage by rememberSaveable { mutableIntStateOf(startPage.coerceIn(0, source.pageCount - 1)) }
 
     var chrome by remember { mutableStateOf(false) }
@@ -233,16 +241,16 @@ private fun Reader(
     val commands = remember { MutableSharedFlow<NavCommand>(extraBufferCapacity = 8) }
     val store = remember { BalloonStore.get(context) }
     // Detections are relative to the page as shown, so cropped and uncropped pages are kept apart.
-    val storeKey = if (settings.cropMargins) comic.id + "#crop" else comic.id
+    val storeKey = comic.id + (if (settings.cropMargins) "#crop" else "") + (if (pageMap.identity) "" else "#split")
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val wPx = with(density) { maxWidth.toPx() }.roundToInt().coerceAtLeast(1)
         val hPx = with(density) { maxHeight.toPx() }.roundToInt().coerceAtLeast(1)
-        val host = remember(spreads, double, rtl, cache, wPx, hPx, wide) {
-            ReaderHost(spreads, double, rtl, cache, if (double) wPx / 2 else wPx, hPx, wide)
+        val host = remember(spreads, double, rtl, cache, wPx, hPx, shownWide) {
+            ReaderHost(spreads, double, rtl, cache, if (double) wPx / 2 else wPx, hPx, shownWide)
         }
-        val startSpread = remember(host) { spreads.indexOfFirst { lastPage in it }.coerceAtLeast(0) }
+        val startSpread = remember(host) { spreads.indexOfFirst { p -> p.any { pageMap.real(it) == lastPage } }.coerceAtLeast(0) }
         var spread by remember(host) { mutableIntStateOf(startSpread) }
         var zoom by remember { mutableStateOf<ZoomState?>(null) }
 
@@ -369,15 +377,15 @@ private fun Reader(
         val turnFeedback = { feedback.turn(settings.turnHaptic, settings.turnSound) }
         val onSpreadChanged: (Int) -> Unit = { s ->
             // The paper reader announces its turns as they start; the others once they land.
-            if (!scroll && settings.turnStyle != TurnStyle.Curl && spreads.getOrNull(s)?.firstOrNull() != lastPage) turnFeedback()
+            if (!scroll && settings.turnStyle != TurnStyle.Curl && s != spread) turnFeedback()
             if (s != spread) {
                 stop = -1
                 if (guide != null && pending == null) pending = PendingStop.First
             }
             spread = s
             spreads.getOrNull(s)?.let { pages ->
-                lastPage = pages.first()
-                onProgress(pages.last(), source.pageCount)
+                lastPage = pageMap.real(pages.first())
+                onProgress(pageMap.real(pages.last()), source.pageCount)
             }
         }
 
@@ -499,7 +507,7 @@ private fun Reader(
         ReaderChrome(
             visible = chrome,
             title = title,
-            pageLabel = spreads.getOrNull(spread)?.let { p ->
+            pageLabel = spreads.getOrNull(spread)?.map(pageMap::real)?.distinct()?.let { p ->
                 if (p.size == 2) str(R.string.pages_x_y_of_n, p[0] + 1, p[1] + 1, source.pageCount) else str(R.string.page_x_of_n, p[0] + 1, source.pageCount)
             } ?: "",
             spreadIndex = spread,
@@ -510,9 +518,9 @@ private fun Reader(
             onBack = onClose,
             onSettings = { showSettings = true },
             onGuide = { kind -> setGuide(if (guide == kind) null else kind) },
-            bookmarked = spreads.getOrNull(spread)?.any { it in marks } == true,
+            bookmarked = spreads.getOrNull(spread)?.any { pageMap.real(it) in marks } == true,
             onBookmark = {
-                val pages = spreads.getOrNull(spread).orEmpty()
+                val pages = spreads.getOrNull(spread).orEmpty().map(pageMap::real)
                 marks = if (pages.any { it in marks }) marks - pages.toSet() else marks + pages.first()
                 bookmarkStore.set(comic.id, marks)
             },
@@ -547,16 +555,18 @@ private fun Reader(
         }
 
         if (showPages) {
+            // The overview always shows the real pages, whole.
+            val gridCache = remember(cache, source) { if (pageMap.identity) cache else PageCache(source) }
             PageGrid(
                 pageCount = source.pageCount,
-                cache = cache,
-                current = spreads.getOrNull(spread)?.first() ?: 0,
+                cache = gridCache,
+                current = spreads.getOrNull(spread)?.first()?.let(pageMap::real) ?: 0,
                 bookmarks = marks,
                 rtl = rtl,
                 onPick = { page ->
                     showPages = false
                     chrome = false
-                    val target = spreads.indexOfFirst { page in it }
+                    val target = spreads.indexOfFirst { p -> p.any { pageMap.real(it) == page } }
                     if (target >= 0) commands.tryEmit(NavCommand.Seek(target))
                 },
                 onDismiss = { showPages = false },

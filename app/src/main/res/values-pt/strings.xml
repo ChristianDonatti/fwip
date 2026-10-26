@@ -549,4 +549,15 @@
     <string name="downloaded_one">HQ baixada, ela continua no NAS também</string>
     <string name="downloaded_n">%1$d HQs baixadas, elas continuam no NAS também</string>
     <string name="download_some_failed">%1$d de %2$d baixadas. Problema: %3$s</string>
+    <string name="section_image">Imagem</string>
+    <string name="fix_colors">Corrigir cores</string>
+    <string name="fix_colors_hint">O papel amarelado volta a ficar branco e a tinta desbotada escurece, para scans antigos.</string>
+    <string name="denoise">Reduzir ruído</string>
+    <string name="denoise_hint">Suaviza granulado e manchas de JPEG nas áreas lisas, sem borrar os traços.</string>
+    <string name="sharpness">Nitidez</string>
+    <string name="sharp_off">Desligada</string>
+    <string name="sharp_light">Leve</string>
+    <string name="sharp_strong">Forte</string>
+    <string name="split_wide">Dividir páginas duplas</string>
+    <string name="split_wide_hint">Com uma página na tela, a página dupla aparece uma metade de cada vez.</string>
 </resources>

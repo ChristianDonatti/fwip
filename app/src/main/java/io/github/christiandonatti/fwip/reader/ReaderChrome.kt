@@ -418,6 +418,13 @@ internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
                 Toggle(str(R.string.manga_mode), str(R.string.manga_mode_hint), settings.mangaMode, settings::updateManga)
                 Toggle(str(R.string.crop_margins), str(R.string.crop_margins_hint), settings.cropMargins, settings::updateCrop)
 
+                Toggle(str(R.string.split_wide), str(R.string.split_wide_hint), settings.splitWide, settings::updateSplitWide)
+
+                Section(str(R.string.section_image))
+                Toggle(str(R.string.fix_colors), str(R.string.fix_colors_hint), settings.fixColors, settings::updateFixColors)
+                Toggle(str(R.string.denoise), str(R.string.denoise_hint), settings.denoise, settings::updateDenoise)
+                Choice(str(R.string.sharpness), Sharpness.entries, settings.sharpness, { it.label }, settings::updateSharpness)
+
                 Section(str(R.string.section_touch))
                 Choice(str(R.string.tap_zones), TapZones.entries, settings.tapZones, { it.label }, settings::updateTapZones)
                 TapZonePreview(settings.tapZones, settings.mangaMode)

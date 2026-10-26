@@ -104,6 +104,18 @@ class ReaderSettings(context: Context) {
     /** The rustle of paper at each page turn. */
     var turnSound by mutableStateOf(prefs.getBoolean("sound", false))
         private set
+    /** Scan touch-ups: whiter paper and darker ink, less grain, crisper lines. */
+    var fixColors by mutableStateOf(prefs.getBoolean("fixColors", false))
+        private set
+    var denoise by mutableStateOf(prefs.getBoolean("denoise", false))
+        private set
+    var sharpness by mutableStateOf(runCatching { Sharpness.valueOf(prefs.getString("sharp", null) ?: "") }.getOrDefault(Sharpness.Off))
+        private set
+    /** Wide (double) pages split in two when only one page fits on screen. */
+    var splitWide by mutableStateOf(prefs.getBoolean("splitWide", false))
+        private set
+
+    val pageFilters: PageFilters get() = PageFilters(fixColors, denoise, sharpness)
 
     fun updateManga(value: Boolean) { mangaMode = value; prefs.edit().putBoolean("manga", value).apply() }
     fun updateTurn(value: TurnStyle) { turnStyle = value; prefs.edit().putString("turn2", value.name).apply() }
@@ -120,6 +132,10 @@ class ReaderSettings(context: Context) {
     fun updatePaperTexture(value: Boolean) { paperTexture = value; prefs.edit().putBoolean("texture", value).apply() }
     fun updateTurnHaptic(value: Boolean) { turnHaptic = value; prefs.edit().putBoolean("haptic", value).apply() }
     fun updateTurnSound(value: Boolean) { turnSound = value; prefs.edit().putBoolean("sound", value).apply() }
+    fun updateFixColors(value: Boolean) { fixColors = value; prefs.edit().putBoolean("fixColors", value).apply() }
+    fun updateDenoise(value: Boolean) { denoise = value; prefs.edit().putBoolean("denoise", value).apply() }
+    fun updateSharpness(value: Sharpness) { sharpness = value; prefs.edit().putString("sharp", value.name).apply() }
+    fun updateSplitWide(value: Boolean) { splitWide = value; prefs.edit().putBoolean("splitWide", value).apply() }
 
     /** Everything worth carrying to another device in a backup. */
     fun toJson(): org.json.JSONObject = org.json.JSONObject()
@@ -128,6 +144,7 @@ class ReaderSettings(context: Context) {
         .put("warmth", warmth.toDouble()).put("awake", keepScreenOn).put("rotation", rotation.name).put("taps", tapZones.name)
         .put("haptic", turnHaptic).put("sound", turnSound)
         .put("ground", ground.name).put("spine", spineShadow.toDouble()).put("texture", paperTexture)
+        .put("fixColors", fixColors).put("denoise", denoise).put("sharp", sharpness.name).put("splitWide", splitWide)
 
     fun fromJson(o: org.json.JSONObject) {
         if (o.has("manga")) updateManga(o.getBoolean("manga"))
@@ -145,6 +162,10 @@ class ReaderSettings(context: Context) {
         runCatching { updateGround(ReaderGround.valueOf(o.getString("ground"))) }
         if (o.has("spine")) updateSpineShadow(o.getDouble("spine").toFloat())
         if (o.has("texture")) updatePaperTexture(o.getBoolean("texture"))
+        if (o.has("fixColors")) updateFixColors(o.getBoolean("fixColors"))
+        if (o.has("denoise")) updateDenoise(o.getBoolean("denoise"))
+        runCatching { updateSharpness(Sharpness.valueOf(o.getString("sharp"))) }
+        if (o.has("splitWide")) updateSplitWide(o.getBoolean("splitWide"))
     }
 }
 

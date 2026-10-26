@@ -550,4 +550,15 @@
     <string name="downloaded_one">Comic downloaded, it stays on the NAS too</string>
     <string name="downloaded_n">%1$d comics downloaded, they stay on the NAS too</string>
     <string name="download_some_failed">%1$d of %2$d downloaded. Problem: %3$s</string>
+    <string name="section_image">Image</string>
+    <string name="fix_colors">Fix colours</string>
+    <string name="fix_colors_hint">Yellowed paper turns white again and faded ink gets dark, for old scans.</string>
+    <string name="denoise">Reduce noise</string>
+    <string name="denoise_hint">Smooths grain and JPEG blotches on flat areas, keeping lines sharp.</string>
+    <string name="sharpness">Sharpness</string>
+    <string name="sharp_off">Off</string>
+    <string name="sharp_light">Light</string>
+    <string name="sharp_strong">Strong</string>
+    <string name="split_wide">Split double pages</string>
+    <string name="split_wide_hint">With one page on screen, a double page shows one half at a time.</string>
 </resources>
