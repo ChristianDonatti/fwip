@@ -79,7 +79,12 @@ adb push /tmp/event.cbl /sdcard/Download/event.cbl
 ui '^Collections\|' ; sleep 2
 shot c0-collections 1
 ui '^Import a reading list\|' ; sleep 4
-[ -z "$(find_xy '^event.cbl\|')" ] && { ui '^Download\|' ; sleep 3; }
+# The picker opens on "Recent": go to Downloads through the side list.
+if [ -z "$(find_xy '^event.cbl\|')" ]; then
+  ui '\|Show roots$' ; sleep 2
+  ui '^Downloads\|' ; sleep 3
+  quick_names=$(texts | tr '\n' ' ' | cut -c1-300); note "picker: $quick_names"
+fi
 ui '^event.cbl\|' ; sleep 4
 shot c1-cbl 1
 ui '^Create collection\|' ; sleep 3
@@ -100,10 +105,11 @@ timeout 20 adb shell am force-stop $APP
 python3 scripts/look_prefs.py fixColors=true sharp=Strong > /tmp/reader.xml
 put /tmp/reader.xml shared_prefs/fwip_reader.xml
 timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file:///data/user/0/$APP/files/Baixadas/PepperCarrot_01.cbz"
-shot r1-filtered 10
+sleep 8
+shot r1-filtered 6
 timeout 20 adb shell input tap $(( W / 2 )) $(( H / 2 )); sleep 2
 ui '\|Reading settings$' ; sleep 2
-for k in 1 2; do timeout 20 adb shell input swipe $(( W / 2 )) $(( H * 3 / 4 )) $(( W / 2 )) $(( H / 3 )) 400; sleep 1; done
+timeout 20 adb shell input swipe $(( W / 2 )) $(( H * 3 / 4 )) $(( W / 2 )) $(( H / 2 )) 600; sleep 1
 shot r2-settings-image 1
 timeout 20 adb shell input keyevent KEYCODE_BACK; sleep 1
 
