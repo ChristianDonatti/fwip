@@ -543,7 +543,13 @@ internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
                 val soundCheck = rememberTurnFeedback()
                 Toggle(str(R.string.turn_sound), str(R.string.turn_sound_hint), settings.turnSound) { on ->
                     settings.updateTurnSound(on)
-                    if (on) soundCheck.preview()
+                    if (on) soundCheck.preview(settings.soundKind)
+                }
+                if (settings.turnSound) {
+                    Choice(str(R.string.sound_kind), TurnSoundKind.entries, settings.soundKind, { it.label }) { k ->
+                        settings.updateSoundKind(k)
+                        soundCheck.preview(k)
+                    }
                 }
 
                 Section(str(R.string.section_look))
@@ -776,6 +782,9 @@ internal fun ReaderLookSettings(settings: ReaderSettings) {
         Choice(str(R.string.reader_ground), ReaderGround.entries, settings.ground, { it.label }, settings::updateGround)
         LevelSlider(str(R.string.spine_shadow), settings.spineShadow, 0f..1f, settings::updateSpineShadow, hint = str(R.string.spine_shadow_hint))
         Toggle(str(R.string.paper_texture), str(R.string.paper_texture_hint), settings.paperTexture, settings::updatePaperTexture)
+        Choice(str(R.string.turn_speed), TurnSpeed.entries, settings.turnSpeed, { it.label }, settings::updateTurnSpeed)
+        LevelSlider(str(R.string.turn_lift), settings.turnLift, 0f..1f, settings::updateTurnLift, hint = str(R.string.turn_lift_hint))
+        LevelSlider(str(R.string.fold_shade), settings.foldShade, 0f..1f, settings::updateFoldShade, hint = str(R.string.fold_shade_hint))
     }
 }
 

@@ -109,7 +109,7 @@ private class CurlController(initialHost: ReaderHost, start: Int) {
             val target = if (complete) t.end else t.corner
             val distance = (target - t.point).getDistance()
             val anim = Animatable(t.point, Offset.VectorConverter)
-            anim.animateTo(target, tween((180 + distance / w * 260).toInt().coerceIn(180, 420), easing = FastOutSlowInEasing)) {
+            anim.animateTo(target, tween(((180 + distance / w * 260).coerceIn(180f, 420f) * ReaderLook.speed).toInt(), easing = FastOutSlowInEasing)) {
                 t.point = value
             }
             // Pages, not indices: the layout may have been rebuilt while the page was moving.
@@ -140,9 +140,9 @@ private class CurlController(initialHost: ReaderHost, start: Int) {
         turn = t
         animating = true
         try {
-            val lift = t.leaf.height * 0.16f
+            val lift = t.leaf.height * ReaderLook.lift
             val anim = Animatable(if (forward) 0f else 1f)
-            anim.animateTo(if (forward) 1f else 0f, tween(520, easing = FastOutSlowInEasing)) {
+            anim.animateTo(if (forward) 1f else 0f, tween((520 * ReaderLook.speed).toInt(), easing = FastOutSlowInEasing)) {
                 val x = t.corner.x + (t.end.x - t.corner.x) * value
                 t.point = Offset(x, t.corner.y - lift * sin(PI * value).toFloat())
             }

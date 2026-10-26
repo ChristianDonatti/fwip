@@ -56,7 +56,7 @@ fun PagerReader(
                         onEnd()
                     } else {
                         val target = (pagerState.currentPage + cmd.delta).coerceIn(0, spreads.lastIndex)
-                        if (target != pagerState.currentPage) pagerState.animateScrollToPage(target)
+                        if (target != pagerState.currentPage) pagerState.animateScrollToPage(target, animationSpec = androidx.compose.animation.core.tween((380 * ReaderLook.speed).toInt()))
                     }
                 }
                 is NavCommand.Seek -> pagerState.scrollToPage(cmd.spread.coerceIn(0, spreads.lastIndex))

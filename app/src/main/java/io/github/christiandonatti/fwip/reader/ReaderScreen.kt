@@ -139,6 +139,9 @@ fun ReaderScreen(
         FwipColors.ReaderBg = androidx.compose.ui.graphics.Color(settings.ground.argb)
         ReaderLook.spine = settings.spineShadow
         ReaderLook.texture = settings.paperTexture
+        ReaderLook.speed = settings.turnSpeed.factor
+        ReaderLook.lift = 0.04f + settings.turnLift * 0.3f
+        ReaderLook.fold = settings.foldShade
     }
     KeepScreenOn(settings.keepScreenOn)
     ReaderComfort(settings)
@@ -374,7 +377,7 @@ private fun Reader(
 
         // ---------- Navigation & input ----------
         val feedback = rememberTurnFeedback()
-        val turnFeedback = { feedback.turn(settings.turnHaptic, settings.turnSound) }
+        val turnFeedback = { feedback.turn(settings.turnHaptic, settings.turnSound, settings.soundKind) }
         val onSpreadChanged: (Int) -> Unit = { s ->
             // The paper reader announces its turns as they start; the others once they land.
             if (!scroll && settings.turnStyle != TurnStyle.Curl && s != spread) turnFeedback()

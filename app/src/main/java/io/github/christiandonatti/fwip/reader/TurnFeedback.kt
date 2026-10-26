@@ -31,8 +31,10 @@ class TurnFeedback(context: Context) {
                 .build()
         )
         .build()
-    @Volatile private var loaded = false
-    private val soundId: Int
+    /** Sound id of each kind, and which ones are ready to play. */
+    private val ids = HashMap<TurnSoundKind, Int>()
+    private val ready = java.util.Collections.synchronizedSet(HashSet<Int>())
+    private val loaded: Boolean get() = ready.isNotEmpty()
     private var lastSound = 0L
 
     private val vibrator: Vibrator? = runCatching {
@@ -57,15 +59,23 @@ class TurnFeedback(context: Context) {
         }.getOrNull()
     }
 
+    @Volatile private var pendingPreview: Int = 0
+
     init {
-        pool.setOnLoadCompleteListener { _, _, status -> loaded = status == 0 }
-        soundId = pool.load(context, R.raw.page_turn, 1)
+        pool.setOnLoadCompleteListener { p, id, status ->
+            if (status == 0) {
+                ready += id
+                if (id == pendingPreview) { pendingPreview = 0; p.play(id, 1f, 1f, 1, 0, 1f) }
+            }
+        }
+        TurnSoundKind.entries.forEach { ids[it] = pool.load(context, it.raw, 1) }
     }
 
-    fun turn(haptic: Boolean, sound: Boolean) {
+    fun turn(haptic: Boolean, sound: Boolean, kind: TurnSoundKind = TurnSoundKind.Paper) {
+        val soundId = ids[kind] ?: 0
         var stream = 0
         if (haptic) tick?.let { e -> runCatching { vibrator?.vibrate(e) }.onFailure { Log.w("Fwip", "vibrate", it) } }
-        if (sound && loaded) {
+        if (sound && soundId in ready) {
             // Quick taps through many pages should not stack into noise.
             val now = System.currentTimeMillis()
             if (now - lastSound > 120) {
@@ -75,14 +85,14 @@ class TurnFeedback(context: Context) {
                 stream = pool.play(soundId, 1f, 1f, 1, 0, rate)
             }
         }
-        Log.i("Fwip", "turn feedback haptic=$haptic (motor=${vibrator != null}, effect=${tick != null}) sound=$sound loaded=$loaded stream=$stream")
+        Log.i("Fwip", "turn feedback haptic=$haptic (motor=${vibrator != null}, effect=${tick != null}) sound=$sound ${kind.name} loaded=$loaded stream=$stream")
     }
 
-    /** Plays the sound once (when it is switched on), so its volume can be checked right away. */
-    fun preview() {
-        if (loaded) pool.play(soundId, 1f, 1f, 1, 0, 1f)
-        else pool.setOnLoadCompleteListener { p, id, status -> loaded = status == 0; if (loaded) p.play(id, 1f, 1f, 1, 0, 1f) }
-        Log.i("Fwip", "turn sound preview loaded=$loaded")
+    /** Plays a sound once (when picked or switched on), so its volume can be checked right away. */
+    fun preview(kind: TurnSoundKind = TurnSoundKind.Paper) {
+        val id = ids[kind] ?: return
+        if (id in ready) pool.play(id, 1f, 1f, 1, 0, 1f) else pendingPreview = id
+        Log.i("Fwip", "turn sound preview ${kind.name} ready=${id in ready}")
     }
 
     fun release() = pool.release()

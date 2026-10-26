@@ -36,8 +36,30 @@ enum class ReaderGround(@androidx.annotation.StringRes private val labelRes: Int
     val label: String get() = str(labelRes)
 }
 
+enum class TurnSpeed(@androidx.annotation.StringRes private val labelRes: Int, val factor: Float) {
+    Slow(R.string.speed_slow, 1.5f), Normal(R.string.speed_normal, 1f), Fast(R.string.speed_fast, 0.6f);
+
+    val label: String get() = str(labelRes)
+}
+
+/** The sound of a page turning, each made for this app. */
+enum class TurnSoundKind(@androidx.annotation.StringRes private val labelRes: Int, @androidx.annotation.RawRes val raw: Int) {
+    Paper(R.string.sound_paper, R.raw.page_turn),
+    Comic(R.string.sound_comic, R.raw.page_comic),
+    Thin(R.string.sound_thin, R.raw.page_thin),
+    Thick(R.string.sound_thick, R.raw.page_thick);
+
+    val label: String get() = str(labelRes)
+}
+
 /** Reader looks read while drawing (outside composition), set from [ReaderSettings]. */
 object ReaderLook {
+    /** Multiplies the length of turn animations. */
+    @Volatile var speed: Float = 1f
+    /** How high the corner rises on a tapped turn, as a share of the page height. */
+    @Volatile var lift: Float = 0.16f
+    /** Strength of the shading along the fold, 0..1 (0.5 = the usual). */
+    @Volatile var fold: Float = 0.5f
     /** Strength of the shadow where two pages meet, 0..1 (0.5 = the usual). */
     @Volatile var spine: Float = 0.5f
     /** Paper fibres on the back of a turning sheet. */
@@ -115,6 +137,16 @@ class ReaderSettings(context: Context) {
     var splitWide by mutableStateOf(prefs.getBoolean("splitWide", false))
         private set
 
+    var turnSpeed by mutableStateOf(runCatching { TurnSpeed.valueOf(prefs.getString("speed", null) ?: "") }.getOrDefault(TurnSpeed.Normal))
+        private set
+    /** 0 flat .. 1 high arc; 0.4 is the usual. */
+    var turnLift by mutableFloatStateOf(prefs.getFloat("lift", 0.4f))
+        private set
+    var foldShade by mutableFloatStateOf(prefs.getFloat("fold", 0.5f))
+        private set
+    var soundKind by mutableStateOf(runCatching { TurnSoundKind.valueOf(prefs.getString("soundKind", null) ?: "") }.getOrDefault(TurnSoundKind.Paper))
+        private set
+
     /** The page bar as a strip of little pages (Panels style), or a slim line. */
     var filmStrip by mutableStateOf(prefs.getBoolean("filmStrip", true))
         private set
@@ -139,6 +171,10 @@ class ReaderSettings(context: Context) {
     fun updateFixColors(value: Boolean) { fixColors = value; prefs.edit().putBoolean("fixColors", value).apply() }
     fun updateDenoise(value: Boolean) { denoise = value; prefs.edit().putBoolean("denoise", value).apply() }
     fun updateSharpness(value: Sharpness) { sharpness = value; prefs.edit().putString("sharp", value.name).apply() }
+    fun updateTurnSpeed(value: TurnSpeed) { turnSpeed = value; prefs.edit().putString("speed", value.name).apply() }
+    fun updateTurnLift(value: Float) { turnLift = value; prefs.edit().putFloat("lift", value).apply() }
+    fun updateFoldShade(value: Float) { foldShade = value; prefs.edit().putFloat("fold", value).apply() }
+    fun updateSoundKind(value: TurnSoundKind) { soundKind = value; prefs.edit().putString("soundKind", value.name).apply() }
     fun updateFilmStrip(value: Boolean) { filmStrip = value; prefs.edit().putBoolean("filmStrip", value).apply() }
     fun updateSplitWide(value: Boolean) { splitWide = value; prefs.edit().putBoolean("splitWide", value).apply() }
 
@@ -150,6 +186,7 @@ class ReaderSettings(context: Context) {
         .put("haptic", turnHaptic).put("sound", turnSound)
         .put("ground", ground.name).put("spine", spineShadow.toDouble()).put("texture", paperTexture)
         .put("fixColors", fixColors).put("denoise", denoise).put("sharp", sharpness.name).put("splitWide", splitWide).put("filmStrip", filmStrip)
+        .put("speed", turnSpeed.name).put("lift", turnLift.toDouble()).put("fold", foldShade.toDouble()).put("soundKind", soundKind.name)
 
     fun fromJson(o: org.json.JSONObject) {
         if (o.has("manga")) updateManga(o.getBoolean("manga"))
@@ -172,6 +209,10 @@ class ReaderSettings(context: Context) {
         runCatching { updateSharpness(Sharpness.valueOf(o.getString("sharp"))) }
         if (o.has("splitWide")) updateSplitWide(o.getBoolean("splitWide"))
         if (o.has("filmStrip")) updateFilmStrip(o.getBoolean("filmStrip"))
+        runCatching { updateTurnSpeed(TurnSpeed.valueOf(o.getString("speed"))) }
+        if (o.has("lift")) updateTurnLift(o.getDouble("lift").toFloat())
+        if (o.has("fold")) updateFoldShade(o.getDouble("fold").toFloat())
+        runCatching { updateSoundKind(TurnSoundKind.valueOf(o.getString("soundKind"))) }
     }
 }
 

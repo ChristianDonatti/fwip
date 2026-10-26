@@ -170,7 +170,7 @@ class CurlRenderer {
         val shadowW = min(len * 0.45f, leaf.width * 0.28f) + 6f
         shadePaint.shader = LinearGradient(
             m.x, m.y, m.x - n.x * shadowW, m.y - n.y * shadowW,
-            intArrayOf(0x88000000.toInt(), 0x00000000),
+            intArrayOf(shade(0x88), 0x00000000),
             null, Shader.TileMode.CLAMP,
         )
         c.drawRect(0f, 0f, width, leaf.bottom + 1000f, shadePaint)
@@ -200,7 +200,7 @@ class CurlRenderer {
         val depth = len / 2f
         shadePaint.shader = LinearGradient(
             m.x, m.y, m.x - n.x * depth, m.y - n.y * depth,
-            intArrayOf(0x55000000, 0x10000000, 0x22FFFFFF, 0x00FFFFFF),
+            intArrayOf(shade(0x55), shade(0x10), light(0x22), 0x00FFFFFF),
             floatArrayOf(0f, 0.18f, 0.45f, 1f),
             Shader.TileMode.CLAMP,
         )
@@ -209,6 +209,10 @@ class CurlRenderer {
 
         c.restore()
     }
+
+    /** Black or white at [alpha] scaled by the fold setting (0.5 keeps it as designed). */
+    private fun shade(alpha: Int) = ((alpha * ReaderLook.fold * 2f).toInt().coerceIn(0, 255) shl 24)
+    private fun light(alpha: Int) = shade(alpha) or 0x00FFFFFF
 
     private fun page(c: Canvas, d: PageDraw, rtl: Boolean, mirror: Boolean) {
         c.save()

@@ -607,4 +607,17 @@
     <string name="shelf_remove">Remover</string>
     <string name="film_strip">Páginas na barra</string>
     <string name="film_strip_hint">A barra mostra as páginas em miniatura, como no Panels. Desligado, ela vira uma linha fina.</string>
+    <string name="speed_slow">Lenta</string>
+    <string name="speed_normal">Normal</string>
+    <string name="speed_fast">Rápida</string>
+    <string name="sound_paper">Papel</string>
+    <string name="sound_comic">Gibi</string>
+    <string name="sound_thin">Fino</string>
+    <string name="sound_thick">Grosso</string>
+    <string name="sound_kind">Som</string>
+    <string name="turn_speed">Velocidade da virada</string>
+    <string name="turn_lift">Curva da folha</string>
+    <string name="turn_lift_hint">Quanto a ponta sobe quando um toque vira a página.</string>
+    <string name="fold_shade">Sombra da dobra</string>
+    <string name="fold_shade_hint">Sombra e brilho onde o papel dobra.</string>
 </resources>

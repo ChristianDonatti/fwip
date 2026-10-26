@@ -608,4 +608,17 @@
     <string name="shelf_remove">Remove</string>
     <string name="film_strip">Pages along the bar</string>
     <string name="film_strip_hint">The page bar shows the pages in miniature, like Panels. Off, it is a slim line.</string>
+    <string name="speed_slow">Slow</string>
+    <string name="speed_normal">Normal</string>
+    <string name="speed_fast">Fast</string>
+    <string name="sound_paper">Paper</string>
+    <string name="sound_comic">Comic</string>
+    <string name="sound_thin">Thin</string>
+    <string name="sound_thick">Thick</string>
+    <string name="sound_kind">Sound</string>
+    <string name="turn_speed">Turn speed</string>
+    <string name="turn_lift">Page arc</string>
+    <string name="turn_lift_hint">How high the corner rises when a tap turns the page.</string>
+    <string name="fold_shade">Fold shading</string>
+    <string name="fold_shade_hint">Shadow and shine where the paper bends.</string>
 </resources>
