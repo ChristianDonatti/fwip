@@ -25,8 +25,10 @@ Fluid, simple and made to feel like reading a real comic book.
 **Reading**
 - Paper page curl that follows your finger, with the back of the sheet and soft shadows; in landscape on tablets the page turns over the spine of a double spread
 - Guided reading, panel by panel or balloon by balloon: panels are found from the page gutters (with the ML model as a fallback) and speech balloons by an on-device model, both in reading order with a spotlight; double tap a balloon to zoom straight into it
-- Page overview with thumbnails, page previews while you drag the page bar, bookmarks, manga mode (right to left), automatic margin cropping, wide double pages shown whole
+- Page overview with thumbnails, a page bar made of little pages (like Panels) with a big preview while you drag it, bookmarks, manga mode (right to left), automatic margin cropping, wide double pages shown whole
 - Vertical scrolling for webtoons and long strips (picked automatically for very tall pages)
+- Your gestures: choose what a double tap, a long press and swiping up or down do (zoom, controls, page overview, bookmark, panel by panel, close)
+- Page turn feel: four page sounds, turn speed, how high the page arcs and how deep the fold shading is
 - Comfort: brightness just for reading, warm night light, keep the screen on, rotation lock, configurable tap zones, volume keys, a light vibration and an optional paper sound on each turn
 - Reader look: black, gray or paper background, spine shadow strength and an optional paper texture on the turning page
 - Page filters for old scans: yellowed paper made white again and faded ink darkened, less noise, sharper lines
@@ -44,14 +46,16 @@ Fluid, simple and made to feel like reading a real comic book.
 - Series (even with a single issue), folders, your own collections with a reading order for events, a "Want to read" list, read/unread, filters, sorting and search
 - ComicRack reading lists (.cbl) imported as collections in their reading order, with a list of the issues you are missing
 - A NEW badge on comics that just arrived, and optional notifications when a new issue of a series you are reading shows up (on the NAS too)
-- Your own colour, picture and logo for any series, folder or collection
+- Your own colour, picture and logo for any series, folder, collection or publisher; publishers get their own shelves
+- The library as covers or a compact list; progress on covers as a bar, a ring, a percentage or nothing; pick the tab the app opens on and hide the ones you do not use
 - A storage screen: what downloads, covers and temporary files take, and finished downloads cleaned up by themselves when they are still on the NAS
 - Receive comics over Wi-Fi: open the address shown in a computer's browser and drop the files
 - Fix names, series and covers by hand: edit an issue, rename a whole series, or pick a cover from any page or image
 - Delete comics or move them between folders, the app's downloads and your NAS, keeping progress and collections
 - Reading statistics: pages, time, finished comics, streaks and completed series
 - ComicInfo.xml metadata: series and issue numbers, credits, publisher, date, synopsis; manga flagged as right to left opens in manga mode
-- Reset the progress of a comic, next issue card at the end of a comic, a "Continue reading" home screen widget and icon shortcuts
+- Reset the progress of a comic, next issue card at the end of a comic and icon shortcuts
+- Home screen widgets in the app's colours: continue reading (with a next issue button), up next in every series, an event or collection in its reading order, reading stats with the week, new arrivals, and shortcuts (continue, surprise me, receive over Wi-Fi, sync)
 
 **Your NAS and your devices**
 - Network folders over SMB (Windows shares, Samba, most NAS) and WebDAV: comics are read in place, a block at a time, or downloaded for offline reading, one comic or a whole series straight from the library
