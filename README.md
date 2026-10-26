@@ -29,6 +29,8 @@ Fluid, simple and made to feel like reading a real comic book.
 - Vertical scrolling for webtoons and long strips (picked automatically for very tall pages)
 - Comfort: brightness just for reading, warm night light, keep the screen on, rotation lock, configurable tap zones, volume keys, a light vibration and an optional paper sound on each turn
 - Reader look: black, gray or paper background, spine shadow strength and an optional paper texture on the turning page
+- Page filters for old scans: yellowed paper made white again and faded ink darkened, less noise, sharper lines
+- Double pages split in two halves when only one page fits on screen
 
 **Library**
 - Your own folders (subfolders included): CBZ, CBR (RAR4 and RAR5, solid archives too), CB7 and PDF
@@ -40,6 +42,11 @@ Fluid, simple and made to feel like reading a real comic book.
 - Home sections you can turn on, reorder and add to (pin a collection or a series), plus an optional greeting with your name
 - A choice of app icons that match the themes and colours
 - Series (even with a single issue), folders, your own collections with a reading order for events, a "Want to read" list, read/unread, filters, sorting and search
+- ComicRack reading lists (.cbl) imported as collections in their reading order, with a list of the issues you are missing
+- A NEW badge on comics that just arrived, and optional notifications when a new issue of a series you are reading shows up (on the NAS too)
+- Your own colour, picture and logo for any series, folder or collection
+- A storage screen: what downloads, covers and temporary files take, and finished downloads cleaned up by themselves when they are still on the NAS
+- Receive comics over Wi-Fi: open the address shown in a computer's browser and drop the files
 - Fix names, series and covers by hand: edit an issue, rename a whole series, or pick a cover from any page or image
 - Delete comics or move them between folders, the app's downloads and your NAS, keeping progress and collections
 - Reading statistics: pages, time, finished comics, streaks and completed series
