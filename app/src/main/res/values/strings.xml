@@ -561,4 +561,13 @@
     <string name="sharp_strong">Strong</string>
     <string name="split_wide">Split double pages</string>
     <string name="split_wide_hint">With one page on screen, a double page shows one half at a time.</string>
+    <string name="cbl_import">Import a reading list</string>
+    <string name="cbl_import_hint">A .cbl file (ComicRack) with the reading order of an event</string>
+    <string name="cbl_found">%1$d of %2$d issues found in your library.</string>
+    <string name="cbl_missing">Not found</string>
+    <string name="cbl_more_missing">and %1$d more</string>
+    <string name="cbl_missing_hint">Comics are matched by series and number. Fix a name with \"Edit info\" and import again.</string>
+    <string name="cbl_create">Create collection</string>
+    <string name="cbl_empty">This reading list has no issues.</string>
+    <string name="cbl_failed">Could not read the reading list: %1$s</string>
 </resources>

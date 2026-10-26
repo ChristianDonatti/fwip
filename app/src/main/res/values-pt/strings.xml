@@ -560,4 +560,13 @@
     <string name="sharp_strong">Forte</string>
     <string name="split_wide">Dividir páginas duplas</string>
     <string name="split_wide_hint">Com uma página na tela, a página dupla aparece uma metade de cada vez.</string>
+    <string name="cbl_import">Importar lista de leitura</string>
+    <string name="cbl_import_hint">Um arquivo .cbl (ComicRack) com a ordem de leitura de um evento</string>
+    <string name="cbl_found">%1$d de %2$d edições encontradas na sua biblioteca.</string>
+    <string name="cbl_missing">Não encontradas</string>
+    <string name="cbl_more_missing">e mais %1$d</string>
+    <string name="cbl_missing_hint">As HQs são encontradas pela série e pelo número. Corrija um nome em \"Editar informações\" e importe de novo.</string>
+    <string name="cbl_create">Criar coleção</string>
+    <string name="cbl_empty">Esta lista de leitura não tem edições.</string>
+    <string name="cbl_failed">Não deu para ler a lista de leitura: %1$s</string>
 </resources>

@@ -56,6 +56,8 @@ data class LibraryState(
     val fileMessage: String? = null,
     /** Copies not shown (the same comic on the NAS) to the copy shown in their place. */
     val aliases: Map<String, String> = emptyMap(),
+    /** A reading list just read from a .cbl file, waiting to become a collection. */
+    val readingList: io.github.christiandonatti.fwip.data.CblMatch? = null,
 ) {
     /** Started but not finished, most recent first. */
     val continueReading: List<LibraryItem>
@@ -617,6 +619,52 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
 
     /** The app's own downloads folder, a place comics can be moved to as well. */
     val downloadsUri: Uri get() = Uri.fromFile(io.github.christiandonatti.fwip.remote.RemoteComics.downloadsDir(getApplication()))
+
+    // ---------- Reading lists (.cbl) ----------
+
+    /** Reads a ComicRack reading list and finds its issues in the library. */
+    fun importReadingList(uri: Uri) {
+        viewModelScope.launch {
+            val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val app = getApplication<Application>()
+                    val bytes = app.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: error(str(R.string.error_read_file))
+                    val list = io.github.christiandonatti.fwip.data.ReadingLists.parse(bytes)
+                    val fallback = runCatching {
+                        app.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                            if (c.moveToFirst()) c.getString(0)?.substringBeforeLast('.') else null
+                        }
+                    }.getOrNull()
+                    val named = if (list.name.isBlank()) list.copy(name = fallback ?: str(R.string.new_collection)) else list
+                    val candidates = _state.value.items.map { item ->
+                        io.github.christiandonatti.fwip.data.CblCandidate(
+                            id = item.comic.id,
+                            series = item.series.name,
+                            number = item.meta?.issue ?: item.parsed.number,
+                            volume = item.meta?.volume ?: item.parsed.year,
+                            year = item.meta?.year ?: item.parsed.year,
+                        )
+                    }
+                    io.github.christiandonatti.fwip.data.ReadingLists.match(named, candidates)
+                }
+            }
+            result.onSuccess { m ->
+                if (m.total == 0) _state.update { it.copy(fileMessage = str(R.string.cbl_empty)) }
+                else _state.update { it.copy(readingList = m) }
+            }.onFailure { e ->
+                _state.update { it.copy(fileMessage = str(R.string.cbl_failed, io.github.christiandonatti.fwip.ui.errorText(e))) }
+            }
+        }
+    }
+
+    /** Turns the pending reading list into a collection, in its order. Returns the new collection's id. */
+    fun createFromReadingList(): String? {
+        val m = _state.value.readingList ?: return null
+        _state.update { it.copy(readingList = null) }
+        return createCollection(m.name, m.ids)
+    }
+
+    fun dismissReadingList() = _state.update { it.copy(readingList = null) }
 
     /** Copies comics from the NAS into this device's downloads, to read offline. The NAS copy stays. */
     fun downloadComics(ids: List<String>) {

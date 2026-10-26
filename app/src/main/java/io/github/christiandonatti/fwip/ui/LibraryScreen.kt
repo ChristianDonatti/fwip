@@ -120,6 +120,10 @@ class LibraryActions(
     val moveComics: (List<String>, Uri) -> Unit,
     /** Copies comics from the NAS to this device (the NAS copy stays). */
     val downloadComics: (List<String>) -> Unit = {},
+    /** Picks a ComicRack .cbl reading list; the match comes back in the state. */
+    val importReadingList: () -> Unit = {},
+    val createFromReadingList: () -> String? = { null },
+    val dismissReadingList: () -> Unit = {},
     val downloadsUri: () -> Uri,
     val dismissFileMessage: () -> Unit,
     val saveReport: () -> Unit = {},
@@ -991,10 +995,42 @@ private fun CollectionsTab(
                 }
             }
         }
+        item(key = "cbl") {
+            Column(
+                Modifier
+                    .clip(RoundedCornerShape(24.dp))
+                    .border(1.dp, FwipColors.Stroke, RoundedCornerShape(24.dp))
+                    .clickable(role = Role.Button) { actions.importReadingList() }
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(Modifier.fillMaxWidth().height(110.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier.size(52.dp).clip(CircleShape).background(FwipColors.Surface),
+                        contentAlignment = Alignment.Center,
+                    ) { ListGlyph(FwipColors.Text) }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(str(R.string.cbl_import), style = MaterialTheme.typography.labelLarge)
+                    Text(str(R.string.cbl_import_hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 3)
+                }
+            }
+        }
         item(span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.padding(top = 12.dp)) { SectionTitle(str(R.string.smart_collections)) } }
         items(smart, key = { "m:" + it.kind.name }) { shelf ->
             ShelfCard(shelf.title, state.itemsOf(shelf), onClick = { openShelf(shelf) })
         }
+    }
+
+    state.readingList?.let { m ->
+        ReadingListDialog(
+            m,
+            onCreate = {
+                val name = m.name
+                actions.createFromReadingList()?.let { id -> openShelf(Shelf.Custom(id, name)) }
+            },
+            onDismiss = actions.dismissReadingList,
+        )
     }
 
     if (creating) {
@@ -1320,3 +1356,47 @@ private fun FoldersDialog(
     }
 }
 
+
+
+/** What a reading list found in the library, before it becomes a collection. */
+@Composable
+private fun ReadingListDialog(m: io.github.christiandonatti.fwip.data.CblMatch, onCreate: () -> Unit, onDismiss: () -> Unit) {
+    FwipDialog(onDismiss) {
+        DialogTitle(m.name, onDismiss)
+        Text(
+            str(R.string.cbl_found, m.ids.size, m.total),
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (m.ids.isEmpty()) FwipColors.Danger else FwipColors.Text,
+        )
+        if (m.missing.isNotEmpty()) {
+            Text(str(R.string.cbl_missing), style = MaterialTheme.typography.labelLarge, color = FwipColors.TextSoft)
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                m.missing.take(40).forEach { b ->
+                    Text(b.label, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                if (m.missing.size > 40) {
+                    Text(str(R.string.cbl_more_missing, m.missing.size - 40), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+                }
+            }
+            Text(str(R.string.cbl_missing_hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PillButton(str(R.string.cancel), onDismiss, style = PillStyle.Ghost, height = 46.dp, modifier = Modifier.weight(1f))
+            PillButton(str(R.string.cbl_create), onCreate, style = PillStyle.Amber, height = 46.dp, enabled = m.ids.isNotEmpty(), modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+/** Three lines with dots: a reading list. */
+@Composable
+internal fun ListGlyph(color: Color, modifier: Modifier = Modifier.size(22.dp)) {
+    androidx.compose.foundation.Canvas(modifier) {
+        val w = size.width
+        val stroke = w * 0.09f
+        for (i in 0..2) {
+            val y = w * (0.25f + i * 0.25f)
+            drawCircle(color, radius = stroke * 0.75f, center = androidx.compose.ui.geometry.Offset(w * 0.16f, y))
+            drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.34f, y), androidx.compose.ui.geometry.Offset(w * 0.88f, y), stroke, androidx.compose.ui.graphics.StrokeCap.Round)
+        }
+    }
+}

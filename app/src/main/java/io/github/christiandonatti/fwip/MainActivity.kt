@@ -84,6 +84,9 @@ class MainActivity : ComponentActivity() {
                 val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                     if (uri != null) viewModel.importBackup(uri)
                 }
+                val openReadingList = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                    if (uri != null) viewModel.importReadingList(uri)
+                }
                 val saveReport = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
                     if (uri != null) viewModel.saveReport(uri)
                 }
@@ -151,6 +154,9 @@ class MainActivity : ComponentActivity() {
                         dismissFileMessage = viewModel::dismissFileMessage,
                         saveReport = { saveReport.launch(io.github.christiandonatti.fwip.data.Reports.fileName()) },
                         pickBackdrop = { pickBackdrop.launch("image/*") },
+                        importReadingList = { openReadingList.launch(arrayOf("*/*")) },
+                        createFromReadingList = viewModel::createFromReadingList,
+                        dismissReadingList = viewModel::dismissReadingList,
                         addFolder = { pickFolder.launch(null) },
                         removeFolder = viewModel::removeFolder,
                         refresh = viewModel::refresh,
