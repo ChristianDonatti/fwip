@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   repro:
-    if: contains(github.event.head_commit.message, '[repro]') || contains(github.event.head_commit.message, '[uicheck]') || contains(github.event.head_commit.message, '[nascheck]')
+    if: contains(github.event.head_commit.message, '[repro]') || contains(github.event.head_commit.message, '[uicheck]') || contains(github.event.head_commit.message, '[nascheck]') || contains(github.event.head_commit.message, '[newcheck]')
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     steps:
@@ -58,7 +58,7 @@ jobs:
           disk-size: 4G
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           disable-animations: false
-          script: bash scripts/${{ contains(github.event.head_commit.message, '[nascheck]') && 'nas_check.sh' || (contains(github.event.head_commit.message, '[uicheck]') && 'ui_check.sh' || 'repro.sh') }}
+          script: bash scripts/${{ contains(github.event.head_commit.message, '[newcheck]') && 'new_check.sh' || (contains(github.event.head_commit.message, '[nascheck]') && 'nas_check.sh' || (contains(github.event.head_commit.message, '[uicheck]') && 'ui_check.sh' || 'repro.sh')) }}
       - name: Push screenshots
         if: always()
         run: |
