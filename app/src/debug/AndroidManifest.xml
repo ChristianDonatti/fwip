@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test builds only: a page that hosts every Fwip widget, so the emulator check can photograph them. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name=".WidgetPreviewActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Fwip" />
+    </application>
+</manifest>
