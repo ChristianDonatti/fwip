@@ -222,7 +222,7 @@ private fun ShelfStripCard(shelf: Shelf, list: List<LibraryItem>, modifier: Modi
                     model = art,
                     contentDescription = null,
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                    modifier = Modifier.matchParentSize().clip(RoundedCornerShape(12.dp)),
                 )
             } else if (list.isEmpty()) {
                 Box(
