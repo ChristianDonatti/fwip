@@ -36,10 +36,11 @@ for k in 1 2 3; do put /tmp/ui.xml shared_prefs/fwip_ui.xml; adb shell "run-as $
 for f in comics/PepperCarrot_0[1-6].cbz; do put "$f" "files/Baixadas/$(basename $f)"; done
 restart 25
 shot n1-whats-new 2
-ui '^Got it\|' ; sleep 2
+ui '\|Close$' ; sleep 2
 openc PepperCarrot_01.cbz
-for k in 1 2 3; do timeout 20 adb shell input tap $(( W - 60 )) $(( H / 2 )); sleep 1.5; done
-back 3
+for k in 1 2; do timeout 20 adb shell input tap $(( W - 60 )) $(( H / 2 )); sleep 1.5; done
+# Back to the library (the end card, if it showed, takes one more).
+for k in 1 2 3; do back 2; [ -n "$(find_xy '\|Settings$')" ] && break; done
 
 # ---- Settings on the tablet: two panes ----
 ui '\|Settings$' ; shot s1-settings 3
@@ -100,7 +101,7 @@ adb shell wm density 240
 # ---- Screen saver with the cover ----
 adb shell settings put secure screensaver_enabled 1
 adb shell settings put secure screensaver_components $APP/.widget.CoverDream
-timeout 20 adb shell am start -n com.android.systemui/.Somnambulator || timeout 20 adb shell cmd dreams start-dreaming
+timeout 20 adb shell cmd dreams start-dreaming || timeout 20 adb shell am start -n com.android.systemui/.Somnambulator
 shot d1-dream 8
 timeout 20 adb shell input keyevent KEYCODE_WAKEUP; sleep 1
 

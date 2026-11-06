@@ -136,9 +136,10 @@ fun ReaderScreen(
     }
 
     BackHandler(onBack = onClose)
+    // E-ink pages sit on e-ink paper (read here, so a change redraws at once).
+    val ground = if (light.ink != InkLook.Off) androidx.compose.ui.graphics.Color(0xFFE6E3DA) else androidx.compose.ui.graphics.Color(settings.ground.argb)
     SideEffect {
-        // E-ink pages sit on e-ink paper.
-        FwipColors.ReaderBg = if (light.ink != InkLook.Off) androidx.compose.ui.graphics.Color(0xFFE6E3DA) else androidx.compose.ui.graphics.Color(settings.ground.argb)
+        FwipColors.ReaderBg = ground
         ReaderLook.spine = settings.spineShadow
         ReaderLook.texture = settings.paperTexture
         ReaderLook.speed = settings.turnSpeed.factor
