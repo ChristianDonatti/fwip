@@ -337,7 +337,8 @@ object BookSources {
     fun info(context: Context, comic: Comic): BookInfo = when (comic.format) {
         ComicFormat.EPUB -> withZip(context, comic) { BookInfoReader.epub(it) }
         ComicFormat.FB2 -> BookInfoReader.fb2(readAll(context, comic))
-        ComicFormat.MOBI -> MobiBooks.info(localOriginal(context, comic))
+        // Kindle books are rebuilt as EPUB once; their details come from that copy.
+        ComicFormat.MOBI -> @Suppress("DEPRECATION") ZipFile(epubFor(context, comic)).use { BookInfoReader.epub(it) }
         else -> BookInfo()
     }
 

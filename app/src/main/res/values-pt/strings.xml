@@ -883,7 +883,7 @@
     <string name="columns_auto">Automático</string>
     <string name="columns_one">Uma</string>
     <string name="columns_two">Duas</string>
-    <string name="mobi_unsupported">Não foi possível abrir este MOBI ou AZW3. Arquivos comprados na Amazon têm DRM e não abrem fora do app Kindle.</string>
+    <string name="mobi_unsupported">Não foi possível abrir este arquivo Kindle. Ele pode estar danificado ou num formato que o Fwip não conhece.</string>
     <string name="mode_comics">HQs</string>
     <string name="mode_books">Livros</string>
     <string name="settings_books">Leitura de livros</string>
@@ -894,4 +894,5 @@
     <string name="book_progress_book">Tempo para o fim do livro</string>
     <string name="book_progress_page">Página</string>
     <string name="book_progress_percent">Porcentagem</string>
+    <string name="mobi_drm">Este livro Kindle tem DRM. Livros comprados na Amazon só abrem no app Kindle.</string>
 </resources>
