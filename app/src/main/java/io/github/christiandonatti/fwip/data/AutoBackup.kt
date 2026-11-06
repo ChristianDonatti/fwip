@@ -39,6 +39,7 @@ object Backups {
             .put("state", sync.localState(comics).toJson())
             .put("settings", io.github.christiandonatti.fwip.reader.ReaderSettings.get(context).toJson())
             .put("light", io.github.christiandonatti.fwip.reader.LightSettings.get(context).toJson())
+            .put("books", io.github.christiandonatti.fwip.book.BookSettings.get(context).toJson())
             .put("servers", list)
             .put("netFolders", net)
     }

@@ -38,7 +38,11 @@ enum class BookColumns(@androidx.annotation.StringRes private val labelRes: Int)
 }
 
 /** What the bottom line shows; a tap moves to the next one, as on the Kindle. */
-enum class BookProgress { ChapterTime, BookTime, Page, Percent }
+enum class BookProgress(@androidx.annotation.StringRes private val labelRes: Int) {
+    ChapterTime(R.string.book_progress_chapter), BookTime(R.string.book_progress_book), Page(R.string.book_progress_page), Percent(R.string.book_progress_percent);
+
+    val label: String get() = str(labelRes)
+}
 
 /** Book reading preferences, shared state like the comic ones. */
 class BookSettings private constructor(context: Context) {

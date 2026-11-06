@@ -77,6 +77,7 @@ import io.github.christiandonatti.fwip.reader.LevelSlider
 import io.github.christiandonatti.fwip.reader.LightSettings
 import io.github.christiandonatti.fwip.reader.Section
 import io.github.christiandonatti.fwip.reader.Toggle
+import io.github.christiandonatti.fwip.reader.settingAnchor
 import io.github.christiandonatti.fwip.str
 import io.github.christiandonatti.fwip.ui.CircleIconButton
 import io.github.christiandonatti.fwip.ui.PillButton
@@ -156,6 +157,16 @@ internal fun BookPanelHost(
 
 @Composable
 private fun TextPanel(settings: BookSettings, light: LightSettings) {
+    Column(
+        Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(start = 22.dp, end = 22.dp, bottom = 24.dp),
+    ) { BookTextSettings(settings, light, inReader = true) }
+}
+
+/** Book look and layout: in the reader's Aa panel and in Settings > Books. */
+@Composable
+fun BookTextSettings(settings: BookSettings, light: LightSettings, inReader: Boolean = false) {
     val context = LocalContext.current
     var fonts by remember { mutableStateOf(UserFonts.list(context)) }
     var added by remember { mutableStateOf(false) }
@@ -168,14 +179,9 @@ private fun TextPanel(settings: BookSettings, light: LightSettings) {
             }
         }
     }
-    Column(
-        Modifier
-            .verticalScroll(rememberScrollState())
-            .padding(start = 22.dp, end = 22.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // Themes: little pages in their colours.
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().settingAnchor("bookTheme")) {
             BookTheme.entries.forEach { t ->
                 val (bg, fg) = pageColors(t, light.ink)
                 val on = t == settings.theme
@@ -200,7 +206,7 @@ private fun TextPanel(settings: BookSettings, light: LightSettings) {
         if (light.ink != InkLook.Off) Text(str(R.string.book_ink_hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
 
         // Size: two buttons and the value, as on e-readers.
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.settingAnchor("bookSize"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(str(R.string.book_size), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
             SizeButton("A", 14) { settings.updateFontSize(settings.fontSize - 0.1f) }
             Text("${(settings.fontSize * 100).toInt()}%", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -208,7 +214,7 @@ private fun TextPanel(settings: BookSettings, light: LightSettings) {
         }
 
         Section(str(R.string.book_font))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(Modifier.settingAnchor("bookFont"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val shipped = listOf(
                 BookFontKind.Original to str(R.string.book_font_original),
                 BookFontKind.Literata to "Literata",
@@ -225,19 +231,22 @@ private fun TextPanel(settings: BookSettings, light: LightSettings) {
         if (added) Text(str(R.string.book_font_added), style = MaterialTheme.typography.bodySmall, color = FwipColors.Amber)
 
         Section(str(R.string.book_layout))
-        LevelSlider(str(R.string.book_line_height), (settings.lineHeight - 1f) / 1.2f, 0f..1f, { settings.updateLineHeight(1f + it * 1.2f) }, valueLabel = "%.1f".format(settings.lineHeight))
+        LevelSlider(str(R.string.book_line_height), (settings.lineHeight - 1f) / 1.2f, 0f..1f, { settings.updateLineHeight(1f + it * 1.2f) }, key = "bookLines", valueLabel = "%.1f".format(settings.lineHeight))
         LevelSlider(str(R.string.book_margins), (settings.margins - 0.4f) / 1.8f, 0f..1f, { settings.updateMargins(0.4f + it * 1.8f) }, valueLabel = "%.1f".format(settings.margins))
-        Toggle(str(R.string.book_justify), str(R.string.book_justify_hint), settings.justify, settings::updateJustify)
-        Toggle(str(R.string.book_hyphens), str(R.string.book_hyphens_hint), settings.hyphens, settings::updateHyphens)
-        Toggle(str(R.string.book_bold), str(R.string.book_bold_hint), settings.bold, settings::updateBold)
-        Toggle(str(R.string.book_publisher), str(R.string.book_publisher_hint), settings.publisherStyles, settings::updatePublisherStyles)
-        Choice(str(R.string.book_columns), BookColumns.entries, settings.columns, { it.label }, settings::updateColumns, hint = str(R.string.book_columns_hint))
-        Choice(str(R.string.page_turn), BookTurn.entries, settings.turn, { it.label }, settings::updateTurn)
+        Toggle(str(R.string.book_justify), str(R.string.book_justify_hint), settings.justify, settings::updateJustify, key = "bookJustify")
+        Toggle(str(R.string.book_hyphens), str(R.string.book_hyphens_hint), settings.hyphens, settings::updateHyphens, key = "bookHyphens")
+        Toggle(str(R.string.book_bold), str(R.string.book_bold_hint), settings.bold, settings::updateBold, key = "bookBold")
+        Toggle(str(R.string.book_publisher), str(R.string.book_publisher_hint), settings.publisherStyles, settings::updatePublisherStyles, key = "bookPublisher")
+        Choice(str(R.string.book_columns), BookColumns.entries, settings.columns, { it.label }, settings::updateColumns, key = "bookColumns", hint = str(R.string.book_columns_hint))
+        Choice(str(R.string.page_turn), BookTurn.entries, settings.turn, { it.label }, settings::updateTurn, key = "bookTurn")
+        Choice(str(R.string.book_progress), BookProgress.entries, settings.progress, { it.label }, settings::updateProgress, key = "bookProgress", hint = str(R.string.book_progress_hint))
 
-        Section(str(R.string.section_light))
-        io.github.christiandonatti.fwip.reader.LightLevelRow(light)
-        LevelSlider(str(R.string.warm_light), light.warmth, 0f..1f, light::updateWarmth)
-        Choice(str(R.string.ink_look), InkLook.entries, light.ink, { it.label }, light::updateInk)
+        if (inReader) {
+            Section(str(R.string.section_light))
+            io.github.christiandonatti.fwip.reader.LightLevelRow(light)
+            LevelSlider(str(R.string.warm_light), light.warmth, 0f..1f, light::updateWarmth)
+            Choice(str(R.string.ink_look), InkLook.entries, light.ink, { it.label }, light::updateInk)
+        }
     }
 }
 

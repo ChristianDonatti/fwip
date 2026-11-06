@@ -511,6 +511,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                         if (!o.has("light")) io.github.christiandonatti.fwip.reader.LightSettings.get(app).fromJson(it)
                     }
                     o.optJSONObject("light")?.let { io.github.christiandonatti.fwip.reader.LightSettings.get(app).fromJson(it) }
+                    o.optJSONObject("books")?.let { io.github.christiandonatti.fwip.book.BookSettings.get(app).fromJson(it) }
                     val known = _state.value.servers.map { it.id }.toSet()
                     val added = mutableListOf<io.github.christiandonatti.fwip.remote.Server>()
                     o.optJSONArray("servers")?.let { arr ->

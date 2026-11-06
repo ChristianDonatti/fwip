@@ -887,4 +887,12 @@
     <string name="mobi_unsupported">This MOBI or AZW3 file could not be opened. Files bought on Amazon have DRM and cannot be read outside the Kindle app.</string>
     <string name="mode_comics">Comics</string>
     <string name="mode_books">Books</string>
+    <string name="settings_books">Books</string>
+    <string name="book_theme">Page colour</string>
+    <string name="book_progress">Bottom line</string>
+    <string name="book_progress_hint">Tap the line while reading to switch</string>
+    <string name="book_progress_chapter">Time left in chapter</string>
+    <string name="book_progress_book">Time left in book</string>
+    <string name="book_progress_page">Page</string>
+    <string name="book_progress_percent">Percentage</string>
 </resources>

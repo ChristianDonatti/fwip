@@ -1,6 +1,7 @@
 @file:OptIn(
     org.readium.r2.shared.ExperimentalReadiumApi::class,
     org.readium.r2.shared.DelicateReadiumApi::class,
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
 )
 
 package io.github.christiandonatti.fwip.book

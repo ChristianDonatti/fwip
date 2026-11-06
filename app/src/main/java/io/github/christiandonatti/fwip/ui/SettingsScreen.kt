@@ -91,6 +91,7 @@ enum class SettingsGroup(val key: String, @StringRes private val titleRes: Int, 
     Appearance("appearance", R.string.appearance, GroupGlyph.Palette, R.string.settings_section_look),
     Light("light", R.string.settings_light, GroupGlyph.Sun, R.string.settings_section_look),
     Comics("comics", R.string.settings_comics, GroupGlyph.Panels, R.string.settings_section_reading),
+    Books("books", R.string.settings_books, GroupGlyph.Book, R.string.settings_section_reading),
     Sync("sync", R.string.sync_title, GroupGlyph.Sync, R.string.settings_section_data),
     Wifi("wifi", R.string.wifi_title, GroupGlyph.Wifi, R.string.settings_section_data),
     Storage("storage", R.string.storage_title, GroupGlyph.Disk, R.string.settings_section_data),
@@ -161,6 +162,17 @@ private fun entries(): List<SettingEntry> {
         e(SettingsGroup.Comics, "spine", R.string.spine_shadow),
         e(SettingsGroup.Comics, "texture", R.string.paper_texture),
         e(SettingsGroup.Comics, "speed", R.string.turn_speed),
+        e(SettingsGroup.Books, "bookTheme", R.string.book_theme, "tema cor papel noite paper night"),
+        e(SettingsGroup.Books, "bookSize", R.string.book_size),
+        e(SettingsGroup.Books, "bookFont", R.string.book_font, "literata bitter atkinson dyslexic"),
+        e(SettingsGroup.Books, "bookLines", R.string.book_line_height),
+        e(SettingsGroup.Books, "bookJustify", R.string.book_justify),
+        e(SettingsGroup.Books, "bookHyphens", R.string.book_hyphens),
+        e(SettingsGroup.Books, "bookBold", R.string.book_bold),
+        e(SettingsGroup.Books, "bookPublisher", R.string.book_publisher),
+        e(SettingsGroup.Books, "bookColumns", R.string.book_columns),
+        e(SettingsGroup.Books, "bookTurn", R.string.page_turn, "livro book"),
+        e(SettingsGroup.Books, "bookProgress", R.string.book_progress, "kindle tempo time"),
         e(SettingsGroup.Sync, "sync", R.string.sync_title),
         e(SettingsGroup.Sync, "upload", R.string.upload_title),
         e(SettingsGroup.Sync, "backup", R.string.backup_title),
@@ -201,6 +213,7 @@ private fun summary(group: SettingsGroup, state: LibraryState): String {
             ).joinToString(" · ")
         }
         SettingsGroup.Comics -> ReaderSettings.get(context).let { r -> r.turnStyle.label + " · " + r.spreadMode.label }
+        SettingsGroup.Books -> io.github.christiandonatti.fwip.book.BookSettings.get(context).let { b -> b.theme.label + " · ${(b.fontSize * 100).toInt()}%" }
         SettingsGroup.Sync -> if (state.sync.place != null) str(R.string.settings_sync_on) else str(R.string.settings_sync_off)
         SettingsGroup.Wifi -> str(R.string.settings_wifi_summary)
         SettingsGroup.Storage -> str(R.string.settings_storage_summary)
@@ -512,6 +525,9 @@ private fun GroupPage(
         }
         SettingsGroup.Comics -> Page(group.title, gutter, onBack, onReset = { ReaderSettings.get(context).reset() }) {
             ComicReadingSettings(ReaderSettings.get(context))
+        }
+        SettingsGroup.Books -> Page(group.title, gutter, onBack, onReset = { io.github.christiandonatti.fwip.book.BookSettings.get(context).reset() }) {
+            io.github.christiandonatti.fwip.book.BookTextSettings(io.github.christiandonatti.fwip.book.BookSettings.get(context), LightSettings.get(context))
         }
         SettingsGroup.Sync -> Page(group.title, gutter, onBack) { SyncSettings(state.sync, state.folders, state.servers, syncActions) }
         SettingsGroup.Wifi -> WifiScreen(state.folders, state.servers, gutter, onReceived = actions.refresh, onBack = onBack, handleBack = false)
