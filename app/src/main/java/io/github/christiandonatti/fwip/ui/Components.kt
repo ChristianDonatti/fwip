@@ -73,7 +73,9 @@ fun AmbientBackground(color: Color, intensity: Float = 0.55f, content: @Composab
             .fillMaxSize()
             .background(FwipColors.Ink)
     ) {
-        when (ui.backdrop) {
+        // E-ink themes are plain paper: no coloured light behind (a picture still shows).
+        val backdrop = if (FwipColors.grain && ui.backdrop != Backdrop.Image) Backdrop.Solid else ui.backdrop
+        when (backdrop) {
             Backdrop.Glow -> Canvas(Modifier.fillMaxSize()) {
                 val r = max(size.width, size.height)
                 drawRect(

@@ -49,7 +49,7 @@ swipe_up; shot s3-light-more 1
 swipe_up; shot s4-light-end 1
 ui '^Comic reading\|' ; shot s5-comics 2
 # Search finds one setting and lights it up.
-ui '^Search settings\|' ; sleep 1
+xy=$(find_xy 'Settings\|$'); timeout 20 adb shell input tap 300 187; sleep 1
 timeout 20 adb shell input text "warm"
 shot s6-search 2
 ui '^Warm light schedule\|' ; shot s7-found 1
