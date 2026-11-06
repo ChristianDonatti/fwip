@@ -884,4 +884,6 @@
     <string name="columns_one">Uma</string>
     <string name="columns_two">Duas</string>
     <string name="mobi_unsupported">Não foi possível abrir este MOBI ou AZW3. Arquivos comprados na Amazon têm DRM e não abrem fora do app Kindle.</string>
+    <string name="mode_comics">HQs</string>
+    <string name="mode_books">Livros</string>
 </resources>

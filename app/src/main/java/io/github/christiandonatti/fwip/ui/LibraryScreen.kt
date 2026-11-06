@@ -241,6 +241,18 @@ fun LibraryScreen(
     val fresh = state.items.isEmpty() && state.folders.isEmpty() && state.servers.isEmpty()
     LaunchedEffect(fresh) { if (!fresh && !ui.welcomed) ui.setWelcomed() }
 
+    // Comics and books share the library; with both, a switch shows one half at a time.
+    val hasBooks = remember(state.items) { state.items.any { it.isBook } }
+    val hasComics = remember(state.items) { state.items.any { !it.isBook } }
+    val mixed = hasBooks && hasComics
+    val books = if (mixed) ui.libraryMode == "books" else hasBooks && !hasComics
+    val full = state
+    @Suppress("NAME_SHADOWING")
+    val state = remember(full, mixed, books) { if (mixed) full.copy(items = full.items.filter { it.isBook == books }) else full }
+    val modeSwitch: (@Composable (Modifier) -> Unit)? = if (!mixed) null else { m ->
+        Segmented(listOf(false, true), books, { if (it) str(R.string.mode_books) else str(R.string.mode_comics) }, { ui.updateLibraryMode(if (it) "books" else "comics") }, m, stretch = m != Modifier)
+    }
+
     BackHandler(enabled = selection.active) { selection.clear() }
     BackHandler(enabled = shelf != null && !selection.active) { shelfToken = null }
     BackHandler(enabled = shelf == null && searching && !selection.active) { searching = false; query = "" }
@@ -315,13 +327,13 @@ fun LibraryScreen(
                 )
             } else if (settingsAt != null) {
                 SettingsScreen(
-                    state, actions, serverActions, syncActions,
+                    full, actions, serverActions, syncActions,
                     start = settingsAt?.ifEmpty { null },
                     onBrowse = { s -> settingsAt = null; browsing = s.id },
                     onClose = { settingsAt = null },
                 )
             } else if (showStats) {
-                StatsScreen(state, actions.stats, gutter, wide, onBack = { showStats = false })
+                StatsScreen(full, actions.stats, gutter, wide, onBack = { showStats = false })
             } else if (browsingServer != null && browsingServer.kind.isFolder) {
                 NetBrowser(browsingServer, state.folders, serverActions, wide, gutter, onClose = { browsing = null })
             } else if (browsingServer != null) {
@@ -362,10 +374,11 @@ fun LibraryScreen(
                             onFolders = { settingsAt = "" },
                             onSearch = { tab = Tab.Library; searching = true },
                             onAbout = { settingsAt = "about" },
+                            modeSwitch = modeSwitch,
                             modifier = Modifier.padding(horizontal = gutter, vertical = if (wide) 24.dp else 12.dp),
                         )
                         when {
-                            state.items.isEmpty() && tab != Tab.Servers -> EmptyState(state.folders.isEmpty(), state.scanning, actions.addFolder, onServers = { tab = Tab.Servers })
+                            full.items.isEmpty() && tab != Tab.Servers -> EmptyState(state.folders.isEmpty(), state.scanning, actions.addFolder, onServers = { tab = Tab.Servers })
                             tab == Tab.Home -> Home(
                                 state, selected, { selected = it }, actions, openShelf, showMenu, seeAll,
                                 onStats = { showStats = true },
@@ -588,10 +601,12 @@ private fun Header(
     onFolders: () -> Unit,
     onSearch: () -> Unit,
     onAbout: () -> Unit,
+    modeSwitch: (@Composable (Modifier) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val button = if (wide) 46.dp else 44.dp
-    Row(modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
         FwipLogo(
             size = if (wide) 22 else 19,
             modifier = Modifier
@@ -599,6 +614,10 @@ private fun Header(
                 .clickable(role = Role.Button, onClickLabel = str(R.string.about), onClick = onAbout)
                 .padding(4.dp),
         )
+        if (wide && modeSwitch != null) {
+            Spacer(Modifier.width(20.dp))
+            modeSwitch(Modifier)
+        }
         Spacer(Modifier.weight(1f))
         if (wide) {
             Segmented(visibleTabs(), tab, { it.label }, onTab)
@@ -617,10 +636,13 @@ private fun Header(
             CircleIconButton(Icons.Filled.Settings, str(R.string.app_settings), onFolders, size = button)
         }
     }
+    // On a phone the switch gets its own line under the header, full width.
+    if (!wide && modeSwitch != null) modeSwitch(Modifier.fillMaxWidth())
+    }
 }
 
 @Composable
-private fun <T> Segmented(options: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit, modifier: Modifier = Modifier) {
+private fun <T> Segmented(options: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit, modifier: Modifier = Modifier, stretch: Boolean = false) {
     Row(
         modifier
             .clip(CircleShape)
@@ -632,7 +654,7 @@ private fun <T> Segmented(options: List<T>, selected: T, label: (T) -> String, o
         options.forEach { t ->
             val on = t == selected
             Box(
-                Modifier
+                (if (stretch) Modifier.weight(1f) else Modifier)
                     .height(40.dp)
                     .clip(CircleShape)
                     .background(if (on) FwipColors.Text else Color.Transparent)

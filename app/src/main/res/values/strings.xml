@@ -885,4 +885,6 @@
     <string name="columns_one">One</string>
     <string name="columns_two">Two</string>
     <string name="mobi_unsupported">This MOBI or AZW3 file could not be opened. Files bought on Amazon have DRM and cannot be read outside the Kindle app.</string>
+    <string name="mode_comics">Comics</string>
+    <string name="mode_books">Books</string>
 </resources>
