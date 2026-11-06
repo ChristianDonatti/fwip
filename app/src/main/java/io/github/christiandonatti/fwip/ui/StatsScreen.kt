@@ -60,7 +60,7 @@ fun StatsScreen(
     if (onBack != null && handleBack) BackHandler(onBack = onBack)
     val days = remember { load() }
     val today = LocalDate.now()
-    val totalPages = days.values.sumOf { it.pages }
+    val totalPages = days.values.sumOf { it.allPages }
     val totalMillis = days.values.sumOf { it.allMillis }
     val hasBooks = state.items.any { it.isBook }
     val finishedComics = state.items.count { it.progress?.finished == true && !it.isBook }

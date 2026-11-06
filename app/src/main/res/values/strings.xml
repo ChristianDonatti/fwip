@@ -36,7 +36,7 @@
     <string name="edit_server">Edit server</string>
     <string name="email_hint">you@email.com</string>
     <string name="empty_collection">Empty collection. Hold a comic\'s cover and choose \"Add to a collection\".</string>
-    <string name="empty_hint">Choose the folder where your comics live. Fwip reads CBZ, CBR, CB7 and PDF files, subfolders included.</string>
+    <string name="empty_hint">Choose the folder where your comics and books live. Fwip reads CBZ, CBR, CB7 and PDF comics and EPUB, MOBI, AZW3, FB2 and TXT books, subfolders included.</string>
     <string name="empty_no_comics">No comics found</string>
     <string name="empty_no_comics_hint">The chosen folders have no CBZ, CBR, CB7 or PDF files. Try adding another folder.</string>
     <string name="empty_title">Your shelf is empty</string>
@@ -930,4 +930,15 @@
     <string name="goal_progress">%1$d of %2$d</string>
     <string name="goal_done">Goal reached!</string>
     <string name="goal_pace">%1$d to go in %2$d days</string>
+    <string name="welcome_kind_title">What will you read?</string>
+    <string name="welcome_kind">Fwip reads comics and books. You can change this later.</string>
+    <string name="welcome_kind_comics">Comics</string>
+    <string name="welcome_kind_comics_hint">CBZ, CBR, CB7 and PDF, page by page or panel by panel</string>
+    <string name="welcome_kind_books">Books</string>
+    <string name="welcome_kind_books_hint">EPUB, Kindle files without DRM, FB2 and TXT, with your own fonts and colours</string>
+    <string name="welcome_kind_both">Both</string>
+    <string name="welcome_kind_both_hint">A switch at the top of the library shows one or the other</string>
+    <string name="welcome_books_title">Where are your books?</string>
+    <string name="welcome_both_title">Where are your comics and books?</string>
+    <string name="a11y_page">Page %1$d of %2$d</string>
 </resources>

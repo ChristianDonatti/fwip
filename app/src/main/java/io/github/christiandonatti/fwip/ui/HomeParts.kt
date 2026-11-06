@@ -619,11 +619,11 @@ private fun weekSummary(days: Map<LocalDate, io.github.christiandonatti.fwip.dat
     var streak = 0
     while ((days[d]?.allPages ?: 0) > 0) { streak++; d = d.minusDays(1) }
     return Week(
-        pages = last7.sumOf { days[it]?.pages ?: 0 },
+        pages = last7.sumOf { days[it]?.allPages ?: 0 },
         minutes = last7.sumOf { days[it]?.allMillis ?: 0L } / 60_000,
         finished = last7.sumOf { days[it]?.finished ?: 0 },
         streak = streak,
-        perDay = last7.map { days[it]?.pages ?: 0 },
+        perDay = last7.map { days[it]?.allPages ?: 0 },
     )
 }
 

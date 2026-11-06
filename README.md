@@ -1,9 +1,7 @@
 # fwip
 
-A comic reader for Android tablets and phones, inspired by Panels on iOS.
-Fluid, simple and made to feel like reading a real comic book.
-
-> Early development. Expect rough edges and frequent changes.
+A comic and book reader for Android tablets and phones, inspired by Panels on iOS.
+Fluid, simple and made to feel like reading a real comic book, or a good e-reader.
 
 <p>
   <img src="docs/screenshots/tablet-1-home.png" width="49%" alt="Home on a tablet: cover carousel with ambient glow">
@@ -22,7 +20,21 @@ Fluid, simple and made to feel like reading a real comic book.
 
 ## Features
 
-**Reading**
+**Books**
+- EPUB, Kindle files without DRM (MOBI, AZW3, PRC), FB2 and TXT, laid out by Readium; Kindle files are rebuilt as EPUB with libmobi, TXT and FB2 converted once and kept
+- Comics and books share the library, collections and sync; with both, a switch at the top shows one or the other, and books can stand on a shelf by their spines
+- Text and page: seven page colours (paper, e-ink, calm, night and more), fonts made for reading (Literata, Bitter, Atkinson Hyperlegible, OpenDyslexic) or your own TTF and OTF files, size, line spacing, margins, justified text, hyphenation, bolder text, publisher styles, one or two columns
+- Page turns: instant, slide or continuous scroll
+- Time left in the chapter or the book at your own reading pace, like on a Kindle; tap the line to see page or percentage instead
+- Contents, bookmarks, search in the whole book, highlights in four colours with notes, shared as Markdown, and a dictionary lookup
+- Read aloud with the device's voices, with speed and a sleep timer (minutes or end of chapter)
+
+**E-reader light**
+- Brightness below the system minimum, warm light by hand, at sunset or on a schedule, and the room's light sensor
+- E-ink themes for the app, and an e-ink look for comic pages (16 greys or soft colour) with an optional refresh blink
+- Clock and battery on the page, focus mode (do not disturb while reading) and a screen saver with your covers
+
+**Reading comics**
 - Paper page curl that follows your finger, with the back of the sheet and soft shadows; in landscape on tablets the page turns over the spine of a double spread
 - Guided reading, panel by panel or balloon by balloon: panels are found from the page gutters (with the ML model as a fallback) and speech balloons by an on-device model, both in reading order with a spotlight; double tap a balloon to zoom straight into it
 - Page overview with thumbnails, a page bar made of little pages (like Panels) with a big preview while you drag it, bookmarks, manga mode (right to left), automatic margin cropping, wide double pages shown whole
@@ -52,7 +64,11 @@ Fluid, simple and made to feel like reading a real comic book.
 - Receive comics over Wi-Fi: open the address shown in a computer's browser and drop the files
 - Fix names, series and covers by hand: edit an issue, rename a whole series, or pick a cover from any page or image
 - Delete comics or move them between folders, the app's downloads and your NAS, keeping progress and collections
-- Reading statistics: pages, time, finished comics, streaks and completed series
+- Reading statistics for comics and books together: time a day, pages, finished titles, streaks, completed series and a goal for the year
+- Undo instead of "are you sure?": deleting, marking read and removing collections can be taken back for a few seconds
+- A page for each comic and book with its cover, synopsis, credits, progress and the rest of its series
+- One search for comics, books, series, collections and settings
+- Settings in groups with search, two panes on tablets and reset per group
 - ComicInfo.xml metadata: series and issue numbers, credits, publisher, date, synopsis; manga flagged as right to left opens in manga mode
 - Reset the progress of a comic, next issue card at the end of a comic and icon shortcuts
 - Home screen widgets in the app's colours: continue reading (with a next issue button), up next in every series, an event or collection in its reading order, reading stats with the week, new arrivals, and shortcuts (continue, surprise me, receive over Wi-Fi, sync)
@@ -96,7 +112,7 @@ Test builds are signed with the development key in `keystore/`. It is public on 
 
 ## Tech
 
-Kotlin, Jetpack Compose, Glance, LiteRT (TensorFlow Lite), Apache Commons Compress, junrar, 7-Zip-JBinding, smbj, OkHttp, Android PdfRenderer, Coil.
+Kotlin, Jetpack Compose, Glance, LiteRT (TensorFlow Lite), Readium, libmobi, Apache Commons Compress, junrar, 7-Zip-JBinding, smbj, OkHttp, Android PdfRenderer, Coil.
 
 ## License
 
@@ -111,4 +127,6 @@ Speech balloon detection uses the YOLOv4-tiny model trained by [Seeneva](https:/
 
 Archives in RAR5 format are read with [7-Zip-JBinding-4Android](https://github.com/omicronapps/7-Zip-JBinding-4Android) (LGPL 2.1 with the unRAR restriction). SMB shares use [smbj](https://github.com/hierynomus/smbj) (Apache 2.0).
 
-Fonts: [Unbounded](https://github.com/googlefonts/unbounded) and [Manrope](https://github.com/sharanda/manrope), both under the SIL Open Font License 1.1 (see `FONTS-OFL.txt`).
+Books are opened and laid out with the [Readium Kotlin Toolkit](https://github.com/readium/kotlin-toolkit) (BSD-3-Clause). Kindle files are read with [libmobi](https://github.com/bfabiszewski/libmobi) by Bartek Fabiszewski (LGPL-3.0-or-later), built from source in `app/src/main/cpp/libmobi`.
+
+Fonts: [Unbounded](https://github.com/googlefonts/unbounded) and [Manrope](https://github.com/sharanda/manrope) for the app, and [Literata](https://github.com/googlefonts/literata), [Bitter](https://github.com/solmatas/BitterPro) and [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) for books, all under the SIL Open Font License 1.1 (see `FONTS-OFL.txt`).

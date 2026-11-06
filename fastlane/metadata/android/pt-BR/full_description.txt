@@ -1,4 +1,11 @@
-Fwip é um leitor de HQs para tablets e celulares Android, inspirado no Panels do iOS. É fluido, simples e feito para parecer que você está lendo uma revista de verdade.
+Fwip é um leitor de HQs e livros para tablets e celulares Android, inspirado no Panels do iOS. É fluido, simples e feito para parecer que você está lendo uma revista de verdade, ou um bom e-reader.
+
+<b>Livros</b>
+<ul>
+<li>EPUB, arquivos Kindle sem DRM (MOBI, AZW3), FB2 e TXT</li>
+<li>Cores de página, inclusive e-ink, fontes de leitura ou as suas, tamanho, espaçamento, margens, texto justificado e colunas</li>
+<li>Tempo restante no capítulo ou no livro no seu ritmo, sumário, marcadores, busca, destaques com notas, dicionário e leitura em voz alta</li>
+</ul>
 
 <b>Leitura</b>
 <ul>

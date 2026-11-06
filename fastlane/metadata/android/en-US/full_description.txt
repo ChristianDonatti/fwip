@@ -1,4 +1,11 @@
-Fwip is a comic reader for Android tablets and phones, inspired by Panels on iOS. It is fluid, simple and made to feel like reading a real comic book.
+Fwip is a comic and book reader for Android tablets and phones, inspired by Panels on iOS. It is fluid, simple and made to feel like reading a real comic book, or a good e-reader.
+
+<b>Books</b>
+<ul>
+<li>EPUB, Kindle files without DRM (MOBI, AZW3), FB2 and TXT</li>
+<li>Page colours including e-ink, reading fonts or your own, size, spacing, margins, justified text and columns</li>
+<li>Time left in the chapter or book at your pace, contents, bookmarks, search, highlights with notes, dictionary and read aloud</li>
+</ul>
 
 <b>Reading</b>
 <ul>

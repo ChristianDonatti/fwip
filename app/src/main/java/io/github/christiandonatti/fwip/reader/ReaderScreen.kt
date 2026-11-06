@@ -190,6 +190,12 @@ private fun Reader(
         }
     }
     val scroll = settings.turnStyle == TurnStyle.Scroll || strips
+    // With "remove animations" on, pages change at once whatever turn was chosen.
+    val a11yContext = androidx.compose.ui.platform.LocalContext.current
+    val reduceMotion = remember { io.github.christiandonatti.fwip.ui.A11y.reduceMotion(a11yContext) }
+    val turnStyle = if (reduceMotion && settings.turnStyle != TurnStyle.Scroll) TurnStyle.Instant else settings.turnStyle
+    val a11yView = androidx.compose.ui.platform.LocalView.current
+    val screenReader = remember { io.github.christiandonatti.fwip.ui.A11y.screenReader(a11yContext) }
 
     val config = LocalConfiguration.current
     val landscape = config.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -382,7 +388,7 @@ private fun Reader(
         val turnFeedback = { feedback.turn(settings.turnHaptic, settings.turnSound, settings.soundKind) }
         val onSpreadChanged: (Int) -> Unit = { s ->
             // The paper reader announces its turns as they start; the others once they land.
-            if (!scroll && settings.turnStyle != TurnStyle.Curl && s != spread) turnFeedback()
+            if (!scroll && turnStyle != TurnStyle.Curl && s != spread) turnFeedback()
             if (s != spread) {
                 stop = -1
                 if (guide != null && pending == null) pending = PendingStop.First
@@ -391,6 +397,7 @@ private fun Reader(
             spreads.getOrNull(s)?.let { pages ->
                 lastPage = pageMap.real(pages.first())
                 onProgress(pageMap.real(pages.last()), source.pageCount)
+                if (screenReader) a11yView.announceForAccessibility(str(R.string.a11y_page, pageMap.real(pages.first()) + 1, source.pageCount))
             }
         }
 
@@ -482,9 +489,9 @@ private fun Reader(
         )
         val flatZoom = remember { ZoomState() }
         // The paper reader follows layout changes itself; the others start over with them.
-        val readerKey: Any = if (scroll || settings.turnStyle != TurnStyle.Curl) host else listOf(double, rtl, cache, wPx, hPx)
+        val readerKey: Any = if (scroll || turnStyle != TurnStyle.Curl) host else listOf(double, rtl, cache, wPx, hPx)
         androidx.compose.runtime.CompositionLocalProvider(LocalPageGestures provides pageGestures) {
-        key(readerKey, settings.turnStyle, scroll) {
+        key(readerKey, turnStyle, scroll) {
             if (scroll) {
                 ScrollReader(
                     host = host,
@@ -494,7 +501,7 @@ private fun Reader(
                     onTap = { pos, size -> onTap(pos, size, flatZoom) },
                     onEnd = { showEnd = true },
                 )
-            } else if (settings.turnStyle == TurnStyle.Curl) {
+            } else if (turnStyle == TurnStyle.Curl) {
                 CurlReader(
                     host = host,
                     startSpread = spread,
@@ -509,7 +516,7 @@ private fun Reader(
             } else {
                 PagerReader(
                     host = host,
-                    style = settings.turnStyle,
+                    style = turnStyle,
                     startSpread = spread,
                     commands = commands,
                     onSpreadChanged = onSpreadChanged,

@@ -337,7 +337,10 @@ private fun GroupList(
             }
             SettingsSearch(query) { query = it }
             if (query.isBlank()) {
-                SettingsGroup.entries.groupBy { it.sectionRes }.forEach { (section, groups) ->
+                // Someone who only reads comics does not need the books group (until a book shows up).
+                val ui = UiSettings.get(LocalContext.current)
+                val hideBooks = ui.readsKind == "comics" && state.items.none { it.isBook }
+                SettingsGroup.entries.filter { !(hideBooks && it == SettingsGroup.Books) }.groupBy { it.sectionRes }.forEach { (section, groups) ->
                     Text(
                         str(section).uppercase(),
                         style = MaterialTheme.typography.labelSmall,

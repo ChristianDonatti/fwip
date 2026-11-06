@@ -63,6 +63,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -345,6 +347,7 @@ private fun BookReader(
 
     val ink = light.ink
     val prefs = preferencesFor(settings, ink)
+    val reduceMotion = remember { io.github.christiandonatti.fwip.ui.A11y.reduceMotion(context) }
     ImmersiveBars(visible = chrome || panel != null)
 
     Box(Modifier.fillMaxSize()) {
@@ -380,8 +383,8 @@ private fun BookReader(
                     val move = if (settings.turn == BookTurn.Scroll) 0 else reader.tapZones.move(side, rtl = false)
                     when {
                         panel != null -> panel = null
-                        move > 0 -> n.goForward(animated = settings.turn == BookTurn.Slide)
-                        move < 0 -> n.goBackward(animated = settings.turn == BookTurn.Slide)
+                        move > 0 -> n.goForward(animated = settings.turn == BookTurn.Slide && !reduceMotion)
+                        move < 0 -> n.goBackward(animated = settings.turn == BookTurn.Slide && !reduceMotion)
                         else -> chrome = !chrome
                     }
                     return true
@@ -434,7 +437,8 @@ private fun BookReader(
         LaunchedEffect(nav) {
             val n = nav ?: return@LaunchedEffect
             ReaderKeys.events.collect { k ->
-                if (k > 0) n.goForward(animated = settings.turn == BookTurn.Slide) else n.goBackward(animated = settings.turn == BookTurn.Slide)
+                val animated = settings.turn == BookTurn.Slide && !reduceMotion
+                if (k > 0) n.goForward(animated = animated) else n.goBackward(animated = animated)
             }
         }
 
@@ -648,7 +652,8 @@ private fun TextIconButton(text: String, description: String, onClick: () -> Uni
             .padding(0.dp)
             .clip(RoundedCornerShape(22.dp))
             .background(FwipColors.Surface)
-            .clickable(onClickLabel = description, onClick = onClick)
+            .semantics { contentDescription = description }
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = description, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {

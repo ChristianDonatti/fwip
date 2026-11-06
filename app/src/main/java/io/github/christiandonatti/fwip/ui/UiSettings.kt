@@ -113,6 +113,9 @@ class UiSettings private constructor(context: Context) {
         private set
     var goalBooks by mutableStateOf(prefs.getInt("goalBooks", 0))
         private set
+    /** What the welcome asked: "comics", "books" or "both". */
+    var readsKind by mutableStateOf(prefs.getString("readsKind", "both") ?: "both")
+        private set
     /** Books shown as spines on shelves instead of covers. */
     var bookSpines by mutableStateOf(prefs.getBoolean("bookSpines", false))
         private set
@@ -192,6 +195,11 @@ class UiSettings private constructor(context: Context) {
     fun updateGoals(comics: Int, books: Int) {
         goalComics = comics; goalBooks = books
         prefs.edit().putInt("goalComics", comics).putInt("goalBooks", books).apply()
+    }
+    fun updateReadsKind(value: String) {
+        readsKind = value
+        prefs.edit().putString("readsKind", value).apply()
+        if (value == "books") updateLibraryMode("books") else if (value == "comics") updateLibraryMode("comics")
     }
     fun updateBookSpines(value: Boolean) { bookSpines = value; prefs.edit().putBoolean("bookSpines", value).apply() }
     fun updateLibraryMode(value: String) { libraryMode = value; prefs.edit().putString("libraryMode", value).apply() }

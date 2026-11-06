@@ -79,7 +79,7 @@ fun WelcomeScreen(onPickFolder: () -> Unit, onServers: () -> Unit, onSkip: () ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 FwipLogo(size = if (wide) 22 else 19)
                 Spacer(Modifier.weight(1f))
-                if (step < 2) {
+                if (step < 3) {
                     Text(
                         str(R.string.welcome_skip),
                         style = MaterialTheme.typography.labelMedium,
@@ -112,7 +112,8 @@ fun WelcomeScreen(onPickFolder: () -> Unit, onServers: () -> Unit, onSkip: () ->
                     ) {
                         when (s) {
                             0 -> Intro(wide)
-                            1 -> Look()
+                            1 -> Kind { step++ }
+                            2 -> Look()
                             else -> Comics(onPickFolder, onServers, onSkip)
                         }
                     }
@@ -120,7 +121,7 @@ fun WelcomeScreen(onPickFolder: () -> Unit, onServers: () -> Unit, onSkip: () ->
             }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
-                    repeat(3) { i ->
+                    repeat(4) { i ->
                         val w by animateDpAsState(if (i == step) 26.dp else 8.dp, label = "dot")
                         Box(
                             Modifier
@@ -135,7 +136,7 @@ fun WelcomeScreen(onPickFolder: () -> Unit, onServers: () -> Unit, onSkip: () ->
                     PillButton(str(R.string.back), { step-- }, style = PillStyle.Ghost, height = 50.dp)
                     Spacer(Modifier.width(10.dp))
                 }
-                if (step < 2) {
+                if (step < 3) {
                     PillButton(str(R.string.welcome_next), { step++ }, height = 50.dp)
                 }
             }
@@ -158,6 +159,43 @@ private fun Intro(wide: Boolean) {
     Feature(Glyph.Shelf, str(R.string.welcome_f3_title), str(R.string.welcome_f3))
 }
 
+/** "Comics, books or both?": sets which half of the library comes first and what Fwip talks about. */
+@Composable
+private fun Kind(onPicked: () -> Unit) {
+    val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
+    Text(str(R.string.welcome_kind_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+    Text(str(R.string.welcome_kind), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextSoft, textAlign = TextAlign.Center)
+    Spacer(Modifier.height(4.dp))
+    listOf(
+        Triple("comics", Glyph.Balloon, R.string.welcome_kind_comics) to R.string.welcome_kind_comics_hint,
+        Triple("books", Glyph.Page, R.string.welcome_kind_books) to R.string.welcome_kind_books_hint,
+        Triple("both", Glyph.Shelf, R.string.welcome_kind_both) to R.string.welcome_kind_both_hint,
+    ).forEach { (t, hint) ->
+        val (key, glyph, title) = t
+        val on = ui.readsKind == key
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(if (on) FwipColors.Amber.copy(alpha = 0.14f) else FwipColors.Surface)
+                .border(if (on) 2.dp else 1.dp, if (on) FwipColors.Amber else FwipColors.Stroke, RoundedCornerShape(22.dp))
+                .clickable(role = Role.RadioButton) { ui.updateReadsKind(key); onPicked() }
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(FwipColors.Amber.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center,
+            ) { FeatureGlyph(glyph, FwipColors.Amber, 26.dp) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(str(title), style = MaterialTheme.typography.labelLarge)
+                Text(str(hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+            }
+        }
+    }
+}
+
 @Composable
 private fun Look() {
     Text(str(R.string.welcome_look_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
@@ -176,7 +214,12 @@ private fun Look() {
 
 @Composable
 private fun Comics(onPickFolder: () -> Unit, onServers: () -> Unit, onSkip: () -> Unit) {
-    Text(str(R.string.welcome_comics_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+    val kind = UiSettings.get(androidx.compose.ui.platform.LocalContext.current).readsKind
+    Text(
+        str(when (kind) { "books" -> R.string.welcome_books_title; "both" -> R.string.welcome_both_title; else -> R.string.welcome_comics_title }),
+        style = MaterialTheme.typography.headlineSmall,
+        textAlign = TextAlign.Center,
+    )
     Text(str(R.string.empty_hint), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextSoft, textAlign = TextAlign.Center)
     Spacer(Modifier.height(4.dp))
     PillButton(

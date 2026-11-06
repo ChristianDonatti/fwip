@@ -1,1 +1,1 @@
-Comic reader with real page turns and balloon by balloon reading
+Comic and book reader with real page turns and an e-reader feel

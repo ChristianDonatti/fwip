@@ -484,7 +484,9 @@ private fun SearchPanel(book: OpenedBook, onGo: (Locator) -> Unit) {
                 ) {
                     Text(
                         buildAnnotatedString {
-                            append("…" + t.before.orEmpty().takeLast(60).trimStart())
+                            // Start at a whole word, not in the middle of one.
+                            val before = t.before.orEmpty().takeLast(60).let { b -> if (b.length >= 60 && ' ' in b) b.substringAfter(' ') else b }
+                            append("…" + before.trimStart())
                             withStyle(SpanStyle(color = FwipColors.Amber, fontWeight = FontWeight.SemiBold)) { append(t.highlight.orEmpty()) }
                             append(t.after.orEmpty().take(80).trimEnd() + "…")
                         },
