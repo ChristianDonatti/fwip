@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 
 enum class TurnStyle(@androidx.annotation.StringRes private val labelRes: Int) {
     Curl(R.string.turn_curl), Flip(R.string.turn_flip), Slide(R.string.turn_slide),
+    /** No animation at all, like an e-ink reader. */
+    Instant(R.string.turn_instant),
     /** Vertical scrolling for webtoons and long strips. */
     Scroll(R.string.turn_scroll);
 
@@ -95,9 +97,14 @@ enum class TapZones(@androidx.annotation.StringRes private val labelRes: Int) {
     }
 }
 
-/** Reader preferences, kept as Compose state so the screen updates the moment one changes. */
-class ReaderSettings(context: Context) {
-    private val prefs = context.getSharedPreferences("fwip_reader", Context.MODE_PRIVATE)
+/**
+ * Comic reader preferences, kept as Compose state so the screen updates the moment one changes.
+ * One shared instance, so the reader and the settings screen always agree. Light and comfort
+ * (brightness, warmth, rotation...) are in [LightSettings], shared with books.
+ */
+class ReaderSettings private constructor(context: Context) {
+    private val app = context.applicationContext
+    private val prefs = app.getSharedPreferences("fwip_reader", Context.MODE_PRIVATE)
 
     var mangaMode by mutableStateOf(prefs.getBoolean("manga", false))
         private set
@@ -111,16 +118,6 @@ class ReaderSettings(context: Context) {
     var cropMargins by mutableStateOf(prefs.getBoolean("crop", true))
         private set
 
-    /** Screen brightness while reading, 0..1; below zero follows the system. */
-    var brightness by mutableFloatStateOf(prefs.getFloat("brightness", -1f))
-        private set
-    /** Warm night filter strength, 0 (off) to 1. */
-    var warmth by mutableFloatStateOf(prefs.getFloat("warmth", 0f))
-        private set
-    var keepScreenOn by mutableStateOf(prefs.getBoolean("awake", true))
-        private set
-    var rotation by mutableStateOf(runCatching { ScreenRotation.valueOf(prefs.getString("rotation", null) ?: "") }.getOrDefault(ScreenRotation.Auto))
-        private set
     var tapZones by mutableStateOf(runCatching { TapZones.valueOf(prefs.getString("taps", null) ?: "") }.getOrDefault(TapZones.Sides))
         private set
     /** A light tick under the finger at each page turn. */
@@ -171,17 +168,12 @@ class ReaderSettings(context: Context) {
     var filmStrip by mutableStateOf(prefs.getBoolean("filmStrip", true))
         private set
 
-    val pageFilters: PageFilters get() = PageFilters(fixColors, denoise, sharpness)
 
     fun updateManga(value: Boolean) { mangaMode = value; prefs.edit().putBoolean("manga", value).apply() }
     fun updateTurn(value: TurnStyle) { turnStyle = value; prefs.edit().putString("turn2", value.name).apply() }
     fun updateSpread(value: SpreadMode) { spreadMode = value; prefs.edit().putString("spread", value.name).apply() }
     fun updateVolume(value: Boolean) { volumeKeys = value; prefs.edit().putBoolean("volume", value).apply() }
     fun updateCrop(value: Boolean) { cropMargins = value; prefs.edit().putBoolean("crop", value).apply() }
-    fun updateBrightness(value: Float) { brightness = value; prefs.edit().putFloat("brightness", value).apply() }
-    fun updateWarmth(value: Float) { warmth = value; prefs.edit().putFloat("warmth", value).apply() }
-    fun updateKeepScreenOn(value: Boolean) { keepScreenOn = value; prefs.edit().putBoolean("awake", value).apply() }
-    fun updateRotation(value: ScreenRotation) { rotation = value; prefs.edit().putString("rotation", value.name).apply() }
     fun updateTapZones(value: TapZones) { tapZones = value; prefs.edit().putString("taps", value.name).apply() }
     fun updateGround(value: ReaderGround) { ground = value; prefs.edit().putString("ground", value.name).apply() }
     fun updateSpineShadow(value: Float) { spineShadow = value; prefs.edit().putFloat("spine", value).apply() }
@@ -202,11 +194,20 @@ class ReaderSettings(context: Context) {
     fun updateFilmStrip(value: Boolean) { filmStrip = value; prefs.edit().putBoolean("filmStrip", value).apply() }
     fun updateSplitWide(value: Boolean) { splitWide = value; prefs.edit().putBoolean("splitWide", value).apply() }
 
+    /** Back to how a new install reads. */
+    fun reset() {
+        updateManga(false); updateTurn(TurnStyle.Curl); updateSpread(SpreadMode.Auto); updateVolume(true); updateCrop(true)
+        updateTapZones(TapZones.Sides); updateGround(ReaderGround.Black); updateSpineShadow(0.5f); updatePaperTexture(false)
+        updateTurnHaptic(true); updateTurnSound(false); updateFixColors(false); updateDenoise(false); updateSharpness(Sharpness.Off)
+        updateSplitWide(false); updateFilmStrip(true); updateTurnSpeed(TurnSpeed.Normal); updateTurnLift(0.4f); updateFoldShade(0.5f)
+        updateSoundKind(TurnSoundKind.Paper); updateGestureDoubleTap(GestureAction.Zoom); updateGestureLongPress(GestureAction.None)
+        updateGestureSwipeUp(GestureAction.Pages); updateGestureSwipeDown(GestureAction.Close)
+    }
+
     /** Everything worth carrying to another device in a backup. */
     fun toJson(): org.json.JSONObject = org.json.JSONObject()
         .put("manga", mangaMode).put("turn", turnStyle.name).put("spread", spreadMode.name)
-        .put("volume", volumeKeys).put("crop", cropMargins).put("brightness", brightness.toDouble())
-        .put("warmth", warmth.toDouble()).put("awake", keepScreenOn).put("rotation", rotation.name).put("taps", tapZones.name)
+        .put("volume", volumeKeys).put("crop", cropMargins).put("taps", tapZones.name)
         .put("haptic", turnHaptic).put("sound", turnSound)
         .put("ground", ground.name).put("spine", spineShadow.toDouble()).put("texture", paperTexture)
         .put("fixColors", fixColors).put("denoise", denoise).put("sharp", sharpness.name).put("splitWide", splitWide).put("filmStrip", filmStrip)
@@ -219,10 +220,6 @@ class ReaderSettings(context: Context) {
         runCatching { updateSpread(SpreadMode.valueOf(o.getString("spread"))) }
         if (o.has("volume")) updateVolume(o.getBoolean("volume"))
         if (o.has("crop")) updateCrop(o.getBoolean("crop"))
-        if (o.has("brightness")) updateBrightness(o.getDouble("brightness").toFloat())
-        if (o.has("warmth")) updateWarmth(o.getDouble("warmth").toFloat())
-        if (o.has("awake")) updateKeepScreenOn(o.getBoolean("awake"))
-        runCatching { updateRotation(ScreenRotation.valueOf(o.getString("rotation"))) }
         runCatching { updateTapZones(TapZones.valueOf(o.getString("taps"))) }
         if (o.has("haptic")) updateTurnHaptic(o.getBoolean("haptic"))
         if (o.has("sound")) updateTurnSound(o.getBoolean("sound"))
@@ -243,10 +240,23 @@ class ReaderSettings(context: Context) {
         runCatching { updateGestureSwipeUp(GestureAction.valueOf(o.getString("gUp"))) }
         runCatching { updateGestureSwipeDown(GestureAction.valueOf(o.getString("gDown"))) }
     }
+
+    companion object {
+        @Volatile private var instance: ReaderSettings? = null
+        fun get(context: Context): ReaderSettings =
+            instance ?: synchronized(this) { instance ?: ReaderSettings(context.applicationContext).also { instance = it } }
+    }
 }
 
-/** Volume key presses forwarded from the activity while the reader is open. +1 = next, -1 = previous. */
+/**
+ * Key presses forwarded from the activity while the reader is open. +1 = next, -1 = previous
+ * (volume keys, page keys, space, media keys, remotes); +2 / -2 = the right / left arrow, which
+ * follow the screen (in manga the left arrow goes forward).
+ */
 object ReaderKeys {
+    /** Volume keys turn pages (they always change the volume otherwise). */
     @Volatile var active: Boolean = false
+    /** A reader is open (other keys turn pages whatever the volume setting). */
+    @Volatile var reading: Boolean = false
     val events = MutableSharedFlow<Int>(extraBufferCapacity = 8)
 }

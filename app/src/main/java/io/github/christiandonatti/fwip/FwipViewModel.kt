@@ -488,22 +488,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
             val app = getApplication<Application>()
             val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 runCatching {
-                    val comics = _state.value.items.map { it.comic }
-                    val servers = org.json.JSONArray()
-                    // Passwords stay out of backup files.
-                    _state.value.servers.forEach { s ->
-                        servers.put(org.json.JSONObject().put("id", s.id).put("name", s.name).put("kind", s.kind.name).put("url", s.url).put("user", s.user))
-                    }
-                    val net = org.json.JSONArray()
-                    repository.folders().filter(io.github.christiandonatti.fwip.remote.NetUris::isNet).forEach { net.put(it.toString()) }
-                    val o = org.json.JSONObject()
-                        .put("app", "fwip").put("kind", "backup").put("v", 1)
-                        .put("created", System.currentTimeMillis())
-                        .put("device", sync.deviceName)
-                        .put("state", sync.localState(comics).toJson())
-                        .put("settings", io.github.christiandonatti.fwip.reader.ReaderSettings(app).toJson())
-                        .put("servers", servers)
-                        .put("netFolders", net)
+                    val o = io.github.christiandonatti.fwip.data.Backups.build(app, _state.value.items.map { it.comic }, _state.value.servers, repository.folders(), sync)
                     app.contentResolver.openOutputStream(target, "wt")!!.use { it.write(o.toString(2).toByteArray()) }
                 }
             }
@@ -520,7 +505,12 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                 runCatching {
                     val o = org.json.JSONObject(app.contentResolver.openInputStream(source)!!.use { it.readBytes().decodeToString() })
                     require(o.optString("app") == "fwip") { str(R.string.backup_not_fwip) }
-                    o.optJSONObject("settings")?.let { io.github.christiandonatti.fwip.reader.ReaderSettings(app).fromJson(it) }
+                    o.optJSONObject("settings")?.let {
+                        io.github.christiandonatti.fwip.reader.ReaderSettings.get(app).fromJson(it)
+                        // Older backups kept brightness and warmth with the reader settings.
+                        if (!o.has("light")) io.github.christiandonatti.fwip.reader.LightSettings.get(app).fromJson(it)
+                    }
+                    o.optJSONObject("light")?.let { io.github.christiandonatti.fwip.reader.LightSettings.get(app).fromJson(it) }
                     val known = _state.value.servers.map { it.id }.toSet()
                     val added = mutableListOf<io.github.christiandonatti.fwip.remote.Server>()
                     o.optJSONArray("servers")?.let { arr ->
@@ -656,7 +646,8 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                         appendLine("Collections: ${s.collections.size}")
                         appendLine("Sync folder: " + if (s.sync.place != null) "yes" else "no")
                         appendLine("Look: ${ui.preset} accent ${ui.accentMode} #${ui.accentIndex}, font ${ui.titleFont}, backdrop ${ui.backdrop}, carousel ${ui.carousel}, icon ${ui.appIcon}, covers x${ui.coverScale}")
-                        appendLine("Reader settings: " + io.github.christiandonatti.fwip.reader.ReaderSettings(app).toJson())
+                        appendLine("Reader settings: " + io.github.christiandonatti.fwip.reader.ReaderSettings.get(app).toJson())
+                        appendLine("Light: " + io.github.christiandonatti.fwip.reader.LightSettings.get(app).toJson())
                     }
                     io.github.christiandonatti.fwip.data.Reports.save(app, target, io.github.christiandonatti.fwip.data.Reports.build(app, extra))
                     io.github.christiandonatti.fwip.data.Reports.markSeen(app)
@@ -718,6 +709,54 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     fun dismissReadingList() = _state.update { it.copy(readingList = null) }
 
     /** Copies comics from the NAS into this device's downloads, to read offline. The NAS copy stays. */
+    /**
+     * Copies files given to the app (dropped onto it, shared to it or opened with it) into its
+     * downloads, then rescans. Only comic and book files are taken.
+     */
+    fun importFiles(uris: List<Uri>) {
+        if (uris.isEmpty() || _state.value.fileWork != null) return
+        val app = getApplication<Application>()
+        viewModelScope.launch {
+            var got = 0
+            var skipped = 0
+            var error: String? = null
+            for ((i, uri) in uris.withIndex()) {
+                val name = runCatching {
+                    app.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                        if (c.moveToFirst()) c.getString(0) else null
+                    }
+                }.getOrNull() ?: uri.lastPathSegment?.substringAfterLast('/') ?: "file"
+                if (name.substringAfterLast('.', "").lowercase() !in IMPORTABLE) { skipped++; continue }
+                _state.update { it.copy(fileWork = FileWork(str(R.string.importing_named, name), i / uris.size.toFloat())) }
+                runCatching {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        val dir = io.github.christiandonatti.fwip.remote.RemoteComics.downloadsDir(app)
+                        val taken = dir.list()?.map { it.lowercase() }?.toSet().orEmpty()
+                        val finalName = io.github.christiandonatti.fwip.data.NasUpload.freeName(name, taken)
+                        val tmp = java.io.File(dir, "$finalName.part")
+                        try {
+                            app.contentResolver.openInputStream(uri)!!.use { input -> tmp.outputStream().buffered(1 shl 20).use { input.copyTo(it, 1 shl 20) } }
+                            if (!tmp.renameTo(java.io.File(dir, finalName))) throw java.io.IOException("rename failed")
+                        } catch (e: Exception) {
+                            tmp.delete(); throw e
+                        }
+                    }
+                }.onSuccess { got++ }.onFailure { error = io.github.christiandonatti.fwip.ui.errorText(it) }
+            }
+            _state.update {
+                it.copy(
+                    fileWork = null,
+                    fileMessage = when {
+                        error != null -> str(R.string.import_failed, error!!)
+                        got == 0 -> str(R.string.import_none)
+                        else -> str(R.string.import_done, got)
+                    },
+                )
+            }
+            if (got > 0) refresh()
+        }
+    }
+
     fun downloadComics(ids: List<String>) {
         val comics = ids.mapNotNull { _state.value.item(it)?.comic }
             .filter { io.github.christiandonatti.fwip.remote.NetUris.isNet(it.uri) }
@@ -880,3 +919,6 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 }
+
+/** Files the app takes in when dropped or shared onto it. */
+internal val IMPORTABLE = setOf("cbz", "cbr", "cb7", "cbt", "zip", "rar", "7z", "pdf")

@@ -53,6 +53,9 @@ enum class ThemePreset(
     Oled(R.string.theme_oled, R.string.theme_oled_desc, TitleFont.Unbounded),
     Comic(R.string.theme_comic, R.string.theme_comic_desc, TitleFont.Comic),
     Manga(R.string.theme_manga, R.string.theme_manga_desc, TitleFont.Unbounded),
+    /** An e-reader's screen: matte paper grey, graphite ink. */
+    Ink(R.string.theme_ink, R.string.theme_ink_desc, TitleFont.Classic),
+    InkNight(R.string.theme_ink_night, R.string.theme_ink_night_desc, TitleFont.Classic),
     System(R.string.theme_system, R.string.theme_system_desc, TitleFont.Unbounded);
 
     val label: String get() = str(labelRes)
@@ -95,6 +98,17 @@ enum class ThemePreset(
                 AccentColor(R.string.accent_indigo, Color(0xFF3A4BA0)),
                 AccentColor(R.string.accent_graphite, Color(0xFF2B2B2B)),
             )
+            Ink -> listOf(
+                AccentColor(R.string.accent_graphite, Color(0xFF2E2E33)),
+                AccentColor(R.string.accent_slate, Color(0xFF45566B)),
+                AccentColor(R.string.accent_sepia, Color(0xFF7A5A3A)),
+                AccentColor(R.string.accent_wine, Color(0xFF8C3A32)),
+            )
+            InkNight -> listOf(
+                AccentColor(R.string.accent_paper, Color(0xFFCFCCC4)),
+                AccentColor(R.string.accent_amber, Color(0xFFD8B377)),
+                AccentColor(R.string.accent_slate, Color(0xFF9FB2C8)),
+            )
         }
 }
 
@@ -114,6 +128,8 @@ data class Palette(
     val danger: Color,
     /** Comic dots over the background. */
     val halftone: Boolean = false,
+    /** Fine paper grain over the background (the e-ink themes). */
+    val grain: Boolean = false,
 ) {
     companion object {
         fun inkFor(accent: Color): Color = if (accent.luminance() > 0.38f) Color(0xFF16130C) else Color.White
@@ -147,6 +163,22 @@ data class Palette(
                 accent = accent, accentInk = inkFor(accent),
                 panel = Color(0xFF22348A), panelHigh = Color(0xFF2A3E9C), danger = Color(0xFFFF9A8F),
                 halftone = true,
+            )
+            ThemePreset.Ink -> Palette(
+                light = true,
+                ink = Color(0xFFE6E3DA), surface = Color(0x8CFFFFFF), stroke = Color(0x24000000),
+                text = Color(0xFF1E1E21), textSoft = Color(0xFF3A3A3F), textMuted = Color(0xFF65656B),
+                accent = accent, accentInk = inkFor(accent),
+                panel = Color(0xFFEFECE5), panelHigh = Color(0xFFDCD8CE), danger = Color(0xFF8E2B20),
+                grain = true,
+            )
+            ThemePreset.InkNight -> Palette(
+                light = false,
+                ink = Color(0xFF161617), surface = Color(0x10FFFFFF), stroke = Color(0x1CFFFFFF),
+                text = Color(0xFFDAD8D2), textSoft = Color(0xFFB9B7B1), textMuted = Color(0xFF8F8D88),
+                accent = accent, accentInk = inkFor(accent),
+                panel = Color(0xFF1F1F21), panelHigh = Color(0xFF29292B), danger = Color(0xFFE59A8F),
+                grain = true,
             )
             ThemePreset.Manga -> Palette(
                 light = true,
@@ -195,6 +227,7 @@ object FwipColors {
 
     val isLight: Boolean get() = chosen.light && dim < 0.5f
     val halftone: Boolean get() = chosen.halftone
+    val grain: Boolean get() = chosen.grain
 
     val Ink get() = pick { it.ink }
     /** Behind the pages; the reader settings can make it grey or paper. */

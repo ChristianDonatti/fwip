@@ -63,8 +63,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.christiandonatti.fwip.LibraryState
-import io.github.christiandonatti.fwip.reader.ReaderLookSettings
-import io.github.christiandonatti.fwip.reader.ReaderSettings
+import io.github.christiandonatti.fwip.reader.settingAnchor
 import io.github.christiandonatti.fwip.reader.Toggle
 import io.github.christiandonatti.fwip.ui.theme.FwipColors
 import io.github.christiandonatti.fwip.ui.theme.Palette
@@ -78,8 +77,8 @@ private fun Modifier.choice(on: Boolean): Modifier = this
     .border(if (on) 2.dp else 1.dp, if (on) FwipColors.Amber else FwipColors.Stroke, RoundedCornerShape(18.dp))
 
 @Composable
-private fun Heading(text: String, hint: String? = null) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+private fun Heading(text: String, hint: String? = null, key: String? = null) {
+    Column(Modifier.settingAnchor(key), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(text, style = MaterialTheme.typography.titleMedium)
         if (hint != null) Text(hint, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
     }
@@ -233,7 +232,7 @@ fun AppearancePicker(modifier: Modifier = Modifier) {
 }
 
 private enum class LookTab(val labelRes: Int) {
-    Style(R.string.look_tab_style), Covers(R.string.look_tab_covers), Home(R.string.look_tab_home), Icon(R.string.look_tab_icon), Reader(R.string.look_tab_reader);
+    Style(R.string.look_tab_style), Covers(R.string.look_tab_covers), Home(R.string.look_tab_home), Icon(R.string.look_tab_icon);
 
     val label: String get() = str(labelRes)
 }
@@ -248,11 +247,17 @@ fun AppearanceScreen(
     gutter: Dp,
     wide: Boolean,
     onPickImage: () -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
+    handleBack: Boolean = true,
+    /** Opens on this tab (Style, Covers, Home or Icon) and lights up one setting ("look:Covers:corners"). */
+    initial: String? = null,
+    onReset: (() -> Unit)? = null,
 ) {
-    BackHandler(onBack = onBack)
+    if (onBack != null && handleBack) BackHandler(onBack = onBack)
     val ui = UiSettings.get(LocalContext.current)
-    var tab by rememberSaveable { mutableStateOf(LookTab.Style) }
+    var tab by rememberSaveable(initial) {
+        mutableStateOf(LookTab.entries.firstOrNull { initial?.split(':')?.getOrNull(1) == it.name } ?: LookTab.Style)
+    }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Column(
             Modifier
@@ -265,8 +270,13 @@ fun AppearanceScreen(
                 verticalArrangement = Arrangement.spacedBy(if (wide) 14.dp else 10.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
-                    Text(str(R.string.appearance), style = if (wide) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineSmall)
+                    if (onBack != null) CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
+                    Text(
+                        str(R.string.appearance),
+                        style = if (wide) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (onReset != null) ResetButton(onReset)
                 }
                 Row(
                     Modifier
@@ -307,7 +317,6 @@ fun AppearanceScreen(
                         LookTab.Covers -> CoversTab(ui)
                         LookTab.Home -> HomeTab(ui, state)
                         LookTab.Icon -> IconTab(ui)
-                        LookTab.Reader -> ReaderTab(ui)
                     }
                     Spacer(Modifier.height(40.dp))
                 }
@@ -319,13 +328,13 @@ fun AppearanceScreen(
 @Composable
 private fun StyleTab(ui: UiSettings, wide: Boolean, onPickImage: () -> Unit) {
     val context = LocalContext.current
-    Heading(str(R.string.appearance_theme), str(R.string.theme_hint))
+    Heading(str(R.string.appearance_theme), str(R.string.theme_hint), key = "look:Style:theme")
     ThemePicker(columns = if (wide) 3 else 2)
 
-    Heading(str(R.string.appearance_accent), str(R.string.accent_hint))
+    Heading(str(R.string.appearance_accent), str(R.string.accent_hint), key = "look:Style:accent")
     AccentPicker()
 
-    Heading(str(R.string.backdrop_title))
+    Heading(str(R.string.backdrop_title), key = "look:Style:backdrop")
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Backdrop.entries.forEach { b ->
             val on = ui.backdrop == b
@@ -353,7 +362,7 @@ private fun StyleTab(ui: UiSettings, wide: Boolean, onPickImage: () -> Unit) {
         }
     }
 
-    Heading(str(R.string.font_title))
+    Heading(str(R.string.font_title), key = "look:Style:font")
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         TitleFont.entries.forEach { f ->
             val on = ui.titleFont == f
@@ -371,9 +380,9 @@ private fun StyleTab(ui: UiSettings, wide: Boolean, onPickImage: () -> Unit) {
         }
     }
 
-    Heading(str(R.string.greeting_title), str(R.string.greeting_hint))
+    Heading(str(R.string.greeting_title), str(R.string.greeting_hint), key = "look:Style:greeting")
     val greeting = ui.sections.firstOrNull { it.part == HomePart.Greeting }
-    Toggle(str(R.string.greeting_show), greetingText(ui.name), greeting?.on == true) { on -> ui.setSection(HomePart.Greeting.name, on) }
+    Toggle(str(R.string.greeting_show), greetingText(ui.name), greeting?.on == true, { on -> ui.setSection(HomePart.Greeting.name, on) })
     NameField(ui)
 }
 
@@ -450,7 +459,7 @@ private fun BackdropThumb(b: Backdrop, modifier: Modifier) {
 
 @Composable
 private fun CoversTab(ui: UiSettings) {
-    Heading(str(R.string.corners_title))
+    Heading(str(R.string.corners_title), key = "look:Covers:corners")
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         CoverCorners.entries.forEach { c ->
             val on = ui.corners == c
@@ -471,12 +480,12 @@ private fun CoversTab(ui: UiSettings) {
     Toggle(str(R.string.cover_shadow), str(R.string.cover_shadow_hint), ui.coverShadow, ui::updateCoverShadow)
     Toggle(str(R.string.cover_titles), str(R.string.cover_titles_hint), ui.coverTitles, ui::updateCoverTitles)
 
-    Heading(str(R.string.progress_title), str(R.string.progress_hint))
+    Heading(str(R.string.progress_title), str(R.string.progress_hint), key = "look:Covers:progress")
     OptionPills(ProgressStyle.entries, ui.progressStyle, { it.label }, ui::updateProgressStyle)
-    Heading(str(R.string.library_view_title))
+    Heading(str(R.string.library_view_title), key = "look:Covers:list")
     OptionPills(listOf(false, true), ui.libraryList, { if (it) str(R.string.view_list_name) else str(R.string.view_grid_name) }, ui::updateLibraryList)
 
-    Heading(str(R.string.read_mark_title))
+    Heading(str(R.string.read_mark_title), key = "look:Covers:readmark")
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         ReadMark.entries.forEach { m ->
             val on = ui.readMark == m
@@ -495,13 +504,14 @@ private fun CoversTab(ui: UiSettings) {
         }
     }
 
-    Heading(str(R.string.appearance_cover_size), str(R.string.appearance_pinch_hint))
+    Heading(str(R.string.appearance_cover_size), str(R.string.appearance_pinch_hint), key = "look:Covers:size")
     if (ui.coverScale !in 0.97f..1.03f) {
         PillButton(str(R.string.appearance_cover_reset), { ui.scaleCovers(1f / ui.coverScale); ui.saveCoverScale() }, style = PillStyle.Ghost, height = 46.dp)
     }
 
-    Heading(str(R.string.carousel_title))
+    Heading(str(R.string.carousel_title), key = "look:Covers:carousel")
     Toggle(str(R.string.carousel_show), str(R.string.carousel_show_hint), ui.showCarousel, ui::updateShowCarousel)
+    Toggle(str(R.string.cover_animation), str(R.string.cover_animation_hint), ui.coverAnimation, ui::updateCoverAnimation, key = "look:Covers:animation")
     if (ui.showCarousel) {
         CarouselStyle.entries.forEach { k ->
             val on = ui.carousel == k
@@ -581,19 +591,19 @@ private fun CarouselThumb(style: CarouselStyle, modifier: Modifier) {
 @Composable
 private fun HomeTab(ui: UiSettings, state: LibraryState) {
     var picking by remember { mutableStateOf<HomePart?>(null) }
-    Heading(str(R.string.start_tab_title), str(R.string.start_tab_hint))
+    Heading(str(R.string.start_tab_title), str(R.string.start_tab_hint), key = "look:Home:starttab")
     val tabs = listOf("Home" to str(R.string.tab_home), "Library" to str(R.string.tab_library), "Collections" to str(R.string.tab_collections), "Servers" to str(R.string.tab_servers))
         .filter { (k, _) -> (k != "Collections" || ui.showCollectionsTab) && (k != "Servers" || ui.showServersTab) }
     OptionPills(tabs.map { it.first }, ui.startTab, { k -> tabs.first { it.first == k }.second }, ui::updateStartTab)
-    Toggle(str(R.string.show_tab_collections), str(R.string.show_tab_hint), ui.showCollectionsTab) { on ->
+    Toggle(str(R.string.show_tab_collections), str(R.string.show_tab_hint), ui.showCollectionsTab, { on ->
         ui.updateShowCollectionsTab(on)
         if (!on && ui.startTab == "Collections") ui.updateStartTab("Home")
-    }
-    Toggle(str(R.string.show_tab_servers), str(R.string.show_tab_servers_hint), ui.showServersTab) { on ->
+    }, key = "look:Home:tabs")
+    Toggle(str(R.string.show_tab_servers), str(R.string.show_tab_servers_hint), ui.showServersTab, { on ->
         ui.updateShowServersTab(on)
         if (!on && ui.startTab == "Servers") ui.updateStartTab("Home")
-    }
-    Heading(str(R.string.home_parts_title), str(R.string.home_parts_hint))
+    })
+    Heading(str(R.string.home_parts_title), str(R.string.home_parts_hint), key = "look:Home:sections")
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         ui.sections.forEachIndexed { i, s ->
             val pinned = s.ref.isNotEmpty()
@@ -699,7 +709,7 @@ private fun sectionHint(s: HomeSection): String = when (s.part) {
 
 @Composable
 private fun IconTab(ui: UiSettings) {
-    Heading(str(R.string.icon_title), str(R.string.icon_hint))
+    Heading(str(R.string.icon_title), str(R.string.icon_hint), key = "look:Icon:icon")
     AppIcon.entries.chunked(2).forEach { row ->
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             row.forEach { icon ->
@@ -758,16 +768,6 @@ fun IconPreview(v: IconVariant, size: Dp) {
         drawPath(head, Color(v.arrow), style = stroke)
     }
 }
-
-@Composable
-private fun ReaderTab(ui: UiSettings) {
-    val context = LocalContext.current
-    val settings = remember { ReaderSettings(context) }
-    Heading(str(R.string.look_tab_reader), str(R.string.reader_look_hint))
-    ReaderLookSettings(settings)
-    Toggle(str(R.string.cover_animation), str(R.string.cover_animation_hint), ui.coverAnimation, ui::updateCoverAnimation)
-}
-
 
 /** A row of pill buttons, one chosen. */
 @Composable

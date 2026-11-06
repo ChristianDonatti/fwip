@@ -50,8 +50,8 @@ import kotlinx.coroutines.launch
  * files as they arrive. Closing the screen stops it.
  */
 @Composable
-fun WifiScreen(folders: List<Uri>, servers: List<Server>, gutter: Dp, onReceived: () -> Unit, onBack: () -> Unit) {
-    BackHandler(onBack = onBack)
+fun WifiScreen(folders: List<Uri>, servers: List<Server>, gutter: Dp, onReceived: () -> Unit, onBack: (() -> Unit)?, handleBack: Boolean = true) {
+    if (onBack != null && handleBack) BackHandler(onBack = onBack)
     val context = LocalContext.current
     // Folders on this device only; network folders already have their own way in.
     val places = folders.filter { !NetUris.isNet(it) && it.scheme != "file" }
@@ -83,7 +83,7 @@ fun WifiScreen(folders: List<Uri>, servers: List<Server>, gutter: Dp, onReceived
                 .padding(horizontal = gutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
+            if (onBack != null) CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
             Text(str(R.string.wifi_title), style = MaterialTheme.typography.headlineSmall)
             Text(str(R.string.wifi_explain), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
 

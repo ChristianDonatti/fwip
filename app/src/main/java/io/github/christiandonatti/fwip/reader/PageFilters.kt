@@ -17,8 +17,14 @@ enum class Sharpness(@androidx.annotation.StringRes private val labelRes: Int, v
  * - [denoise] smooths grain and JPEG blotches, but only where the page is flat, so lines stay crisp;
  * - [sharp] is an unsharp mask that firms up soft scans.
  */
-data class PageFilters(val color: Boolean = false, val denoise: Boolean = false, val sharp: Sharpness = Sharpness.Off) {
-    val active: Boolean get() = color || denoise || sharp != Sharpness.Off
+data class PageFilters(
+    val color: Boolean = false,
+    val denoise: Boolean = false,
+    val sharp: Sharpness = Sharpness.Off,
+    /** Pages as an e-ink screen shows them: 16 greys, or the soft colours of colour e-ink. */
+    val ink: InkLook = InkLook.Off,
+) {
+    val active: Boolean get() = color || denoise || sharp != Sharpness.Off || ink != InkLook.Off
 
     fun apply(src: Bitmap): Bitmap {
         if (!active) return src
@@ -40,9 +46,48 @@ data class PageFilters(val color: Boolean = false, val denoise: Boolean = false,
         if (color) levels(px)
         if (denoise) smooth(px, w, h)
         if (sharp != Sharpness.Off) sharpen(px, w, h, sharp.amount)
+        if (ink != InkLook.Off) inkScreen(px, w, ink == InkLook.Color)
     }
 
     companion object {
+        /** E-ink paper and ink: never pure white nor pure black. */
+        private const val PAPER_R = 236; private const val PAPER_G = 233; private const val PAPER_B = 224
+        private const val INK_R = 28; private const val INK_G = 28; private const val INK_B = 31
+        private val BAYER = intArrayOf(0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
+
+        /**
+         * The e-ink look: [color] false gives 16 greys between paper and ink (with ordered dithering,
+         * as the screens do); true keeps colour, softer and lighter, in 16 steps per channel.
+         */
+        internal fun inkScreen(px: IntArray, w: Int, color: Boolean) {
+            for (k in px.indices) {
+                val p = px[k]
+                var r = (p shr 16) and 0xff
+                var g = (p shr 8) and 0xff
+                var b = p and 0xff
+                val lum = (r * 77 + g * 150 + b * 29) shr 8
+                // Threshold from a 4x4 Bayer matrix: -7.5..7.5 of a 17-wide step.
+                val d = (BAYER[((k / w) and 3) * 4 + ((k % w) and 3)] - 7.5f) * 17f / 16f
+                if (!color) {
+                    val q = (((lum + d) / 17f).toInt().coerceIn(0, 15)) / 15f
+                    r = (INK_R + (PAPER_R - INK_R) * q).toInt()
+                    g = (INK_G + (PAPER_G - INK_G) * q).toInt()
+                    b = (INK_B + (PAPER_B - INK_B) * q).toInt()
+                } else {
+                    // Colour e-ink: a filter over grey ink, so colours come out pale and a bit muted.
+                    fun ch(c: Int, ink: Int, paper: Int): Int {
+                        val soft = lum + (c - lum) * 0.55f
+                        val q = (((soft + d) / 17f).toInt().coerceIn(0, 15)) / 15f
+                        return (ink + (paper - ink) * q).toInt()
+                    }
+                    r = ch(r, INK_R, PAPER_R)
+                    g = ch(g, INK_G, PAPER_G)
+                    b = ch(b, INK_B, PAPER_B)
+                }
+                px[k] = (p and 0xff000000.toInt()) or (r shl 16) or (g shl 8) or b
+            }
+        }
+
         /** Per-channel auto levels from a sample of the page, ignoring the extreme 0.5%. */
         internal fun levels(px: IntArray) {
             val hist = Array(3) { IntArray(256) }

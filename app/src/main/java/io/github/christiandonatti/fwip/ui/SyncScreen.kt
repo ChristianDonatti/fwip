@@ -1,5 +1,7 @@
 package io.github.christiandonatti.fwip.ui
 
+import io.github.christiandonatti.fwip.reader.settingAnchor
+
 import io.github.christiandonatti.fwip.R
 import io.github.christiandonatti.fwip.str
 import android.net.Uri
@@ -67,8 +69,21 @@ fun SyncDialog(
     FwipDialog(onDismiss) {
         DialogTitle(str(R.string.sync_title), onDismiss)
         // FwipDialog already scrolls.
+        SyncSettings(info, folders, servers, actions)
+    }
+}
+
+/** The sync folder, sending comics to the NAS, and backups (here and in Settings). */
+@Composable
+fun SyncSettings(
+    info: SyncInfo,
+    folders: List<Uri>,
+    servers: List<Server>,
+    actions: SyncActions,
+) {
+    run {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(str(R.string.sync_explain), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
+            Text(str(R.string.sync_explain), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft, modifier = Modifier.settingAnchor("sync"))
 
             val place = info.place
             if (place == null) {
@@ -128,16 +143,47 @@ fun SyncDialog(
             Box(Modifier.fillMaxWidth().height(1.dp).background(FwipColors.Stroke))
             UploadSection(folders, servers, actions)
 
-            Box(Modifier.fillMaxWidth().height(1.dp).background(FwipColors.Stroke))
+            Box(Modifier.fillMaxWidth().height(1.dp).background(FwipColors.Stroke).settingAnchor("backup"))
             Label(str(R.string.backup_title))
             Text(str(R.string.backup_explain), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
             SheetButton(str(R.string.backup_save), actions.saveBackup)
             SheetButton(str(R.string.backup_restore), actions.restoreBackup)
+            AutoBackupRow()
 
             info.message?.let {
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = if (info.failed) FwipColors.Danger else FwipColors.Amber)
             }
         }
+    }
+}
+
+/** A backup on the NAS every week, by itself. */
+@Composable
+private fun AutoBackupRow() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val status by io.github.christiandonatti.fwip.data.AutoBackup.status.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(Unit) { io.github.christiandonatti.fwip.data.AutoBackup.refresh(context) }
+    val target = androidx.compose.runtime.remember(status) { io.github.christiandonatti.fwip.data.AutoBackup.target(context) }
+    io.github.christiandonatti.fwip.reader.Toggle(
+        str(R.string.autobackup_title),
+        when {
+            target == null -> str(R.string.autobackup_no_target)
+            status.error != null && status.enabled -> str(R.string.autobackup_error, status.error!!)
+            status.last > 0 -> str(R.string.autobackup_last, android.text.format.DateUtils.getRelativeTimeSpanString(status.last).toString())
+            else -> str(R.string.autobackup_hint)
+        },
+        status.enabled,
+        { on -> io.github.christiandonatti.fwip.data.AutoBackup.setEnabled(context, on) },
+        key = "autobackup",
+    )
+    if (status.enabled && target != null) {
+        PillButton(
+            str(R.string.autobackup_now),
+            { io.github.christiandonatti.fwip.data.AutoBackup.runNow(context) },
+            style = PillStyle.Ghost,
+            height = 44.dp,
+            enabled = !status.running,
+        )
     }
 }
 
@@ -154,7 +200,7 @@ private fun UploadSection(folders: List<Uri>, servers: List<Server>, actions: Sy
     val error = remember(status.rev) { NasUpload.lastError(context) }
 
     Label(str(R.string.upload_title))
-    Text(str(R.string.upload_explain), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+    Text(str(R.string.upload_explain), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, modifier = Modifier.settingAnchor("upload"))
     if (target == null) {
         val netFolders = folders.filter(NetUris::isNet)
         val roots = servers.filter { it.kind.isFolder }

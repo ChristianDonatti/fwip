@@ -1,0 +1,4 @@
+# Startup profile: the app's own code is compiled ahead of time on install (wildcards).
+# Compose, Material and the other libraries bring their own profiles.
+HSPLio/github/christiandonatti/fwip/**->**(**)**
+Lio/github/christiandonatti/fwip/**;

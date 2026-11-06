@@ -48,9 +48,10 @@ fun StatsScreen(
     load: () -> Map<LocalDate, DayStats>,
     gutter: Dp,
     wide: Boolean,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
+    handleBack: Boolean = true,
 ) {
-    BackHandler(onBack = onBack)
+    if (onBack != null && handleBack) BackHandler(onBack = onBack)
     val days = remember { load() }
     val today = LocalDate.now()
     val totalPages = days.values.sumOf { it.pages }
@@ -81,7 +82,7 @@ fun StatsScreen(
                 .padding(horizontal = gutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
+            if (onBack != null) CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
             Text(str(R.string.stats_title), style = if (wide) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineMedium)
 
             val cards = listOf(

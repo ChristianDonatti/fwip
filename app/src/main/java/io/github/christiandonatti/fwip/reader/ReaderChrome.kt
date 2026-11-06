@@ -508,86 +508,7 @@ private fun PageScrubber(
 }
 
 @Composable
-internal fun SettingsDialog(settings: ReaderSettings, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        Column(
-            Modifier
-                .widthIn(max = 520.dp)
-                .heightIn(max = 720.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xFF16171E))
-                .border(1.dp, FwipColors.Stroke, RoundedCornerShape(28.dp)),
-        ) {
-            Row(Modifier.padding(start = 24.dp, end = 16.dp, top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(str(R.string.reading_settings), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                CircleIconButton(Icons.Filled.Close, str(R.string.close), onDismiss, size = 40.dp)
-            }
-            Column(
-                Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                Section(str(R.string.section_pages))
-                Choice(str(R.string.page_turn), TurnStyle.entries, settings.turnStyle, { it.label }, settings::updateTurn)
-                Choice(str(R.string.pages_on_screen), SpreadMode.entries, settings.spreadMode, { it.label }, settings::updateSpread)
-                Toggle(str(R.string.manga_mode), str(R.string.manga_mode_hint), settings.mangaMode, settings::updateManga)
-                Toggle(str(R.string.crop_margins), str(R.string.crop_margins_hint), settings.cropMargins, settings::updateCrop)
-
-                Toggle(str(R.string.split_wide), str(R.string.split_wide_hint), settings.splitWide, settings::updateSplitWide)
-                Toggle(str(R.string.film_strip), str(R.string.film_strip_hint), settings.filmStrip, settings::updateFilmStrip)
-
-                Section(str(R.string.section_image))
-                Toggle(str(R.string.fix_colors), str(R.string.fix_colors_hint), settings.fixColors, settings::updateFixColors)
-                Toggle(str(R.string.denoise), str(R.string.denoise_hint), settings.denoise, settings::updateDenoise)
-                Choice(str(R.string.sharpness), Sharpness.entries, settings.sharpness, { it.label }, settings::updateSharpness)
-
-                Section(str(R.string.section_touch))
-                Choice(str(R.string.tap_zones), TapZones.entries, settings.tapZones, { it.label }, settings::updateTapZones)
-                TapZonePreview(settings.tapZones, settings.mangaMode)
-                Toggle(str(R.string.volume_keys), str(R.string.volume_keys_hint), settings.volumeKeys, settings::updateVolume)
-                Toggle(str(R.string.turn_haptic), str(R.string.turn_haptic_hint), settings.turnHaptic, settings::updateTurnHaptic)
-                val soundCheck = rememberTurnFeedback()
-                Toggle(str(R.string.turn_sound), str(R.string.turn_sound_hint), settings.turnSound) { on ->
-                    settings.updateTurnSound(on)
-                    if (on) soundCheck.preview(settings.soundKind)
-                }
-                if (settings.turnSound) {
-                    Choice(str(R.string.sound_kind), TurnSoundKind.entries, settings.soundKind, { it.label }) { k ->
-                        settings.updateSoundKind(k)
-                        soundCheck.preview(k)
-                    }
-                }
-
-                Section(str(R.string.section_gestures))
-                GestureRow(str(R.string.gesture_double_tap), settings.gestureDoubleTap, GestureAction.entries, settings::updateGestureDoubleTap)
-                val noZoom = GestureAction.entries - GestureAction.Zoom
-                GestureRow(str(R.string.gesture_long_press), settings.gestureLongPress, noZoom, settings::updateGestureLongPress)
-                GestureRow(str(R.string.gesture_swipe_up), settings.gestureSwipeUp, noZoom, settings::updateGestureSwipeUp)
-                GestureRow(str(R.string.gesture_swipe_down), settings.gestureSwipeDown, noZoom, settings::updateGestureSwipeDown)
-
-                Section(str(R.string.section_look))
-                ReaderLookSettings(settings)
-
-                Section(str(R.string.section_comfort))
-                Toggle(
-                    str(R.string.system_brightness),
-                    str(R.string.system_brightness_hint),
-                    settings.brightness < 0f,
-                ) { system -> settings.updateBrightness(if (system) -1f else 0.6f) }
-                if (settings.brightness >= 0f) {
-                    LevelSlider(str(R.string.brightness), settings.brightness, 0.02f..1f, settings::updateBrightness)
-                }
-                LevelSlider(str(R.string.warm_light), settings.warmth, 0f..1f, settings::updateWarmth, hint = str(R.string.warm_light_hint))
-                Toggle(str(R.string.keep_screen_on), str(R.string.keep_screen_on_hint), settings.keepScreenOn, settings::updateKeepScreenOn)
-                Choice(str(R.string.rotation), ScreenRotation.entries, settings.rotation, { it.label }, settings::updateRotation)
-            }
-        }
-    }
-}
-
-@Composable
-private fun Section(title: String) {
+internal fun Section(title: String) {
     Text(
         title.uppercase(),
         style = MaterialTheme.typography.labelSmall,
@@ -597,11 +518,19 @@ private fun Section(title: String) {
 }
 
 @Composable
-internal fun LevelSlider(title: String, value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit, hint: String? = null) {
-    Column {
+internal fun LevelSlider(
+    title: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    onChange: (Float) -> Unit,
+    hint: String? = null,
+    key: String? = null,
+    valueLabel: String = "${(value * 100).roundToInt()}%",
+) {
+    Column(Modifier.settingAnchor(key)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-            Text("${(value * 100).roundToInt()}%", style = MaterialTheme.typography.labelMedium, color = FwipColors.TextSoft)
+            Text(valueLabel, style = MaterialTheme.typography.labelMedium, color = FwipColors.TextSoft)
         }
         if (hint != null) Text(hint, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
         androidx.compose.material3.Slider(
@@ -611,7 +540,7 @@ internal fun LevelSlider(title: String, value: Float, range: ClosedFloatingPoint
             colors = androidx.compose.material3.SliderDefaults.colors(
                 thumbColor = FwipColors.Amber,
                 activeTrackColor = FwipColors.Amber,
-                inactiveTrackColor = Color.White.copy(alpha = 0.16f),
+                inactiveTrackColor = FwipColors.Text.copy(alpha = 0.16f),
             ),
         )
     }
@@ -619,7 +548,7 @@ internal fun LevelSlider(title: String, value: Float, range: ClosedFloatingPoint
 
 /** Little page showing what each third of the screen does with the chosen tap zones. */
 @Composable
-private fun TapZonePreview(zones: TapZones, rtl: Boolean) {
+internal fun TapZonePreview(zones: TapZones, rtl: Boolean) {
     fun label(side: Int): String = when (zones.move(side, rtl)) {
         1 -> str(R.string.zone_next)
         -1 -> str(R.string.zone_back)
@@ -654,9 +583,45 @@ private fun TapZonePreview(zones: TapZones, rtl: Boolean) {
 }
 
 @Composable
-internal fun <T> Choice(title: String, options: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(title, style = MaterialTheme.typography.labelLarge)
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+internal fun <T> Choice(
+    title: String,
+    options: List<T>,
+    selected: T,
+    label: (T) -> String,
+    onPick: (T) -> Unit,
+    key: String? = null,
+    hint: String? = null,
+) {
+    Column(Modifier.settingAnchor(key), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.labelLarge)
+            if (hint != null) Text(hint, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+        }
+        // Many options wrap onto more lines instead of squeezing.
+        if (options.size > 4) {
+            androidx.compose.foundation.layout.FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                options.forEach { o ->
+                    val on = o == selected
+                    Box(
+                        Modifier
+                            .height(40.dp)
+                            .clip(CircleShape)
+                            .background(if (on) FwipColors.Text else FwipColors.Surface)
+                            .border(1.dp, if (on) Color.Transparent else FwipColors.Stroke, CircleShape)
+                            .clickable(role = Role.RadioButton) { onPick(o) }
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(label(o), style = MaterialTheme.typography.labelMedium, color = if (on) FwipColors.Ink else FwipColors.TextSoft, maxLines = 1)
+                    }
+                }
+            }
+            return@Column
+        }
         Row(
             Modifier
                 .clip(CircleShape)
@@ -684,10 +649,11 @@ internal fun <T> Choice(title: String, options: List<T>, selected: T, label: (T)
 }
 
 @Composable
-internal fun Toggle(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun Toggle(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit, key: String? = null) {
     Row(
         Modifier
             .fillMaxWidth()
+            .settingAnchor(key)
             .clickable(role = Role.Switch) { onChange(!checked) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -793,20 +759,20 @@ internal fun EndCard(
 @Composable
 internal fun ReaderLookSettings(settings: ReaderSettings) {
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Choice(str(R.string.reader_ground), ReaderGround.entries, settings.ground, { it.label }, settings::updateGround)
-        LevelSlider(str(R.string.spine_shadow), settings.spineShadow, 0f..1f, settings::updateSpineShadow, hint = str(R.string.spine_shadow_hint))
-        Toggle(str(R.string.paper_texture), str(R.string.paper_texture_hint), settings.paperTexture, settings::updatePaperTexture)
-        Choice(str(R.string.turn_speed), TurnSpeed.entries, settings.turnSpeed, { it.label }, settings::updateTurnSpeed)
-        LevelSlider(str(R.string.turn_lift), settings.turnLift, 0f..1f, settings::updateTurnLift, hint = str(R.string.turn_lift_hint))
-        LevelSlider(str(R.string.fold_shade), settings.foldShade, 0f..1f, settings::updateFoldShade, hint = str(R.string.fold_shade_hint))
+        Choice(str(R.string.reader_ground), ReaderGround.entries, settings.ground, { it.label }, settings::updateGround, key = "ground")
+        LevelSlider(str(R.string.spine_shadow), settings.spineShadow, 0f..1f, settings::updateSpineShadow, hint = str(R.string.spine_shadow_hint), key = "spine")
+        Toggle(str(R.string.paper_texture), str(R.string.paper_texture_hint), settings.paperTexture, settings::updatePaperTexture, key = "texture")
+        Choice(str(R.string.turn_speed), TurnSpeed.entries, settings.turnSpeed, { it.label }, settings::updateTurnSpeed, key = "speed")
+        LevelSlider(str(R.string.turn_lift), settings.turnLift, 0f..1f, settings::updateTurnLift, hint = str(R.string.turn_lift_hint), key = "lift")
+        LevelSlider(str(R.string.fold_shade), settings.foldShade, 0f..1f, settings::updateFoldShade, hint = str(R.string.fold_shade_hint), key = "fold")
     }
 }
 
 /** A gesture and what it does; tap to pick another action from a short menu. */
 @Composable
-private fun GestureRow(title: String, value: GestureAction, options: List<GestureAction>, onPick: (GestureAction) -> Unit) {
+internal fun GestureRow(title: String, value: GestureAction, options: List<GestureAction>, onPick: (GestureAction) -> Unit, key: String? = null) {
     var open by remember { mutableStateOf(false) }
-    Box {
+    Box(Modifier.settingAnchor(key)) {
         Row(
             Modifier
                 .fillMaxWidth()

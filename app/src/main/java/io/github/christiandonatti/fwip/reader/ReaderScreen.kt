@@ -117,7 +117,8 @@ fun ReaderScreen(
     onProgress: (page: Int, pageCount: Int) -> Unit,
 ) {
     val context = LocalContext.current
-    val settings = remember { ReaderSettings(context) }
+    val settings = remember { ReaderSettings.get(context) }
+    val light = remember { LightSettings.get(context) }
 
     val loaded by produceState<Loaded>(Loaded.Loading, comic.id) {
         value = withContext(Dispatchers.IO) {
@@ -136,15 +137,14 @@ fun ReaderScreen(
 
     BackHandler(onBack = onClose)
     SideEffect {
-        FwipColors.ReaderBg = androidx.compose.ui.graphics.Color(settings.ground.argb)
+        // E-ink pages sit on e-ink paper.
+        FwipColors.ReaderBg = if (light.ink != InkLook.Off) androidx.compose.ui.graphics.Color(0xFFE6E3DA) else androidx.compose.ui.graphics.Color(settings.ground.argb)
         ReaderLook.spine = settings.spineShadow
         ReaderLook.texture = settings.paperTexture
         ReaderLook.speed = settings.turnSpeed.factor
         ReaderLook.lift = 0.04f + settings.turnLift * 0.3f
         ReaderLook.fold = settings.foldShade
     }
-    KeepScreenOn(settings.keepScreenOn)
-    ReaderComfort(settings)
 
     Box(Modifier.fillMaxSize().background(FwipColors.ReaderBg)) {
         when (val l = loaded) {
@@ -158,7 +158,7 @@ fun ReaderScreen(
                 Text(l.message, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted, textAlign = TextAlign.Center)
                 PillButton(str(R.string.back), onClose)
             }
-            is Loaded.Ready -> Reader(comic, title, meta, next, onOpenNext, l.source, startPage, settings, onClose, onProgress)
+            is Loaded.Ready -> Reader(comic, title, meta, next, onOpenNext, l.source, startPage, settings, light, onClose, onProgress)
         }
     }
 }
@@ -173,6 +173,7 @@ private fun Reader(
     source: ComicSource,
     startPage: Int,
     settings: ReaderSettings,
+    light: LightSettings,
     onClose: () -> Unit,
     onProgress: (Int, Int) -> Unit,
 ) {
@@ -224,7 +225,7 @@ private fun Reader(
     val view: ComicSource = remember(source, pageMap) { if (pageMap.identity) source else SplitSource(source, pageMap) }
     val shownWide = if (pageMap.identity) wide else emptySet()
 
-    val filters = settings.pageFilters
+    val filters = PageFilters(settings.fixColors, settings.denoise, settings.sharpness, light.ink)
     val cache = remember(view, settings.cropMargins, filters) { PageCache(view, settings.cropMargins, PageCache.budgetFor(context), filters) }
     DisposableEffect(cache) { onDispose { cache.clear() } }
 
@@ -455,10 +456,17 @@ private fun Reader(
         // Volume keys: down = forward, up = back. In balloon mode they step through balloons.
         DisposableEffect(settings.volumeKeys) {
             ReaderKeys.active = settings.volumeKeys
-            onDispose { ReaderKeys.active = false }
+            ReaderKeys.reading = true
+            onDispose { ReaderKeys.active = false; ReaderKeys.reading = false }
         }
         LaunchedEffect(host) {
-            ReaderKeys.events.collect { d ->
+            ReaderKeys.events.collect { k ->
+                // Arrows follow the screen: in manga the left one goes forward.
+                val d = when (k) {
+                    2 -> if (rtl) -1 else 1
+                    -2 -> if (rtl) 1 else -1
+                    else -> k
+                }
                 if (guide != null) {
                     if (d > 0) nextStop() else prevStop()
                 } else {
@@ -513,15 +521,11 @@ private fun Reader(
         }
         }
 
-        // Warm night filter over the pages (the controls stay true to colour).
-        if (settings.warmth > 0f) {
-            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-                drawRect(
-                    androidx.compose.ui.graphics.Color(0xFFFFA24A).copy(alpha = 0.45f * settings.warmth),
-                    blendMode = androidx.compose.ui.graphics.BlendMode.Multiply,
-                )
-            }
-        }
+        // Front light over the pages: warmth, the veil below the minimum, the matte e-ink film
+        // (the controls stay true to colour).
+        ReadingLightLayer(light)
+        InkFlash(spread, light.inkFlash)
+        if (!chrome) ReadingStatus(light.showClock, light.showBattery)
 
         // Spotlight on the panel or balloon being read.
         val spotAlpha by animateFloatAsState(if (guide != null && stop >= 0) 1f else 0f, label = "spot")
@@ -613,7 +617,7 @@ private fun Reader(
     }
 
     if (showSettings) {
-        SettingsDialog(settings, onDismiss = { showSettings = false })
+        QuickSettings(settings, light, onDismiss = { showSettings = false })
     }
 }
 
@@ -639,44 +643,6 @@ private fun ImmersiveMode(visibleBars: Boolean) {
         onDispose {
             WindowCompat.getInsetsController(activity.window, view).show(WindowInsetsCompat.Type.systemBars())
         }
-    }
-}
-
-@Composable
-private fun KeepScreenOn(enabled: Boolean) {
-    val view = LocalView.current
-    DisposableEffect(view, enabled) {
-        view.keepScreenOn = enabled
-        onDispose { view.keepScreenOn = false }
-    }
-}
-
-/** Brightness and rotation lock apply only while the reader is open. */
-@Composable
-private fun ReaderComfort(settings: ReaderSettings) {
-    val view = LocalView.current
-    val activity = view.context.findActivity() ?: return
-    DisposableEffect(settings.brightness) {
-        val attrs = activity.window.attributes
-        attrs.screenBrightness = if (settings.brightness < 0f) {
-            android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-        } else {
-            settings.brightness.coerceIn(0.01f, 1f)
-        }
-        activity.window.attributes = attrs
-        onDispose {
-            val a = activity.window.attributes
-            a.screenBrightness = android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-            activity.window.attributes = a
-        }
-    }
-    DisposableEffect(settings.rotation) {
-        activity.requestedOrientation = when (settings.rotation) {
-            ScreenRotation.Auto -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            ScreenRotation.Portrait -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-            ScreenRotation.Landscape -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        }
-        onDispose { activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
     }
 }
 

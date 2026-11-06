@@ -167,6 +167,7 @@ class MainActivity : ComponentActivity() {
                         dismissFileMessage = viewModel::dismissFileMessage,
                         saveReport = { saveReport.launch(io.github.christiandonatti.fwip.data.Reports.fileName()) },
                         pickBackdrop = { pickBackdrop.launch("image/*") },
+                        importFiles = viewModel::importFiles,
                         importReadingList = { openReadingList.launch(arrayOf("*/*")) },
                         pickShelfArt = { key, logo -> shelfArtFor = key to logo; pickShelfArt.launch("image/*") },
                         screenShown = viewModel::screenShown,
@@ -300,6 +301,16 @@ class MainActivity : ComponentActivity() {
             }
             io.github.christiandonatti.fwip.widget.ACTION_RANDOM -> viewModel.openRandom()
             io.github.christiandonatti.fwip.widget.ACTION_SHOW -> viewModel.requestScreen(intent.getStringExtra(io.github.christiandonatti.fwip.widget.EXTRA_SCREEN))
+            // Opened with Fwip, or shared to it, from another app: keep a copy in the library.
+            android.content.Intent.ACTION_VIEW -> intent.data?.let { viewModel.importFiles(listOf(it)) }
+            android.content.Intent.ACTION_SEND -> {
+                @Suppress("DEPRECATION")
+                (intent.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM))?.let { viewModel.importFiles(listOf(it)) }
+            }
+            android.content.Intent.ACTION_SEND_MULTIPLE -> {
+                @Suppress("DEPRECATION")
+                intent.getParcelableArrayListExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM)?.let { viewModel.importFiles(it) }
+            }
             else -> return
         }
         intent.action = null
@@ -321,6 +332,23 @@ class MainActivity : ComponentActivity() {
                 ReaderKeys.events.tryEmit(if (event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) 1 else -1)
             }
             return true
+        }
+        // Keyboards and Bluetooth page turners (they send arrows, page keys, space or media keys).
+        if (ReaderKeys.reading) {
+            val move = when (event.keyCode) {
+                KeyEvent.KEYCODE_PAGE_DOWN, KeyEvent.KEYCODE_MEDIA_NEXT, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
+                KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_J -> 1
+                KeyEvent.KEYCODE_PAGE_UP, KeyEvent.KEYCODE_MEDIA_PREVIOUS, KeyEvent.KEYCODE_MEDIA_REWIND,
+                KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_K -> -1
+                KeyEvent.KEYCODE_SPACE -> if (event.isShiftPressed) -1 else 1
+                KeyEvent.KEYCODE_DPAD_RIGHT -> 2
+                KeyEvent.KEYCODE_DPAD_LEFT -> -2
+                else -> 0
+            }
+            if (move != 0) {
+                if (event.action == KeyEvent.ACTION_DOWN) ReaderKeys.events.tryEmit(move)
+                return true
+            }
         }
         return super.dispatchKeyEvent(event)
     }

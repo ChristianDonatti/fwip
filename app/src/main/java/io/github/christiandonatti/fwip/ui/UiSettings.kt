@@ -246,6 +246,32 @@ class UiSettings private constructor(context: Context) {
 
     fun setWelcomed() { welcomed = true; prefs.edit().putBoolean("welcomed", true).apply() }
 
+    /** Back to the look of a new install (name, icon and home sections stay). */
+    fun resetLook() {
+        updatePreset(ThemePreset.Night)
+        updateAccent(0)
+        updateBackdrop(Backdrop.Glow)
+        updateCorners(CoverCorners.Rounded)
+        updateCoverShadow(true)
+        updateCoverTitles(true)
+        updateReadMark(ReadMark.Badge)
+        updateProgressStyle(ProgressStyle.Bar)
+        updateLibraryList(false)
+        updateShowCarousel(true)
+        updateCarousel(CarouselStyle.Flat)
+        updateCoverAnimation(true)
+        updateStartTab("Home")
+        updateShowCollectionsTab(true)
+        updateShowServersTab(true)
+        coverScale = 1f
+        saveCoverScale()
+        apply()
+    }
+
+    /** The version whose news were last shown (0 on a new install). */
+    val seenVersion: Int get() = prefs.getInt("seenVersion", 0)
+    fun setSeenVersion(code: Int) { prefs.edit().putInt("seenVersion", code).apply() }
+
     fun systemDark(): Boolean =
         (app.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 

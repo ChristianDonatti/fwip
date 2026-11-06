@@ -38,8 +38,8 @@ private const val GPL = "https://www.gnu.org/licenses/gpl-3.0.html"
 
 /** Version, license, credits and language: everything a free-software app owes its users. */
 @Composable
-fun AboutScreen(gutter: Dp, onBack: () -> Unit) {
-    BackHandler(onBack = onBack)
+fun AboutScreen(gutter: Dp, onBack: (() -> Unit)?, handleBack: Boolean = true, top: @Composable () -> Unit = {}) {
+    if (onBack != null && handleBack) BackHandler(onBack = onBack)
     val context = LocalContext.current
     val version = remember {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?"
@@ -57,7 +57,8 @@ fun AboutScreen(gutter: Dp, onBack: () -> Unit) {
                 .padding(horizontal = gutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
+            if (onBack != null) CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
+            top()
             Spacer(Modifier.height(4.dp))
             FwipLogo(size = 30)
             Text(str(R.string.version, version), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)

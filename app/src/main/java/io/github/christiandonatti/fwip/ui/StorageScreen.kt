@@ -69,9 +69,10 @@ fun StorageScreen(
     state: LibraryState,
     gutter: Dp,
     onDelete: (List<String>) -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
+    handleBack: Boolean = true,
 ) {
-    BackHandler(onBack = onBack)
+    if (onBack != null && handleBack) BackHandler(onBack = onBack)
     val context = LocalContext.current
     var refresh by remember { mutableIntStateOf(0) }
     val downloads = state.items.filter { it.comic.uri.scheme == "file" }.sortedByDescending { it.comic.size }
@@ -97,7 +98,7 @@ fun StorageScreen(
                 .padding(horizontal = gutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
+            if (onBack != null) CircleIconButton(Icons.Filled.ArrowBack, str(R.string.back), onBack, size = 44.dp)
             Text(str(R.string.storage_title), style = MaterialTheme.typography.headlineSmall)
 
             Card {

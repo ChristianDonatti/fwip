@@ -5,6 +5,9 @@
 
 package io.github.christiandonatti.fwip.ui
 
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
+import androidx.compose.ui.draganddrop.toAndroidDragEvent
+
 import io.github.christiandonatti.fwip.R
 import io.github.christiandonatti.fwip.str
 import android.net.Uri
@@ -137,6 +140,8 @@ class LibraryActions(
     val saveReport: () -> Unit = {},
     /** Picks a picture for the library background. */
     val pickBackdrop: () -> Unit = {},
+    /** Files dropped onto the library (tablet split screen, desktop mode). */
+    val importFiles: (List<Uri>) -> Unit = {},
 )
 
 /** The tabs the user keeps; Home and Library always stay. */
@@ -192,8 +197,8 @@ fun LibraryScreen(
     var tab by rememberSaveable { mutableStateOf(runCatching { Tab.valueOf(startUi.startTab) }.getOrDefault(Tab.Home)) }
     var shelfToken by rememberSaveable { mutableStateOf<String?>(null) }
     val shelf = shelfFromToken(shelfToken)
-    var showFolders by remember { mutableStateOf(false) }
-    var showSync by rememberSaveable { mutableStateOf(false) }
+    // Settings: null = closed, "" = the list, "light" = a group, "light/warmth" = a row in it.
+    var settingsAt by rememberSaveable { mutableStateOf<String?>(null) }
     // Fixing names, series and covers by hand.
     var editFor by remember { mutableStateOf<String?>(null) }
     var seriesEditFor by remember { mutableStateOf<List<String>?>(null) }
@@ -208,21 +213,13 @@ fun LibraryScreen(
     var query by rememberSaveable { mutableStateOf("") }
     var searching by rememberSaveable { mutableStateOf(false) }
     var browsing by rememberSaveable { mutableStateOf<String?>(null) }
-    var showAbout by rememberSaveable { mutableStateOf(false) }
     var showStats by rememberSaveable { mutableStateOf(false) }
-    var showAppearance by rememberSaveable { mutableStateOf(false) }
-    var showUpdates by rememberSaveable { mutableStateOf(false) }
-    var showReport by rememberSaveable { mutableStateOf(false) }
-    var showStorage by rememberSaveable { mutableStateOf(false) }
-    var showWifi by rememberSaveable { mutableStateOf(false) }
-    val appContext = androidx.compose.ui.platform.LocalContext.current
-    var alertsOn by remember { mutableStateOf(io.github.christiandonatti.fwip.data.NewIssues.enabled(appContext)) }
     var showUpdateNotes by remember { mutableStateOf(false) }
     var libraryFilter by rememberSaveable { mutableStateOf(Filter.All) }
     // Widgets can open a screen directly.
     LaunchedEffect(state.requestedScreen) {
         when (state.requestedScreen) {
-            "wifi" -> showWifi = true
+            "wifi" -> settingsAt = "wifi"
             "stats" -> showStats = true
             "new" -> { libraryFilter = Filter.All; tab = Tab.Library }
             null -> return@LaunchedEffect
@@ -261,11 +258,48 @@ fun LibraryScreen(
     val showMenu: (LibraryItem) -> Unit = { menuFor = it.comic.id }
 
     AmbientBackground(color = glow, intensity = if (tab == Tab.Home && shelf == null) 0.55f else 0.35f) {
+        val dropContext = androidx.compose.ui.platform.LocalContext.current
+        var dropping by remember { mutableStateOf(false) }
+        val dropTarget = remember(actions) {
+            object : androidx.compose.ui.draganddrop.DragAndDropTarget {
+                override fun onEntered(event: androidx.compose.ui.draganddrop.DragAndDropEvent) { dropping = true }
+                override fun onExited(event: androidx.compose.ui.draganddrop.DragAndDropEvent) { dropping = false }
+                override fun onEnded(event: androidx.compose.ui.draganddrop.DragAndDropEvent) { dropping = false }
+                override fun onDrop(event: androidx.compose.ui.draganddrop.DragAndDropEvent): Boolean {
+                    dropping = false
+                    val drag = event.toAndroidDragEvent()
+                    // Reading another app's files needs its permission, granted for this drop.
+                    (dropContext as? android.app.Activity)?.requestDragAndDropPermissions(drag)
+                    val clip = drag.clipData ?: return false
+                    val uris = (0 until clip.itemCount).mapNotNull { clip.getItemAt(it).uri }
+                    if (uris.isEmpty()) return false
+                    actions.importFiles(uris)
+                    return true
+                }
+            }
+        }
         BoxWithConstraints(
             Modifier
                 .fillMaxSize()
+                .dragAndDropTarget(
+                    shouldStartDragAndDrop = { e -> e.toAndroidDragEvent().clipDescription?.let { d -> (0 until d.mimeTypeCount).any { d.getMimeType(it) != "text/plain" } } == true },
+                    target = dropTarget,
+                )
                 .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility)
         ) {
+            if (dropping) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(12.dp)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(FwipColors.Amber.copy(alpha = 0.12f))
+                        .border(2.dp, FwipColors.Amber, RoundedCornerShape(28.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(str(R.string.drop_here), style = MaterialTheme.typography.titleLarge, color = FwipColors.Amber)
+                }
+            }
             val wide = maxWidth >= 840.dp
             val boxHeight = maxHeight
             val boxWidth = maxWidth
@@ -279,16 +313,15 @@ fun LibraryScreen(
                     onServers = { ui.setWelcomed(); tab = Tab.Servers },
                     onSkip = { ui.setWelcomed() },
                 )
-            } else if (showAppearance) {
-                AppearanceScreen(state, gutter, wide, onPickImage = actions.pickBackdrop, onBack = { showAppearance = false })
-            } else if (showStorage) {
-                StorageScreen(state, gutter, onDelete = actions.deleteComics, onBack = { showStorage = false })
-            } else if (showWifi) {
-                WifiScreen(state.folders, state.servers, gutter, onReceived = actions.refresh, onBack = { showWifi = false })
+            } else if (settingsAt != null) {
+                SettingsScreen(
+                    state, actions, serverActions, syncActions,
+                    start = settingsAt?.ifEmpty { null },
+                    onBrowse = { s -> settingsAt = null; browsing = s.id },
+                    onClose = { settingsAt = null },
+                )
             } else if (showStats) {
                 StatsScreen(state, actions.stats, gutter, wide, onBack = { showStats = false })
-            } else if (showAbout) {
-                AboutScreen(gutter, onBack = { showAbout = false })
             } else if (browsingServer != null && browsingServer.kind.isFolder) {
                 NetBrowser(browsingServer, state.folders, serverActions, wide, gutter, onClose = { browsing = null })
             } else if (browsingServer != null) {
@@ -326,9 +359,9 @@ fun LibraryScreen(
                             scanning = state.scanning,
                             onRefresh = actions.refresh,
                             onAdd = actions.addFolder,
-                            onFolders = { showFolders = true },
+                            onFolders = { settingsAt = "" },
                             onSearch = { tab = Tab.Library; searching = true },
-                            onAbout = { showAbout = true },
+                            onAbout = { settingsAt = "about" },
                             modifier = Modifier.padding(horizontal = gutter, vertical = if (wide) 24.dp else 12.dp),
                         )
                         when {
@@ -359,7 +392,7 @@ fun LibraryScreen(
                 }
             }
             val update = io.github.christiandonatti.fwip.data.Updates.available
-            if (update != null && !selection.active && !(fresh && !ui.welcomed) && shelf == null && !showStats && !showAbout && !showAppearance && browsingServer == null) {
+            if (update != null && !selection.active && !(fresh && !ui.welcomed) && shelf == null && !showStats && settingsAt == null && browsingServer == null) {
                 UpdateBanner(
                     update,
                     onNotes = { showUpdateNotes = true },
@@ -381,46 +414,32 @@ fun LibraryScreen(
                     onClose = { selection.clear() },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
-            } else if (!wide && shelf == null && browsingServer == null && !showAbout && !showStats && !showAppearance && !(fresh && !ui.welcomed) && (state.items.isNotEmpty() || tab == Tab.Servers)) {
+            } else if (!wide && shelf == null && browsingServer == null && settingsAt == null && !showStats && !(fresh && !ui.welcomed) && (state.items.isNotEmpty() || tab == Tab.Servers)) {
                 PhoneTabBar(tab, onTab = { tab = it }, Modifier.align(Alignment.BottomCenter))
             }
 
         }
     }
 
-    if (showFolders) {
-        FoldersDialog(
-            onAbout = { showFolders = false; showAbout = true },
-            folders = state.folders,
-            servers = state.servers,
-            onAdd = { showFolders = false; actions.addFolder() },
-            onAddNet = { showFolders = false; tab = Tab.Servers },
-            onSync = { showFolders = false; showSync = true },
-            onStats = { showFolders = false; showStats = true },
-            onAppearance = { showFolders = false; showAppearance = true },
-            onUpdates = { showFolders = false; showUpdates = true },
-            onReport = { showFolders = false; showReport = true },
-            alertsOn = alertsOn,
-            onAlerts = { on -> alertsOn = on; actions.setAlerts(on) },
-            onStorage = { showFolders = false; showStorage = true },
-            onWifi = { showFolders = false; showWifi = true },
-            onRemove = actions.removeFolder,
-            onDismiss = { showFolders = false },
-        )
-    }
-
-    if (showUpdates) {
-        UpdatesDialog(onDismiss = { showUpdates = false })
-    }
-    if (showReport) {
-        ReportDialog(onSave = actions.saveReport, onDismiss = { showReport = false })
-    }
     io.github.christiandonatti.fwip.data.Updates.available?.let { u ->
         if (showUpdateNotes) UpdateNotesDialog(u, onDismiss = { showUpdateNotes = false })
     }
 
-    if (showSync) {
-        SyncDialog(state.sync, state.folders, state.servers, syncActions, onDismiss = { showSync = false })
+    // What changed since the last version, once, for people who already used the app.
+    var newsSince by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(fresh, ui.welcomed) {
+        val seen = ui.seenVersion
+        if (seen >= WhatsNew.latest) return@LaunchedEffect
+        if (fresh && !ui.welcomed) { ui.setSeenVersion(WhatsNew.latest); return@LaunchedEffect }
+        if (!fresh) newsSince = seen
+    }
+    newsSince?.let { since ->
+        WhatsNewDialog(
+            all = false,
+            since = since,
+            onDismiss = { ui.setSeenVersion(WhatsNew.latest); newsSince = null },
+            onTry = { target -> ui.setSeenVersion(WhatsNew.latest); newsSince = null; settingsAt = target },
+        )
     }
 
     menuFor?.let { id ->
@@ -1400,84 +1419,6 @@ private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit,
         }
     }
 }
-
-@Composable
-private fun FoldersDialog(
-    folders: List<Uri>,
-    servers: List<io.github.christiandonatti.fwip.remote.Server>,
-    onAdd: () -> Unit,
-    onAddNet: () -> Unit,
-    onSync: () -> Unit,
-    onStats: () -> Unit,
-    onAppearance: () -> Unit,
-    onUpdates: () -> Unit,
-    onReport: () -> Unit,
-    onRemove: (Uri) -> Unit,
-    onDismiss: () -> Unit,
-    onAbout: () -> Unit,
-    alertsOn: Boolean = false,
-    onAlerts: (Boolean) -> Unit = {},
-    onStorage: () -> Unit = {},
-    onWifi: () -> Unit = {},
-) {
-    FwipDialog(onDismiss) {
-        DialogTitle(str(R.string.app_settings), onDismiss)
-        Text(str(R.string.library_folders), style = MaterialTheme.typography.labelLarge, color = FwipColors.TextSoft)
-        if (folders.isEmpty()) {
-            Text(str(R.string.no_folders), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
-        }
-        folders.forEach { uri ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(FwipColors.Surface)
-                    .padding(start = 16.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                FolderIcon(FwipColors.TextSoft)
-                Text(folderLabel(uri, servers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                CircleIconButton(Icons.Filled.Delete, str(R.string.remove_folder), { onRemove(uri) }, size = 40.dp)
-            }
-        }
-        PillButton(str(R.string.add_folder), onAdd, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
-        PillButton(str(R.string.add_network_folder), onAddNet, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.fillMaxWidth(), leading = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
-        SheetButton(str(R.string.appearance), onAppearance)
-        SheetButton(str(R.string.stats_title), onStats)
-        SheetButton(str(R.string.sync_title), onSync)
-        SheetButton(str(R.string.wifi_title), onWifi)
-        SheetButton(str(R.string.storage_title), onStorage)
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(FwipColors.Surface)
-                .clickable(role = Role.Switch) { onAlerts(!alertsOn) }
-                .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(str(R.string.alerts_title), style = MaterialTheme.typography.labelLarge)
-                Text(str(R.string.alerts_hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
-            }
-            androidx.compose.material3.Switch(
-                checked = alertsOn,
-                onCheckedChange = onAlerts,
-                colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = FwipColors.Amber, checkedThumbColor = FwipColors.AmberInk),
-            )
-        }
-        if (io.github.christiandonatti.fwip.data.Updates.available != null) {
-            SheetButton(str(R.string.updates), onUpdates, trailing = { Box(Modifier.size(10.dp).clip(CircleShape).background(FwipColors.Amber)) })
-        } else {
-            SheetButton(str(R.string.updates), onUpdates)
-        }
-        SheetButton(str(R.string.report_title), onReport)
-        SheetButton(str(R.string.about), onAbout)
-    }
-}
-
-
 
 /** What a reading list found in the library, before it becomes a collection. */
 @Composable

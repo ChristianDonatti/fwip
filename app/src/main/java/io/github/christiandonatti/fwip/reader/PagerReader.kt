@@ -56,7 +56,10 @@ fun PagerReader(
                         onEnd()
                     } else {
                         val target = (pagerState.currentPage + cmd.delta).coerceIn(0, spreads.lastIndex)
-                        if (target != pagerState.currentPage) pagerState.animateScrollToPage(target, animationSpec = androidx.compose.animation.core.tween((380 * ReaderLook.speed).toInt()))
+                        if (target != pagerState.currentPage) {
+                            if (style == TurnStyle.Instant) pagerState.scrollToPage(target)
+                            else pagerState.animateScrollToPage(target, animationSpec = androidx.compose.animation.core.tween((380 * ReaderLook.speed).toInt()))
+                        }
                     }
                 }
                 is NavCommand.Seek -> pagerState.scrollToPage(cmd.spread.coerceIn(0, spreads.lastIndex))
@@ -117,6 +120,7 @@ private fun Modifier.turnEffect(
     rtl: Boolean,
     double: Boolean,
 ): Modifier {
+    if (style == TurnStyle.Instant) return this
     val rotate = style == TurnStyle.Flip && !double
     fun offsetOf(): Float = ((index - pagerState.currentPage) - pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
     return this

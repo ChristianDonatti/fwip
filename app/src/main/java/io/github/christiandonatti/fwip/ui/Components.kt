@@ -96,6 +96,10 @@ fun AmbientBackground(color: Color, intensity: Float = 0.55f, content: @Composab
             Backdrop.Image -> BackdropPicture(ui)
         }
         if (FwipColors.halftone) Halftone()
+        // E-ink themes: the matte grain of the screen film.
+        if (FwipColors.grain) Canvas(Modifier.fillMaxSize()) {
+            drawRect(io.github.christiandonatti.fwip.reader.PaperGrain.brush, alpha = if (FwipColors.isLight) 0.10f else 0.06f, blendMode = androidx.compose.ui.graphics.BlendMode.Overlay)
+        }
         content()
     }
 }
