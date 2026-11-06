@@ -306,7 +306,8 @@ class LibraryRepository(private val context: Context) {
                     }
                 }
                 val known = progress[comic.id]
-                if (source.pageCount > 0 && (known == null || known.pageCount != source.pageCount)) {
+                // A book's length comes from the book reader (its positions), not from this cover source.
+                if (!comic.format.isBook && source.pageCount > 0 && (known == null || known.pageCount != source.pageCount)) {
                     setProgress(comic.id, known?.page ?: 0, source.pageCount, touch = false)
                 }
                 if (needMeta) {

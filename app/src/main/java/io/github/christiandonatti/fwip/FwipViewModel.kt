@@ -921,4 +921,4 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
 }
 
 /** Files the app takes in when dropped or shared onto it. */
-internal val IMPORTABLE = setOf("cbz", "cbr", "cb7", "cbt", "zip", "rar", "7z", "pdf")
+internal val IMPORTABLE = setOf("cbz", "cbr", "cb7", "cbt", "zip", "rar", "7z", "pdf", "epub", "kepub", "fb2", "txt", "mobi", "azw", "azw3", "prc")

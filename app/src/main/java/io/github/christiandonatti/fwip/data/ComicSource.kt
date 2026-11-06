@@ -47,11 +47,13 @@ internal fun boundsOf(open: () -> InputStream): android.util.Size? {
 object ComicSources {
     fun open(context: Context, comic: Comic): ComicSource = comic.remote?.let {
         io.github.christiandonatti.fwip.remote.StreamComicSource(context, it)
-    } ?: if (io.github.christiandonatti.fwip.remote.NetUris.isNet(comic.uri)) openNet(context, comic) else when (comic.format) {
+    } ?: if (comic.format.isBook) BookSources.coverSource(context, comic)
+    else if (io.github.christiandonatti.fwip.remote.NetUris.isNet(comic.uri)) openNet(context, comic) else when (comic.format) {
         ComicFormat.ZIP -> ZipComicSource.open(context, comic)
         ComicFormat.SEVEN_ZIP -> SevenZipComicSource.open(context, comic)
         ComicFormat.RAR -> openLocalRar(context, comic)
         ComicFormat.PDF -> PdfComicSource.open(context, comic)
+        else -> error("not a comic")
     }
 }
 
@@ -81,6 +83,7 @@ private fun openNet(context: Context, comic: Comic): ComicSource {
                 rar5 = { PositionalInStream(reader.length, reader::read) },
             ).also { (it as? Finishing)?.onFinished = { runCatching { reader.close() } } }
             ComicFormat.PDF -> error("handled above")
+            else -> error("not a comic")
         }
     } catch (e: Exception) {
         runCatching { reader.close() }

@@ -2,7 +2,7 @@ package io.github.christiandonatti.fwip
 
 import android.os.Bundle
 import android.view.KeyEvent
-import androidx.activity.ComponentActivity
+import io.github.christiandonatti.fwip.data.isBook
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -37,7 +37,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-class MainActivity : ComponentActivity() {
+class MainActivity : androidx.fragment.app.FragmentActivity() {
 
     private val viewModel: FwipViewModel by viewModels()
 
@@ -46,7 +46,12 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
+        // The book reader is a Readium fragment; one restored by Android is dropped, Compose adds a fresh one.
+        supportFragmentManager.fragmentFactory = org.readium.r2.navigator.epub.EpubNavigatorFragment.createDummyFactory()
         super.onCreate(savedInstanceState)
+        supportFragmentManager.fragments.filter { it.tag?.startsWith("fwip-epub-") == true }.forEach { f ->
+            runCatching { supportFragmentManager.beginTransaction().remove(f).commitNowAllowingStateLoss() }
+        }
         if (savedInstanceState == null) handleOpenIntent(intent)
         val ui = UiSettings.get(this)
         ui.apply()
@@ -271,7 +276,14 @@ class MainActivity : ComponentActivity() {
                         }
                         val item = state.item(comic.id)
                         val next = item?.let { state.nextAfter(it, state.openContext) }
-                        ReaderScreen(
+                        if (comic.format.isBook) io.github.christiandonatti.fwip.book.BookReaderScreen(
+                            comic = comic,
+                            title = item?.title ?: comic.title,
+                            author = item?.author,
+                            startPage = start,
+                            onClose = viewModel::closeReader,
+                            onProgress = { page, count -> viewModel.saveProgress(comic, page, count) },
+                        ) else ReaderScreen(
                             comic = comic,
                             title = item?.title ?: comic.title,
                             meta = item?.meta,

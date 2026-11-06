@@ -6,7 +6,12 @@ enum class ComicFormat(val label: String) {
     ZIP("CBZ"),
     RAR("CBR"),
     SEVEN_ZIP("CB7"),
-    PDF("PDF");
+    PDF("PDF"),
+    // Books: text that reflows, read in the book reader.
+    EPUB("EPUB"),
+    MOBI("MOBI"),
+    FB2("FB2"),
+    TXT("TXT");
 
     companion object {
         fun fromFileName(name: String): ComicFormat? =
@@ -15,6 +20,10 @@ enum class ComicFormat(val label: String) {
                 "cbr", "rar" -> RAR
                 "cb7", "7z" -> SEVEN_ZIP
                 "pdf" -> PDF
+                "epub", "kepub" -> EPUB
+                "mobi", "azw", "azw3", "prc" -> MOBI
+                "fb2" -> FB2
+                "txt" -> TXT
                 else -> null
             }
     }
@@ -64,8 +73,14 @@ data class LibraryItem(
     /** What the file name says, for comics without metadata. */
     val parsed: ParsedName by lazy { parseFileName(comic.fileName) }
 
-    /** "Series #Number" from the metadata when known, otherwise read from the file name. */
-    val title: String = meta?.displayTitle ?: parseFileName(comic.fileName).display
+    /** "Series #Number" from the metadata when known, otherwise read from the file name. Books keep their own title. */
+    val title: String = if (comic.format.isBook) meta?.title?.takeIf { it.isNotBlank() } ?: prettyTitle(comic.fileName)
+    else meta?.displayTitle ?: parseFileName(comic.fileName).display
+
+    val isBook: Boolean get() = comic.format.isBook
+
+    /** A book's author(s), from its metadata. */
+    val author: String? get() = meta?.writer?.takeIf { it.isNotBlank() }
 
     /**
      * Series from the metadata when known, otherwise from the file name. A start year in the
@@ -73,7 +88,9 @@ data class LibraryItem(
      */
     val series: SeriesInfo = meta?.series?.takeIf { it.isNotBlank() }
         ?.let { SeriesInfo(seriesLabel(it, meta.volume), meta.numberValue) }
-        ?: parseFileName(comic.fileName).let { SeriesInfo(it.series, it.sortNumber) }
+        // A book outside a series is a shelf of its own, under its title.
+        ?: if (comic.format.isBook) SeriesInfo(title, null)
+        else parseFileName(comic.fileName).let { SeriesInfo(it.series, it.sortNumber) }
 
     /** Issue number to match against an online database. */
     val issueNumber: String?

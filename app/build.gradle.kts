@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "io.github.christiandonatti.fwip"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "io.github.christiandonatti.fwip"
@@ -109,6 +109,11 @@ dependencies {
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
     // Copies new comics to the NAS in the background, on Wi-Fi.
     implementation("androidx.work:work-runtime-ktx:2.10.0")
+    // Books: Readium (BSD-3) opens EPUB and lays out reflowable text in a web view.
+    implementation("org.readium.kotlin-toolkit:readium-shared:3.1.2")
+    implementation("org.readium.kotlin-toolkit:readium-streamer:3.1.2")
+    implementation("org.readium.kotlin-toolkit:readium-navigator:3.1.2")
+    implementation("androidx.fragment:fragment-ktx:1.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
