@@ -348,7 +348,7 @@
     <string name="welcome_skip">Pular</string>
     <string name="welcome_next">Continuar</string>
     <string name="welcome_title">Bem-vindo ao Fwip</string>
-    <string name="welcome_subtitle">Um leitor de HQs feito para tablet e celular.</string>
+    <string name="welcome_subtitle">Um leitor de HQs e livros feito para tablet e celular.</string>
     <string name="welcome_f1_title">Páginas que viram como papel</string>
     <string name="welcome_f1">Duas páginas lado a lado com o tablet deitado, e rolagem vertical para webtoons.</string>
     <string name="welcome_f2_title">Leitura guiada</string>

@@ -349,7 +349,7 @@
     <string name="welcome_skip">Skip</string>
     <string name="welcome_next">Continue</string>
     <string name="welcome_title">Welcome to Fwip</string>
-    <string name="welcome_subtitle">A comic reader made for tablets and phones.</string>
+    <string name="welcome_subtitle">A comic and book reader made for tablets and phones.</string>
     <string name="welcome_f1_title">Pages that turn like paper</string>
     <string name="welcome_f1">Two pages side by side with the tablet sideways, and vertical scrolling for webtoons.</string>
     <string name="welcome_f2_title">Guided reading</string>

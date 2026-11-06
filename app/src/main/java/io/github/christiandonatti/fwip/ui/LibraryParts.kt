@@ -643,7 +643,7 @@ private fun ItemDetailPage(
                                 corner = 10.dp,
                                 titleSize = 10,
                             )
-                            Text(other.title, style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(other.title, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextSoft, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }

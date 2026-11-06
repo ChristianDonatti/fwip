@@ -33,9 +33,9 @@ timeout 10 adb logcat -c -b crash
 adb shell pm clear $APP
 restart 15
 shot u01-welcome 2
-ui '^Next\|' ; shot u02-kind 2
+ui '^Continue\|' ; shot u02-kind 2
 ui '^Books\|' ; shot u03-look 2
-ui '^Next\|' ; shot u04-add-books 2
+ui '^Continue\|' ; shot u04-add-books 2
 crashes welcome
 
 # ---- Someone with comics and books ----
@@ -66,8 +66,8 @@ crashes search
 
 # ---- Yearly goal ----
 restart 15
-ui '\|Settings$' ; sleep 2
-ui '^Reading stats\|' ; shot u11-stats 2
+timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.SHOW --es screen stats; sleep 4
+shot u11-stats 2
 ui '^Set a goal\|' ; sleep 1
 for k in 1 2 3 4; do ui '^\+\|' ; done
 shot u12-goal-dialog 1

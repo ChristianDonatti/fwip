@@ -916,7 +916,8 @@ private fun LibraryTab(
                     }
                 }
             }
-            item(span = { GridItemSpan(maxLineSpan) }) {
+            // "Nothing found" only when nothing at all matched, settings and collections included.
+            if (results.isNotEmpty() || (matchingSeries.isEmpty() && matchingCollections.isEmpty() && matchingSettings.isEmpty())) item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
                     when (results.size) { 0 -> str(R.string.search_none, query); 1 -> str(R.string.search_one); else -> str(R.string.search_n, results.size) },
                     style = MaterialTheme.typography.bodyMedium,
