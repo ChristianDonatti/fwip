@@ -153,13 +153,6 @@ fun StatsScreen(
                         )
                     }
                 }
-                if (hasBooks) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Legend(FwipColors.Amber, str(R.string.mode_comics))
-                        Legend(bookColor, str(R.string.mode_books))
-                        Text(str(R.string.stats_minutes_a_day), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextMuted)
-                    }
-                }
                 Row(Modifier.fillMaxWidth()) {
                     last14.forEach { d ->
                         Text(
@@ -169,6 +162,13 @@ fun StatsScreen(
                             textAlign = TextAlign.Center,
                             modifier = Modifier.weight(1f),
                         )
+                    }
+                }
+                if (hasBooks) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Legend(FwipColors.Amber, str(R.string.mode_comics))
+                        Legend(bookColor, str(R.string.mode_books))
+                        Text(str(R.string.stats_minutes_a_day), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextMuted)
                     }
                 }
             }

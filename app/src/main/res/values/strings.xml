@@ -301,7 +301,7 @@
     <string name="stats_streak">Days in a row</string>
     <string name="stats_one_day">1 day</string>
     <string name="stats_n_days">%1$d days</string>
-    <string name="stats_two_weeks">Last two weeks (pages)</string>
+    <string name="stats_two_weeks">Last two weeks</string>
     <string name="stats_month">This month: %1$d pages, %2$d comics finished</string>
     <string name="stats_top_series">Most read series</string>
     <string name="stats_n_read">%1$d read</string>

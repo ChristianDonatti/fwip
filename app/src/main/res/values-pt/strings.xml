@@ -300,7 +300,7 @@
     <string name="stats_streak">Dias seguidos</string>
     <string name="stats_one_day">1 dia</string>
     <string name="stats_n_days">%1$d dias</string>
-    <string name="stats_two_weeks">Últimas duas semanas (páginas)</string>
+    <string name="stats_two_weeks">Últimas duas semanas</string>
     <string name="stats_month">Este mês: %1$d páginas, %2$d HQs terminadas</string>
     <string name="stats_top_series">Séries mais lidas</string>
     <string name="stats_n_read">%1$d lidas</string>
