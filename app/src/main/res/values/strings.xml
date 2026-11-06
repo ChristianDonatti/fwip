@@ -908,4 +908,13 @@
     <string name="news_book_time_text">Like on a Kindle, the bottom line tells how long until the end of the chapter or the book, learned from how fast you read. Tap it to switch to page or percentage.</string>
     <string name="news_book_tools">Notes, search and reading aloud</string>
     <string name="news_book_tools_text">Highlight in four colours, add notes and share them as Markdown, bookmarks, search the whole book, look up words, and listen with a sleep timer.</string>
+    <string name="undo">Undo</string>
+    <string name="undo_deleted_one">Deleted “%1$s”</string>
+    <string name="undo_deleted_n">Deleted %1$d files</string>
+    <string name="undo_collection_deleted">Collection “%1$s” deleted</string>
+    <string name="undo_marked_read">Marked as read</string>
+    <string name="undo_marked_unread">Marked as unread</string>
+    <string name="undo_marked_read_n">%1$d marked as read</string>
+    <string name="undo_marked_unread_n">%1$d marked as unread</string>
+    <string name="detail_more_series">More from %1$s</string>
 </resources>

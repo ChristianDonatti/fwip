@@ -43,6 +43,9 @@ data class SyncInfo(
 /** Files being deleted or moved. */
 data class FileWork(val label: String, val progress: Float, val detail: String? = null)
 
+/** Something just done that can still be taken back, shown as a bar with Undo for a few seconds. */
+data class UndoOffer(val message: String, val id: Long)
+
 data class LibraryState(
     val items: List<LibraryItem> = emptyList(),
     val folders: List<Uri> = emptyList(),
@@ -65,6 +68,9 @@ data class LibraryState(
     val requestedScreen: String? = null,
     /** A reading list just read from a .cbl file, waiting to become a collection. */
     val readingList: io.github.christiandonatti.fwip.data.CblMatch? = null,
+    val undo: UndoOffer? = null,
+    /** Comics deleted with Undo still possible: hidden now, removed when the offer ends. */
+    val pendingDelete: Set<String> = emptySet(),
 ) {
     /** Started but not finished, most recent first. */
     val continueReading: List<LibraryItem>
@@ -809,14 +815,97 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Deletes the files themselves (from the device or the NAS), not just from the library. */
-    fun deleteComics(ids: List<String>) {
+    // ---------- Undo instead of "are you sure?" ----------
+    private var undoJob: Job? = null
+    private var undoCommit: (() -> Unit)? = null
+    private var undoAction: (() -> Unit)? = null
+
+    private fun offerUndo(message: String, commit: () -> Unit = {}, undo: () -> Unit) {
+        finishUndo()
+        undoCommit = commit
+        undoAction = undo
+        _state.update { it.copy(undo = UndoOffer(message, System.nanoTime())) }
+        undoJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(7_000)
+            finishUndo()
+        }
+    }
+
+    /** The offer ends: what was waiting (deleting files) happens now. */
+    fun finishUndo() {
+        undoJob?.cancel()
+        undoJob = null
+        val commit = undoCommit
+        undoCommit = null
+        undoAction = null
+        _state.update { it.copy(undo = null) }
+        commit?.invoke()
+    }
+
+    fun undo() {
+        undoJob?.cancel()
+        undoJob = null
+        val action = undoAction
+        undoCommit = null
+        undoAction = null
+        _state.update { it.copy(undo = null) }
+        action?.invoke()
+    }
+
+    /** Deleting files: they vanish at once and are really removed when the Undo bar goes. */
+    fun deleteWithUndo(ids: List<String>) {
+        val items = ids.mapNotNull { _state.value.item(it) }
+        if (items.isEmpty()) return
+        val set = items.map { it.comic.id }.toSet()
+        _state.update { it.copy(pendingDelete = it.pendingDelete + set) }
+        offerUndo(
+            if (items.size == 1) str(R.string.undo_deleted_one, items[0].title) else str(R.string.undo_deleted_n, items.size),
+            commit = { deleteComics(set.toList(), quiet = true) },
+            undo = { _state.update { it.copy(pendingDelete = it.pendingDelete - set) } },
+        )
+    }
+
+    fun deleteCollectionWithUndo(id: String) {
+        val before = _state.value.collections
+        val index = before.indexOfFirst { it.id == id }
+        if (index < 0) return
+        val removed = before[index]
+        deleteCollection(id)
+        offerUndo(str(R.string.undo_collection_deleted, removed.name)) {
+            updateCollections { list -> if (list.any { it.id == id }) list else list.toMutableList().apply { add(index.coerceAtMost(size), removed) } }
+        }
+    }
+
+    /** Marking read or unread, with the old place kept for Undo. */
+    fun setReadWithUndo(ids: List<String>, read: Boolean) {
+        val old = ids.associateWith { repository.progressFor(it) }
+        setRead(ids, read)
+        offerUndo(
+            when {
+                ids.size > 1 && read -> str(R.string.undo_marked_read_n, ids.size)
+                ids.size > 1 -> str(R.string.undo_marked_unread_n, ids.size)
+                read -> str(R.string.undo_marked_read)
+                else -> str(R.string.undo_marked_unread)
+            },
+        ) {
+            val now = System.currentTimeMillis()
+            old.forEach { (id, p) -> if (p != null) repository.putProgress(id, p.copy(lastRead = maxOf(p.lastRead, now))) }
+            refreshProgress()
+            scheduleSync()
+        }
+    }
+
+    fun deleteComics(ids: List<String>, quiet: Boolean = false) {
         val comics = ids.mapNotNull { _state.value.item(it)?.comic }
-        if (comics.isEmpty() || _state.value.fileWork != null) return
+        if (comics.isEmpty() || (!quiet && _state.value.fileWork != null)) {
+            _state.update { it.copy(pendingDelete = it.pendingDelete - ids.toSet()) }
+            return
+        }
         viewModelScope.launch {
             val gone = mutableSetOf<String>()
             var error: String? = null
             comics.forEachIndexed { i, comic ->
-                _state.update { it.copy(fileWork = FileWork(str(R.string.deleting, comic.fileName), i / comics.size.toFloat())) }
+                if (!quiet) _state.update { it.copy(fileWork = FileWork(str(R.string.deleting, comic.fileName), i / comics.size.toFloat())) }
                 runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.christiandonatti.fwip.data.FileOps.delete(getApplication(), comic) } }
                     .onSuccess { gone += comic.id }
                     .onFailure { error = it.message ?: it.javaClass.simpleName }
@@ -834,9 +923,10 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
                     items = twins.visible.map(::itemFor),
                     aliases = twins.aliases,
                     collections = repository.collections(),
-                    fileWork = null,
+                    fileWork = if (quiet) s.fileWork else null,
+                    pendingDelete = s.pendingDelete - ids.toSet(),
                     fileMessage = error?.let { str(R.string.delete_failed, gone.size, comics.size, it) }
-                        ?: if (gone.size == 1) str(R.string.deleted_one) else str(R.string.deleted_n, gone.size),
+                        ?: if (quiet) s.fileMessage else if (gone.size == 1) str(R.string.deleted_one) else str(R.string.deleted_n, gone.size),
                 )
             }
             refreshHomeScreen()

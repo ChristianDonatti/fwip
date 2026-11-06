@@ -907,4 +907,13 @@
     <string name="news_book_time_text">Como no Kindle, a linha de baixo diz quanto falta para o fim do capítulo ou do livro, aprendendo com o seu ritmo. Toque nela para ver página ou porcentagem.</string>
     <string name="news_book_tools">Notas, busca e leitura em voz alta</string>
     <string name="news_book_tools_text">Destaque em quatro cores, escreva notas e compartilhe em Markdown, marcadores, busca no livro todo, dicionário e leitura em voz alta com timer.</string>
+    <string name="undo">Desfazer</string>
+    <string name="undo_deleted_one">“%1$s” apagado</string>
+    <string name="undo_deleted_n">%1$d arquivos apagados</string>
+    <string name="undo_collection_deleted">Coleção “%1$s” apagada</string>
+    <string name="undo_marked_read">Marcado como lido</string>
+    <string name="undo_marked_unread">Marcado como não lido</string>
+    <string name="undo_marked_read_n">%1$d marcados como lidos</string>
+    <string name="undo_marked_unread_n">%1$d marcados como não lidos</string>
+    <string name="detail_more_series">Mais de %1$s</string>
 </resources>

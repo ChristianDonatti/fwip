@@ -142,6 +142,8 @@ class LibraryActions(
     val pickBackdrop: () -> Unit = {},
     /** Files dropped onto the library (tablet split screen, desktop mode). */
     val importFiles: (List<Uri>) -> Unit = {},
+    val undo: () -> Unit = {},
+    val finishUndo: () -> Unit = {},
 )
 
 /** The tabs the user keeps; Home and Library always stay. */
@@ -204,7 +206,6 @@ fun LibraryScreen(
     var seriesEditFor by remember { mutableStateOf<List<String>?>(null) }
     var coverFor by remember { mutableStateOf<String?>(null) }
     // Deleting and moving files.
-    var deleteFor by remember { mutableStateOf<List<String>?>(null) }
     var moveFor by remember { mutableStateOf<List<String>?>(null) }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var menuFor by remember { mutableStateOf<String?>(null) }
@@ -246,7 +247,9 @@ fun LibraryScreen(
     val hasComics = remember(state.items) { state.items.any { !it.isBook } }
     val mixed = hasBooks && hasComics
     val books = if (mixed) ui.libraryMode == "books" else hasBooks && !hasComics
-    val full = state
+    val all = state
+    // Everything but what was just deleted (Undo still possible), for Settings and Stats.
+    val full = remember(all) { if (all.pendingDelete.isEmpty()) all else all.copy(items = all.items.filter { it.comic.id !in all.pendingDelete }) }
     @Suppress("NAME_SHADOWING")
     val state = remember(full, mixed, books) { if (mixed) full.copy(items = full.items.filter { it.isBook == books }) else full }
     val modeSwitch: (@Composable (Modifier) -> Unit)? = if (!mixed) null else { m ->
@@ -404,6 +407,14 @@ fun LibraryScreen(
                     }
                 }
             }
+            full.undo?.let { offer ->
+                UndoBar(
+                    offer,
+                    onUndo = actions.undo,
+                    onDismiss = actions.finishUndo,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = if (wide || selection.active) 24.dp else 92.dp),
+                )
+            }
             val update = io.github.christiandonatti.fwip.data.Updates.available
             if (update != null && !selection.active && !(fresh && !ui.welcomed) && shelf == null && !showStats && settingsAt == null && browsingServer == null) {
                 UpdateBanner(
@@ -420,7 +431,7 @@ fun LibraryScreen(
                     onCollection = { pickerFor = selection.ids.toList() },
                     onWant = { actions.setWant(selection.ids.toList(), true); selection.clear() },
                     onMove = { moveFor = selection.ids.toList() },
-                    onDelete = { deleteFor = selection.ids.toList() },
+                    onDelete = { actions.deleteComics(selection.ids.toList()); selection.clear() },
                     onDownload = selection.ids.filter { id -> state.item(id)?.comic?.uri?.let(io.github.christiandonatti.fwip.remote.NetUris::isNet) == true }
                         .takeIf { it.isNotEmpty() }
                         ?.let { ids -> { actions.downloadComics(ids); selection.clear() } },
@@ -489,7 +500,7 @@ fun LibraryScreen(
                 onCover = { menuFor = null; coverFor = id },
                 onWant = { actions.setWant(listOf(id), !item.wanted) },
                 onMove = { menuFor = null; moveFor = listOf(id) },
-                onDelete = { menuFor = null; deleteFor = listOf(id) },
+                onDelete = { menuFor = null; actions.deleteComics(listOf(id)) },
                 onEdit = { menuFor = null; editFor = id },
                 onResetProgress = {
                     actions.setRead(listOf(id), false)
@@ -502,6 +513,8 @@ fun LibraryScreen(
                     { menuFor = null; actions.downloadComics(seriesOnNas) }
                 } else null,
                 seriesToDownload = seriesOnNas.size,
+                seriesItems = state.items.filter { seriesKey(it.series.name) == seriesKeyOf }.sortedFor(io.github.christiandonatti.fwip.data.SortOrder.Title),
+                onOpenItem = { other -> menuFor = other.comic.id },
                 onEditSeries = {
                     menuFor = null
                     seriesEditFor = state.items.filter { seriesKey(it.series.name) == seriesKeyOf }.map { it.comic.id }.ifEmpty { listOf(id) }
@@ -518,26 +531,6 @@ fun LibraryScreen(
     seriesEditFor?.let { ids ->
         val list = ids.mapNotNull(state::item)
         if (list.isEmpty()) seriesEditFor = null else SeriesEditDialog(list, metaActions, onDismiss = { seriesEditFor = null })
-    }
-
-    deleteFor?.let { ids ->
-        val list = ids.mapNotNull(state::item)
-        FwipDialog({ deleteFor = null }) {
-            DialogTitle(if (list.size == 1) str(R.string.delete_one_title) else str(R.string.delete_n_title, list.size), { deleteFor = null })
-            if (list.size == 1) Text(list[0].comic.fileName, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
-            Text(str(R.string.delete_explain), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
-            if (list.isNotEmpty() && list.all { it.alsoOnNas }) {
-                Text(str(R.string.delete_keeps_nas), style = MaterialTheme.typography.bodyMedium, color = FwipColors.Amber)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PillButton(str(R.string.cancel), { deleteFor = null }, style = PillStyle.Ghost, height = 46.dp, modifier = Modifier.weight(1f))
-                PillButton(str(R.string.delete), {
-                    actions.deleteComics(ids)
-                    deleteFor = null
-                    selection.clear()
-                }, style = PillStyle.Amber, height = 46.dp, modifier = Modifier.weight(1f))
-            }
-        }
     }
 
     moveFor?.let { ids ->
@@ -1206,7 +1199,6 @@ private fun ShelfScreen(
     val next = list.firstOrNull { it.progress?.started == true && it.progress.finished.not() }
         ?: list.firstOrNull { it.progress?.finished != true }
     var renaming by remember { mutableStateOf(false) }
-    var confirmDelete by remember { mutableStateOf(false) }
     var reordering by remember { mutableStateOf(false) }
     var looking by remember { mutableStateOf(false) }
     val tint = ShelfLooks.color(shelf)
@@ -1255,7 +1247,7 @@ private fun ShelfScreen(
                     }
                     if (collection != null) {
                         CircleIconButton(Icons.Filled.Edit, str(R.string.rename_collection), { renaming = true }, size = 44.dp)
-                        CircleIconButton(Icons.Filled.Delete, str(R.string.delete_collection), { confirmDelete = true }, size = 44.dp)
+                        CircleIconButton(Icons.Filled.Delete, str(R.string.delete_collection), { onBack(); actions.deleteCollection(collection.id) }, size = 44.dp)
                     }
                 }
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -1382,25 +1374,6 @@ private fun ShelfScreen(
             onDone = { actions.renameCollection(collection.id, it); renaming = false },
             onDismiss = { renaming = false },
         )
-    }
-    if (confirmDelete && collection != null) {
-        FwipDialog({ confirmDelete = false }) {
-            DialogTitle(str(R.string.delete_collection_q, collection.name), { confirmDelete = false })
-            Text(str(R.string.delete_collection_hint), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PillButton(str(R.string.cancel), { confirmDelete = false }, style = PillStyle.Ghost, height = 48.dp, modifier = Modifier.weight(1f))
-                PillButton(
-                    str(R.string.delete),
-                    {
-                        confirmDelete = false
-                        onBack()
-                        actions.deleteCollection(collection.id)
-                    },
-                    height = 48.dp,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
     }
 }
 

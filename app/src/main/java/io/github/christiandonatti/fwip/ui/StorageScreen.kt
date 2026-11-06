@@ -87,7 +87,6 @@ fun StorageScreen(
         }
     }
     var autoClean by remember { mutableStateOf(StorageSettings.autoClean(context)) }
-    var confirm by remember { mutableStateOf<List<LibraryItem>?>(null) }
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Column(
@@ -147,7 +146,7 @@ fun StorageScreen(
                 if (finished.isNotEmpty()) {
                     PillButton(
                         str(R.string.storage_delete_finished, finished.size, sizeLabel(finished.sumOf { it.comic.size })),
-                        { confirm = finished },
+                        { onDelete(finished.map { it.comic.id }); refresh++ },
                         style = PillStyle.Amber,
                         height = 46.dp,
                         modifier = Modifier.fillMaxWidth(),
@@ -172,7 +171,7 @@ fun StorageScreen(
                             )
                             Text(bits.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1)
                         }
-                        CircleIconButton(Icons.Filled.Delete, str(R.string.delete), { confirm = listOf(item) }, size = 40.dp)
+                        CircleIconButton(Icons.Filled.Delete, str(R.string.delete), { onDelete(listOf(item.comic.id)); refresh++ }, size = 40.dp)
                     }
                 }
             }
@@ -180,23 +179,6 @@ fun StorageScreen(
         }
     }
 
-    confirm?.let { list ->
-        FwipDialog({ confirm = null }) {
-            DialogTitle(if (list.size == 1) str(R.string.delete_one_title) else str(R.string.delete_n_title, list.size), { confirm = null })
-            Text(str(R.string.storage_delete_explain), style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft)
-            if (list.any { !it.alsoOnNas }) {
-                Text(str(R.string.storage_not_on_nas), style = MaterialTheme.typography.bodyMedium, color = FwipColors.Danger)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PillButton(str(R.string.cancel), { confirm = null }, style = PillStyle.Ghost, height = 46.dp, modifier = Modifier.weight(1f))
-                PillButton(str(R.string.delete), {
-                    onDelete(list.map { it.comic.id })
-                    confirm = null
-                    refresh++
-                }, style = PillStyle.Amber, height = 46.dp, modifier = Modifier.weight(1f))
-            }
-        }
-    }
 }
 
 @Composable

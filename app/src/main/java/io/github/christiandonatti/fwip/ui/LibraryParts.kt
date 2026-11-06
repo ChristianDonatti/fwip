@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -72,6 +75,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
@@ -487,82 +492,199 @@ fun ComicActionsDialog(
     /** The other issues of its series still only on the NAS, and how many. */
     onDownloadSeries: (() -> Unit)? = null,
     seriesToDownload: Int = 0,
+    /** The rest of its series, to show and open from here. */
+    seriesItems: List<LibraryItem> = emptyList(),
+    onOpenItem: (LibraryItem) -> Unit = {},
 ) {
-    FwipDialog(onDismiss, tint = item.glowColor()) {
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            CoverImage(item, Modifier.size(72.dp, 108.dp), corner = 10.dp, titleSize = 10)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                val p = item.progress
-                val pages = p?.pageCount?.takeIf { it > 0 }?.let { str(R.string.n_pages, it) }
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
+        ItemDetailPage(
+            item, seriesSize, onDismiss, onOpen, onToggleRead, onCollections, onSeries, onSelect, onCover, onWant, onMove,
+            onDelete, onEdit, onEditSeries, onResetProgress, onDownload, onDownloadSeries, seriesToDownload, seriesItems, onOpenItem,
+        )
+    }
+}
+
+/**
+ * Everything about one comic or book on one page: big cover, what it is, how far you are,
+ * the synopsis and credits, the rest of the series, and what you can do with it.
+ */
+@Composable
+private fun ItemDetailPage(
+    item: LibraryItem,
+    seriesSize: Int,
+    onDismiss: () -> Unit,
+    onOpen: () -> Unit,
+    onToggleRead: () -> Unit,
+    onCollections: () -> Unit,
+    onSeries: () -> Unit,
+    onSelect: () -> Unit,
+    onCover: () -> Unit,
+    onWant: () -> Unit,
+    onMove: () -> Unit,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit,
+    onEditSeries: () -> Unit,
+    onResetProgress: () -> Unit,
+    onDownload: (() -> Unit)?,
+    onDownloadSeries: (() -> Unit)?,
+    seriesToDownload: Int,
+    seriesItems: List<LibraryItem>,
+    onOpenItem: (LibraryItem) -> Unit,
+) {
+    val tint = item.glowColor()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val p = item.progress
+    val finished = p?.finished == true
+    val started = p?.started == true
+    androidx.compose.foundation.layout.BoxWithConstraints(
+        Modifier
+            .fillMaxSize()
+            .background(FwipColors.Ink)
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    0f to tint.copy(alpha = if (FwipColors.isLight) 0.22f else 0.34f),
+                    0.6f to tint.copy(alpha = 0f),
+                )
+            ),
+    ) {
+        val wide = maxWidth >= 760.dp
+        val coverW = if (wide) 260.dp else 150.dp
+
+        @Composable
+        fun Heading() {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(item.title, style = if (wide) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                val byline = if (item.isBook) item.author else listOfNotNull(item.meta?.writer, item.meta?.publisher).joinToString(" · ").ifBlank { null }
+                byline?.let { Text(it, style = MaterialTheme.typography.titleSmall, color = FwipColors.TextSoft, maxLines = 2) }
+                val pages = p?.pageCount?.takeIf { it > 0 && !item.isBook }?.let { str(R.string.n_pages, it) }
                 Text(
-                    listOfNotNull(item.comic.format.label, pages, fileSizeLabel(item.comic.size).ifBlank { null }).joinToString(" · "),
+                    listOfNotNull(item.comic.format.label, pages, fileSizeLabel(item.comic.size).ifBlank { null }, item.meta?.year?.toString()).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = FwipColors.TextMuted,
                 )
-                if (item.comic.folder.isNotBlank()) {
-                    Text(item.comic.folder, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                if (item.alsoOnNas) {
-                    Text(str(R.string.also_on_nas), style = MaterialTheme.typography.labelSmall, color = FwipColors.Amber)
+                if (item.alsoOnNas) Text(str(R.string.also_on_nas), style = MaterialTheme.typography.labelSmall, color = FwipColors.Amber)
+            }
+        }
+
+        @Composable
+        fun ReadButton() {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                PillButton(
+                    when { finished -> str(R.string.read_again); started -> str(R.string.continue_reading); else -> str(R.string.read) },
+                    onOpen,
+                    style = PillStyle.Amber,
+                    height = 54.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                    leading = { Icon(Icons.Filled.PlayArrow, null) },
+                )
+                if (p != null && p.pageCount > 0) {
+                    if (started && !finished) ProgressBar(p.fraction, tint, Modifier.fillMaxWidth())
+                    Text(progressLine(item), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
                 }
             }
-            CircleIconButton(Icons.Filled.Close, str(R.string.close), onDismiss, size = 40.dp)
         }
-        item.meta?.let { MetaDetails(it) }
-        val finished = item.progress?.finished == true
-        val started = item.progress?.started == true
-        SheetButton(
-            when { finished -> str(R.string.read_again); started -> str(R.string.continue_reading); else -> str(R.string.read) },
-            onOpen,
-            leading = { Icon(Icons.Filled.PlayArrow, null) },
-        )
-        SheetButton(
-            if (finished) str(R.string.mark_unread) else str(R.string.mark_read),
-            onToggleRead,
-            leading = { Icon(Icons.Filled.Check, null) },
-        )
-        if (started && !finished) {
-            SheetButton(str(R.string.reset_progress), onResetProgress, leading = { Icon(Icons.Filled.Refresh, null) })
-        }
-        onDownload?.let { SheetButton(str(R.string.download_here), it, leading = { DownloadGlyph(LocalContentColor.current) }) }
-        onDownloadSeries?.let {
-            SheetButton(str(R.string.download_series, seriesToDownload), it, leading = { DownloadGlyph(LocalContentColor.current) })
-        }
-        SheetButton(str(R.string.add_to_collection), onCollections, leading = { Icon(Icons.Filled.Add, null) })
-        if (!finished) {
-            SheetButton(
-                str(if (item.wanted) R.string.want_remove else R.string.want_add),
-                onWant,
-                leading = { BookmarkGlyph(LocalContentColor.current, filled = item.wanted) },
-            )
-        }
-        if (item.comic.remote == null) {
-            SheetButton(str(R.string.edit_info), onEdit, leading = { Icon(Icons.Filled.Edit, null) })
-            SheetButton(str(R.string.series_edit), onEditSeries, leading = { StackIcon(LocalContentColor.current) })
-            SheetButton(str(R.string.cover_change), onCover, leading = { CoverIcon(LocalContentColor.current) })
-            SheetButton(str(R.string.move_to), onMove, leading = { FolderIcon(LocalContentColor.current) })
-            SheetButton(str(R.string.delete_file), onDelete, leading = { Icon(Icons.Filled.Delete, null) }, danger = true)
-        }
-        if (item.coverPath != null) {
-            val context = androidx.compose.ui.platform.LocalContext.current
-            SheetButton(str(R.string.use_as_backdrop), {
-                if (Backdrops.set(context, java.io.File(item.coverPath))) {
-                    val ui = UiSettings.get(context)
-                    ui.updateBackdrop(Backdrop.Image)
-                    ui.backdropChanged()
+
+        @Composable
+        fun Actions() {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SheetButton(if (finished) str(R.string.mark_unread) else str(R.string.mark_read), onToggleRead, leading = { Icon(Icons.Filled.Check, null) })
+                if (started && !finished) SheetButton(str(R.string.reset_progress), onResetProgress, leading = { Icon(Icons.Filled.Refresh, null) })
+                onDownload?.let { SheetButton(str(R.string.download_here), it, leading = { DownloadGlyph(LocalContentColor.current) }) }
+                onDownloadSeries?.let { SheetButton(str(R.string.download_series, seriesToDownload), it, leading = { DownloadGlyph(LocalContentColor.current) }) }
+                SheetButton(str(R.string.add_to_collection), onCollections, leading = { Icon(Icons.Filled.Add, null) })
+                if (!finished) SheetButton(str(if (item.wanted) R.string.want_remove else R.string.want_add), onWant, leading = { BookmarkGlyph(LocalContentColor.current, filled = item.wanted) })
+                if (seriesSize >= 1) {
+                    SheetButton(
+                        str(R.string.see_series, item.series.name),
+                        onSeries,
+                        leading = { StackIcon(LocalContentColor.current) },
+                        trailing = { Text(countLabel(seriesSize), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted) },
+                    )
                 }
-                onDismiss()
-            }, leading = { CoverIcon(LocalContentColor.current) })
+                if (item.comic.remote == null) {
+                    SheetButton(str(R.string.edit_info), onEdit, leading = { Icon(Icons.Filled.Edit, null) })
+                    SheetButton(str(R.string.series_edit), onEditSeries, leading = { StackIcon(LocalContentColor.current) })
+                    SheetButton(str(R.string.cover_change), onCover, leading = { CoverIcon(LocalContentColor.current) })
+                    SheetButton(str(R.string.move_to), onMove, leading = { FolderIcon(LocalContentColor.current) })
+                }
+                if (item.coverPath != null) {
+                    SheetButton(str(R.string.use_as_backdrop), {
+                        if (Backdrops.set(context, java.io.File(item.coverPath))) {
+                            val ui = UiSettings.get(context)
+                            ui.updateBackdrop(Backdrop.Image)
+                            ui.backdropChanged()
+                        }
+                        onDismiss()
+                    }, leading = { CoverIcon(LocalContentColor.current) })
+                }
+                SheetButton(str(R.string.select_several), onSelect, leading = { SelectIcon(LocalContentColor.current) })
+                if (item.comic.remote == null) SheetButton(str(R.string.delete_file), onDelete, leading = { Icon(Icons.Filled.Delete, null) }, danger = true)
+            }
         }
-        SheetButton(str(R.string.select_several), onSelect, leading = { SelectIcon(LocalContentColor.current) })
-        if (seriesSize >= 1) {
-            SheetButton(
-                str(R.string.see_series, item.series.name),
-                onSeries,
-                leading = { StackIcon(LocalContentColor.current) },
-                trailing = { Text(countLabel(seriesSize), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted) },
-            )
+
+        @Composable
+        fun Series() {
+            val others = seriesItems.filter { it.comic.id != item.comic.id }
+            if (others.isEmpty()) return
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(str(R.string.detail_more_series, item.series.name), style = MaterialTheme.typography.labelLarge)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    others.take(30).forEach { other ->
+                        Column(Modifier.width(92.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            CoverImage(
+                                other,
+                                Modifier
+                                    .size(92.dp, 138.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable(role = Role.Button, onClickLabel = other.title) { onOpenItem(other) },
+                                corner = 10.dp,
+                                titleSize = 10,
+                            )
+                            Text(other.title, style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            }
+        }
+
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .windowInsetsPadding(WindowInsets.systemBars)
+                .padding(horizontal = if (wide) 48.dp else 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircleIconButton(Icons.Filled.Close, str(R.string.close), onDismiss, size = 44.dp)
+            }
+            if (wide) {
+                Row(horizontalArrangement = Arrangement.spacedBy(40.dp)) {
+                    Column(Modifier.width(coverW), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                        CoverImage(item, Modifier.size(coverW, coverW * 1.5f).coverShadow(18.dp, 22.dp), corner = 16.dp, titleSize = 18)
+                        ReadButton()
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                        Heading()
+                        item.meta?.let { MetaDetails(it) }
+                        Series()
+                        Actions()
+                    }
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.Bottom) {
+                    CoverImage(item, Modifier.size(coverW, coverW * 1.5f).coverShadow(14.dp, 18.dp), corner = 12.dp, titleSize = 14)
+                    Box(Modifier.weight(1f)) { Heading() }
+                }
+                ReadButton()
+                item.meta?.let { MetaDetails(it) }
+                Series()
+                Actions()
+            }
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
@@ -843,5 +965,40 @@ internal fun DownloadGlyph(color: Color, modifier: Modifier = Modifier.size(22.d
         drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.3f, w * 0.44f), androidx.compose.ui.geometry.Offset(w * 0.5f, w * 0.64f), stroke, cap)
         drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.7f, w * 0.44f), androidx.compose.ui.geometry.Offset(w * 0.5f, w * 0.64f), stroke, cap)
         drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.18f, w * 0.84f), androidx.compose.ui.geometry.Offset(w * 0.82f, w * 0.84f), stroke, cap)
+    }
+}
+
+/** "Deleted · Undo": the bar that replaces "are you sure?" dialogs, with a line that runs out. */
+@Composable
+fun UndoBar(offer: io.github.christiandonatti.fwip.UndoOffer, onUndo: () -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    val left = remember(offer.id) { androidx.compose.animation.core.Animatable(1f) }
+    LaunchedEffect(offer.id) { left.animateTo(0f, androidx.compose.animation.core.tween(7_000, easing = androidx.compose.animation.core.LinearEasing)) }
+    Column(
+        modifier
+            .padding(horizontal = 16.dp)
+            .widthIn(max = 560.dp)
+            .fillMaxWidth()
+            .shadow(16.dp, RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(20.dp))
+            .background(FwipColors.PanelHigh)
+            .border(1.dp, FwipColors.Stroke, RoundedCornerShape(20.dp))
+            .semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite },
+    ) {
+        Row(Modifier.padding(start = 18.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(offer.message, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Box(
+                Modifier
+                    .clip(CircleShape)
+                    .clickable(role = Role.Button, onClick = onUndo)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            ) { Text(str(R.string.undo), style = MaterialTheme.typography.labelLarge, color = FwipColors.Amber) }
+            Box(
+                Modifier
+                    .clip(CircleShape)
+                    .clickable(role = Role.Button, onClickLabel = str(R.string.close), onClick = onDismiss)
+                    .padding(12.dp),
+            ) { Text("✕", style = MaterialTheme.typography.labelLarge, color = FwipColors.TextMuted) }
+        }
+        Box(Modifier.fillMaxWidth(left.value).height(3.dp).background(FwipColors.Amber.copy(alpha = 0.7f)))
     }
 }
