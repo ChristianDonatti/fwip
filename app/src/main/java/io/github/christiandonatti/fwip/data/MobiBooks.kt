@@ -42,7 +42,9 @@ object MobiBooks {
             zip.closeEntry()
             nativeParts(source.absolutePath) { name, data ->
                 zip.putNextEntry(ZipEntry("OEBPS/$name"))
-                zip.write(data)
+                // Old Kindle markup is HTML, not strict XHTML: declared as XHTML, the web view
+                // would refuse a page at its first loose tag.
+                zip.write(if (name == "content.opf") htmlParts(data) else data)
                 zip.closeEntry()
                 count++
                 if (name == "content.opf") hasOpf = true
@@ -54,4 +56,9 @@ object MobiBooks {
         }
         tmp.renameTo(target)
     }
+
+    private fun htmlParts(opf: ByteArray): ByteArray =
+        Regex("""(href="[^"]+\.html"\s+media-type=")application/xhtml\+xml(")""")
+            .replace(opf.decodeToString()) { it.groupValues[1] + "text/html" + it.groupValues[2] }
+            .toByteArray()
 }
