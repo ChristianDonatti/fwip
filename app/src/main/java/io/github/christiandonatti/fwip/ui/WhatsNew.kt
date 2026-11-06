@@ -44,6 +44,10 @@ object WhatsNew {
         NewsItem(1, GroupGlyph.Info, R.string.news_dream, R.string.news_dream_text, "alerts/dream"),
         NewsItem(1, GroupGlyph.Sync, R.string.news_backup, R.string.news_backup_text, "sync/autobackup"),
         NewsItem(1, GroupGlyph.Disk, R.string.news_drop, R.string.news_drop_text, null),
+        NewsItem(2, GroupGlyph.Book, R.string.news_books, R.string.news_books_text, null),
+        NewsItem(2, GroupGlyph.Palette, R.string.news_book_look, R.string.news_book_look_text, "books/bookTheme"),
+        NewsItem(2, GroupGlyph.Chart, R.string.news_book_time, R.string.news_book_time_text, "books/bookProgress"),
+        NewsItem(2, GroupGlyph.Bell, R.string.news_book_tools, R.string.news_book_tools_text, null),
     )
 
     val latest: Int get() = items.maxOf { it.batch }

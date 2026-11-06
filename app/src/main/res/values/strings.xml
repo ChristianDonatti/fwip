@@ -896,4 +896,16 @@
     <string name="book_progress_page">Page</string>
     <string name="book_progress_percent">Percentage</string>
     <string name="mobi_drm">This Kindle book has DRM. Books bought on Amazon only open in the Kindle app.</string>
+    <string name="book_line_read">Finished</string>
+    <string name="book_line_unstarted">%1$s · about %2$s</string>
+    <string name="book_line_reading">%1$d%% · %2$s left</string>
+    <string name="view_spines">Shelf</string>
+    <string name="news_books">Books</string>
+    <string name="news_books_text">EPUB, Kindle files without DRM (MOBI, AZW3), FB2 and TXT open in Fwip. With comics and books together, a switch at the top of the library shows one or the other, and books can stand on a shelf by their spines.</string>
+    <string name="news_book_look">Your page, your type</string>
+    <string name="news_book_look_text">Seven page colours, fonts made for reading (Literata, Bitter, Atkinson Hyperlegible, OpenDyslexic) or your own, size, spacing, margins, justified text and columns.</string>
+    <string name="news_book_time">Time left, at your pace</string>
+    <string name="news_book_time_text">Like on a Kindle, the bottom line tells how long until the end of the chapter or the book, learned from how fast you read. Tap it to switch to page or percentage.</string>
+    <string name="news_book_tools">Notes, search and reading aloud</string>
+    <string name="news_book_tools_text">Highlight in four colours, add notes and share them as Markdown, bookmarks, search the whole book, look up words, and listen with a sleep timer.</string>
 </resources>

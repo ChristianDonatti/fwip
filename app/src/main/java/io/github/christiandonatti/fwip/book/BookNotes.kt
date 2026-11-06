@@ -130,6 +130,17 @@ class BookNotes private constructor(private val file: File) {
 
         fun dir(context: Context): File = File(context.filesDir, "booknotes").apply { mkdirs() }
 
+        @Volatile private var paceCache: Pair<Long, Double>? = null
+
+        /** Positions per minute over every book (kept a minute), for time left in the library. */
+        fun pace(context: Context): Double {
+            val now = System.currentTimeMillis()
+            paceCache?.let { (at, v) -> if (now - at < 60_000) return v }
+            val v = Speed.average(dir(context)) ?: DEFAULT_SPEED
+            paceCache = now to v
+            return v
+        }
+
         fun load(context: Context, bookId: String): BookNotes {
             val name = java.security.MessageDigest.getInstance("SHA-1").digest(bookId.toByteArray()).joinToString("") { "%02x".format(it) }
             return BookNotes(File(dir(context), "$name.json")).apply { load() }

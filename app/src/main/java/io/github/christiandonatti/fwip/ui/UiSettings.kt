@@ -108,6 +108,9 @@ class UiSettings private constructor(context: Context) {
     /** The tab the app opens on: Home, Library, Collections or Servers. */
     var startTab by mutableStateOf(prefs.getString("startTab", "Home") ?: "Home")
         private set
+    /** Books shown as spines on shelves instead of covers. */
+    var bookSpines by mutableStateOf(prefs.getBoolean("bookSpines", false))
+        private set
     /** "comics" or "books": which half of the library is shown when there are both. */
     var libraryMode by mutableStateOf(prefs.getString("libraryMode", "comics") ?: "comics")
         private set
@@ -181,6 +184,7 @@ class UiSettings private constructor(context: Context) {
     fun updateReadMark(value: ReadMark) { readMark = value; prefs.edit().putString("readMark", value.name).apply() }
     fun updateProgressStyle(value: ProgressStyle) { progressStyle = value; prefs.edit().putString("progressStyle", value.name).apply() }
     fun updateLibraryList(value: Boolean) { libraryList = value; prefs.edit().putBoolean("libraryList", value).apply() }
+    fun updateBookSpines(value: Boolean) { bookSpines = value; prefs.edit().putBoolean("bookSpines", value).apply() }
     fun updateLibraryMode(value: String) { libraryMode = value; prefs.edit().putString("libraryMode", value).apply() }
     fun updateStartTab(value: String) { startTab = value; prefs.edit().putString("startTab", value).apply() }
     fun updateShowCollectionsTab(value: Boolean) { showCollectionsTab = value; prefs.edit().putBoolean("tabCollections", value).apply() }

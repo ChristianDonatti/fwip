@@ -895,4 +895,16 @@
     <string name="book_progress_page">Página</string>
     <string name="book_progress_percent">Porcentagem</string>
     <string name="mobi_drm">Este livro Kindle tem DRM. Livros comprados na Amazon só abrem no app Kindle.</string>
+    <string name="book_line_read">Lido</string>
+    <string name="book_line_unstarted">%1$s · cerca de %2$s</string>
+    <string name="book_line_reading">%1$d%% · faltam %2$s</string>
+    <string name="view_spines">Estante</string>
+    <string name="news_books">Livros</string>
+    <string name="news_books_text">EPUB, arquivos Kindle sem DRM (MOBI, AZW3), FB2 e TXT abrem no Fwip. Com HQs e livros juntos, um seletor no topo da biblioteca mostra um ou outro, e os livros podem ficar numa estante pela lombada.</string>
+    <string name="news_book_look">Sua página, sua letra</string>
+    <string name="news_book_look_text">Sete cores de página, fontes feitas para leitura (Literata, Bitter, Atkinson Hyperlegible, OpenDyslexic) ou as suas, tamanho, espaçamento, margens, texto justificado e colunas.</string>
+    <string name="news_book_time">Tempo restante no seu ritmo</string>
+    <string name="news_book_time_text">Como no Kindle, a linha de baixo diz quanto falta para o fim do capítulo ou do livro, aprendendo com o seu ritmo. Toque nela para ver página ou porcentagem.</string>
+    <string name="news_book_tools">Notas, busca e leitura em voz alta</string>
+    <string name="news_book_tools_text">Destaque em quatro cores, escreva notas e compartilhe em Markdown, marcadores, busca no livro todo, dicionário e leitura em voz alta com timer.</string>
 </resources>

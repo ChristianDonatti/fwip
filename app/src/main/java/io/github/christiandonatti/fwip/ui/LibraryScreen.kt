@@ -697,6 +697,7 @@ internal fun cta(item: LibraryItem): String = when {
 }
 
 internal fun progressLine(item: LibraryItem): String {
+    if (item.isBook) return bookProgressLine(item)
     val p = item.progress ?: return item.comic.format.label
     if (p.pageCount <= 0) return item.comic.format.label
     val remaining = p.pageCount - 1 - p.page
@@ -707,7 +708,27 @@ internal fun progressLine(item: LibraryItem): String {
     }
 }
 
+/** Books: how far, and the time left at your pace (a position is about a page of text). */
+private fun bookProgressLine(item: LibraryItem): String {
+    val p = item.progress
+    val pace = io.github.christiandonatti.fwip.book.BookNotes.pace(io.github.christiandonatti.fwip.FwipApp.instance)
+    fun time(positions: Int) = io.github.christiandonatti.fwip.book.BookNotes.timeLabel(positions / pace, str(R.string.book_less_minute))
+    return when {
+        p == null || p.pageCount <= 0 -> item.comic.format.label
+        p.finished -> str(R.string.book_line_read)
+        !p.started -> str(R.string.book_line_unstarted, item.comic.format.label, time(p.pageCount))
+        else -> str(R.string.book_line_reading, (p.page + 1) * 100 / p.pageCount, time(p.pageCount - 1 - p.page))
+    }
+}
+
 internal fun subtitle(item: LibraryItem): String {
+    if (item.isBook) {
+        return listOfNotNull(
+            item.author,
+            item.meta?.series?.takeIf { it.isNotBlank() }?.let { s -> item.meta?.number?.let { "$s #$it" } ?: s },
+            item.comic.format.label,
+        ).joinToString(" · ")
+    }
     val m = item.meta
     val credits = listOfNotNull(m?.writer, m?.artists).flatMap { it.split(',') }.map { it.trim() }.distinct().take(2)
     return listOfNotNull(
@@ -835,6 +856,7 @@ private fun LibraryTab(
     val minCell = (if (wide) 160.dp else 104.dp) * ui.coverScale
     val shelfCell = (if (wide) 220.dp else 150.dp) * ui.coverScale.coerceIn(0.8f, 1.6f)
     val bigTitles = wide || ui.coverScale > 1.35f
+    val allBooks = state.items.isNotEmpty() && state.items.all { it.isBook }
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(
@@ -897,7 +919,8 @@ private fun LibraryTab(
                 if (filter != Filter.Series && filter != Filter.Folders && filter != Filter.Publishers) {
                     Spacer(Modifier.width(8.dp))
                     Chip(str(R.string.sort_by, sort.label), false) { sort = SortOrder.entries[(sort.ordinal + 1) % SortOrder.entries.size] }
-                    Chip(if (ui.libraryList) str(R.string.view_grid) else str(R.string.view_list), false) { ui.updateLibraryList(!ui.libraryList) }
+                    Chip(if (ui.libraryList) str(R.string.view_grid) else str(R.string.view_list), false) { ui.updateLibraryList(!ui.libraryList); ui.updateBookSpines(false) }
+                    if (allBooks) Chip(str(R.string.view_spines), ui.bookSpines && !ui.libraryList) { ui.updateBookSpines(!ui.bookSpines); if (ui.libraryList) ui.updateLibraryList(false) }
                 }
             }
         }
@@ -937,7 +960,11 @@ private fun LibraryTab(
                         Hint(if (filter == Filter.Finished) str(R.string.none_read) else str(R.string.all_read))
                     }
                 }
-                items(list, key = { it.comic.id }) { it ->
+                if (allBooks && ui.bookSpines && !ui.libraryList) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        BookShelf(list, onOpen = { actions.open(it) }, onMenu = onMenu, wide = wide)
+                    }
+                } else items(list, key = { it.comic.id }) { it ->
                     if (ui.libraryList) ComicRow(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, selection = selection)
                     else CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
                 }
