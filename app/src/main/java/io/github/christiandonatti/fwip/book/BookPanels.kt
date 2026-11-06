@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -98,7 +99,8 @@ private fun Sheet(title: String, onDismiss: () -> Unit, actions: @Composable () 
         Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.35f))
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
+            .imePadding(),
         contentAlignment = Alignment.BottomCenter,
     ) {
         BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
@@ -418,10 +420,12 @@ private fun SearchPanel(book: OpenedBook, onGo: (Locator) -> Unit) {
     val results = remember { mutableStateListOf<Locator>() }
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     fun run() {
         val q = query.trim()
         if (q.length < 2) return
+        keyboard?.hide()
         results.clear()
         searching = true
         searched = q

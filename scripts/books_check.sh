@@ -51,7 +51,10 @@ ui '^Aa\|' ; shot b05-aa 2
 timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 150 )) $(( W / 2 )) $(( H / 3 )) 500; shot b06-aa-more 1
 timeout 20 adb shell input swipe $(( W / 2 )) $(( H / 3 )) $(( W / 2 )) $(( H - 150 )) 500; sleep 1
 ui '^Night\|' ; shot b07-night 2
+ui '^Paper\|' ; sleep 1
 tap $(( W / 2 )) 60 ; sleep 1
+# The controls are still up after a panel: hide them, then turn.
+tap $(( W / 2 )) $(( H / 2 )) ; sleep 1
 tap $(( W - 80 )) $(( H / 2 )); shot b08-next-page 2
 tap $(( W - 80 )) $(( H / 2 )); sleep 1
 tap $(( W / 2 )) $(( H / 2 ))
@@ -61,24 +64,31 @@ tap $(( W / 2 )) $(( H / 2 ))
 ui '\|Search in book$' ; sleep 2
 timeout 20 adb shell input text "bicycle"; timeout 20 adb shell input keyevent KEYCODE_ENTER
 shot b11-search 4
-xy=$(find_xy 'icycle'); if [ -n "$xy" ]; then set -- $xy; tap $1 $2; fi
+xy=$(find_xy 'Chapter 3'); if [ -n "$xy" ]; then set -- $xy; tap $1 $2; fi
 shot b12-search-hit 3
 # Select a word and highlight it.
 timeout 20 adb shell input swipe $(( W / 3 )) $(( H / 3 )) $(( W / 3 )) $(( H / 3 )) 1500; shot b13-selection 2
 ui '^Highlight\|' ; shot b14-highlight 2
 tap $(( W / 2 )) $(( H / 2 ))
-ui '\|Add bookmark$' ; sleep 1
+ui '\|Add bookmark$' ; shot b14b-bookmarked 1
 ui '\|Contents$' ; sleep 2
 ui '^Highlights\|' ; shot b15-highlights 2
 tap $(( W / 2 )) 60 ; sleep 1
+tap $(( W / 2 )) $(( H / 2 ))
 tap $(( W / 2 )) $(( H / 2 ))
 ui '^♪\|' ; shot b16-listen 2
 ui '^Read aloud\|' ; shot b17-reading-aloud 5
 ui '^Pause\|' ; sleep 1
 tap $(( W / 2 )) 60 ; sleep 1
+# Long press on a cover opens its page.
 crashes epub
 back 3
 shot b18-library-after 2
+ui '^Library\|' ; sleep 2
+ui '^Shelf\|' ; shot b18b-spines 3
+xy=$(find_xy 'Quiet Street'); if [ -n "$xy" ]; then set -- $xy; timeout 20 adb shell input swipe $1 $2 $1 $2 1200; fi
+shot b18c-detail 3
+back 2
 
 # ---- Other formats ----
 openb Evening_Notes.txt 12 ; shot b19-txt 2 ; crashes txt ; back 3
@@ -93,6 +103,30 @@ openb Libmobi_DRM.mobi 12 ; shot b24-drm 2 ; crashes drm ; back 3
 ui '\|Settings$' ; sleep 2
 ui '^Books\|' ; shot b26-settings-books 2
 back 2 ; back 2
+
+# ---- Undo: delete a book, then undo ----
+ui '^Home\|' ; sleep 2
+ui '\|Settings$' ; sleep 2
+ui '^Storage\|' ; sleep 2
+xy=$(find_xy '\|Delete$'); if [ -n "$xy" ]; then set -- $xy; tap $1 $2; fi
+shot b26b-undo 1
+ui '^Undo\|' ; shot b26c-undone 2
+back 2 ; back 2
+
+# ---- Stats with a goal ----
+ui '\|Settings$' ; sleep 2
+ui '^Reading stats\|' ; sleep 2
+ui '^Set a goal\|' ; sleep 1
+for k in 1 2 3; do ui '^\+\|' ; done
+shot b26d-goal-dialog 1
+ui '^Save\|' ; shot b26e-stats 2
+back 2 ; back 2
+
+# ---- Search finds books and settings ----
+ui '^Comics\|' ; sleep 1
+ui '\|Search$' ; sleep 1
+timeout 20 adb shell input text "quiet"; shot b26f-search 2
+timeout 20 adb shell input keyevent KEYCODE_ESCAPE ; back 2
 
 # ---- Phone ----
 adb shell wm size 1080x2400

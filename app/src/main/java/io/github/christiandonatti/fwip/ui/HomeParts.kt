@@ -615,12 +615,12 @@ private class Week(val pages: Int, val minutes: Long, val finished: Int, val str
 private fun weekSummary(days: Map<LocalDate, io.github.christiandonatti.fwip.data.DayStats>): Week {
     val today = LocalDate.now()
     val last7 = (6 downTo 0).map { today.minusDays(it.toLong()) }
-    var d = if ((days[today]?.pages ?: 0) > 0) today else today.minusDays(1)
+    var d = if ((days[today]?.allPages ?: 0) > 0) today else today.minusDays(1)
     var streak = 0
-    while ((days[d]?.pages ?: 0) > 0) { streak++; d = d.minusDays(1) }
+    while ((days[d]?.allPages ?: 0) > 0) { streak++; d = d.minusDays(1) }
     return Week(
         pages = last7.sumOf { days[it]?.pages ?: 0 },
-        minutes = last7.sumOf { days[it]?.millis ?: 0L } / 60_000,
+        minutes = last7.sumOf { days[it]?.allMillis ?: 0L } / 60_000,
         finished = last7.sumOf { days[it]?.finished ?: 0 },
         streak = streak,
         perDay = last7.map { days[it]?.pages ?: 0 },

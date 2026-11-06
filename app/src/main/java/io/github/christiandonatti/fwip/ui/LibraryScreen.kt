@@ -401,6 +401,8 @@ fun LibraryScreen(
                                 onCloseSearch = { searching = false; query = "" },
                                 filter = libraryFilter,
                                 onFilter = { libraryFilter = it },
+                                everything = full,
+                                onOpenSetting = { target -> searching = false; query = ""; settingsAt = target },
                             )
                             else -> CollectionsTab(state, actions, openShelf, wide, gutter)
                         }
@@ -843,6 +845,9 @@ private fun LibraryTab(
     onCloseSearch: () -> Unit,
     filter: Filter,
     onFilter: (Filter) -> Unit,
+    /** Search looks through everything, comics and books, whatever the switch shows. */
+    everything: LibraryState = state,
+    onOpenSetting: (String) -> Unit = {},
 ) {
     var sort by rememberSaveable { mutableStateOf(SortOrder.Title) }
     val ui = UiSettings.get(androidx.compose.ui.platform.LocalContext.current)
@@ -869,11 +874,33 @@ private fun LibraryTab(
                 SearchField(query, onQuery, onCloseSearch)
             }
         }
-        val results = if (query.isBlank()) null else search(state.items, query)
+        val results = if (query.isBlank()) null else search(everything.items, query)
         if (results != null) {
             // Series whose name matches come first, single-issue ones too.
             val words = normalize(query).split(Regex("\\s+")).filter { it.isNotBlank() }
-            val matchingSeries = state.series.filter { (shelf, _) -> words.all { it in normalize(shelf.title) } }
+            val matchingSeries = everything.series.filter { (shelf, _) -> words.all { it in normalize(shelf.title) } }
+            val matchingCollections = everything.collections.filter { c -> words.all { it in normalize(c.name) } }
+            val matchingSettings = searchSettings(query)
+            if (matchingCollections.isNotEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(str(R.string.tab_collections), style = MaterialTheme.typography.labelLarge)
+                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            matchingCollections.take(20).forEach { c -> Chip(c.name, false) { openShelf(Shelf.Custom(c.id, c.name)) } }
+                        }
+                    }
+                }
+            }
+            if (matchingSettings.isNotEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(str(R.string.app_settings), style = MaterialTheme.typography.labelLarge)
+                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            matchingSettings.take(12).forEach { (title, group, target) -> Chip("$title · $group", false) { onOpenSetting(target) } }
+                        }
+                    }
+                }
+            }
             if (matchingSeries.isNotEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -896,9 +923,15 @@ private fun LibraryTab(
                     color = FwipColors.TextMuted,
                 )
             }
-            items(results, key = { it.comic.id }) { it ->
-                if (ui.libraryList) ComicRow(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, selection = selection)
-                else CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
+            val (bookHits, comicHits) = results.partition { it.isBook }
+            listOf(comicHits to str(R.string.mode_comics), bookHits to str(R.string.mode_books)).forEach { (hits, label) ->
+                if (hits.isNotEmpty() && bookHits.isNotEmpty() && comicHits.isNotEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) { Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 6.dp)) }
+                }
+                items(hits, key = { it.comic.id }) { it ->
+                    if (ui.libraryList) ComicRow(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, selection = selection)
+                    else CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
+                }
             }
             return@LazyVerticalGrid
         }

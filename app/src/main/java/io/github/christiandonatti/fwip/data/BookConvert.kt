@@ -48,7 +48,7 @@ class EpubWriter(
   <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
 </container>""",
             )
-            val css = "body{margin:0;padding:0}h1,h2,h3{text-align:center;margin:1.2em 0 .8em}p{margin:0;text-indent:1.4em}p.first,h1+p,h2+p,h3+p{text-indent:0}.blank{height:1em}img{max-width:100%}blockquote{margin:1em 1.5em;font-style:italic}"
+            val css = "body{margin:0;padding:0}h1,h2,h3{text-align:center;margin:1.2em 0 .8em}p{margin:0;text-indent:1.4em}p.first,h1+p,h2+p,h3+p{text-indent:0}.blank{height:1em}img{max-width:100%}blockquote{margin:1em 1.5em;font-style:italic}.titlepage{text-align:center;padding-top:30%}.titlepage h1{font-size:2em;margin-bottom:1em}.titlepage p{text-indent:0;margin:.4em 0}"
             put("OEBPS/style.css", css)
             chapters.forEachIndexed { i, ch ->
                 put(
@@ -168,6 +168,14 @@ object TxtToEpub {
         }
         fun flushChapter() {
             flushPara()
+            // A few short lines before the first chapter are the book's title page: set them as one.
+            if (w.chapters.isEmpty() && chapterTitle == title && body.isNotBlank() && body.length < 600 && !body.contains("<h2>")) {
+                val lines = Regex("<p>(.*?)</p>").findAll(body).map { it.groupValues[1] }.toList()
+                body.setLength(0)
+                body.append("<div class=\"titlepage\">")
+                lines.forEachIndexed { i, l -> body.append(if (i == 0) "<h1>$l</h1>" else "<p>$l</p>") }
+                body.append("</div>\n")
+            }
             if (body.isNotBlank()) w.chapters += EpubWriter.Chapter(chapterTitle, body.toString())
             body.setLength(0)
             count = 0

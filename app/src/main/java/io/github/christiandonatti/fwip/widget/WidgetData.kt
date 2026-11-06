@@ -114,9 +114,9 @@ class WidgetLibrary(val state: LibraryState, private val repo: LibraryRepository
         val days = ReadingStats(context.filesDir).all()
         val today = LocalDate.now()
         val pages = (n - 1 downTo 0).map { days[today.minusDays(it.toLong())]?.pages ?: 0 }
-        var d = if ((days[today]?.pages ?: 0) > 0) today else today.minusDays(1)
+        var d = if ((days[today]?.allPages ?: 0) > 0) today else today.minusDays(1)
         var streak = 0
-        while ((days[d]?.pages ?: 0) > 0) { streak++; d = d.minusDays(1) }
+        while ((days[d]?.allPages ?: 0) > 0) { streak++; d = d.minusDays(1) }
         return pages to streak
     }
 

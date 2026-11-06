@@ -916,4 +916,17 @@
     <string name="undo_marked_read_n">%1$d marcados como lidos</string>
     <string name="undo_marked_unread_n">%1$d marcados como não lidos</string>
     <string name="detail_more_series">Mais de %1$s</string>
+    <string name="stats_books_finished">Livros lidos</string>
+    <string name="stats_month_books">%1$d livros lidos</string>
+    <string name="stats_minutes_a_day">Minutos por dia</string>
+    <string name="goal_title">Meta de %1$d</string>
+    <string name="goal_set">Definir meta</string>
+    <string name="goal_change">Mudar</string>
+    <string name="goal_hint">Quantas HQs e livros você quer terminar este ano? O Fwip conta conforme você lê.</string>
+    <string name="goal_comics">HQs</string>
+    <string name="goal_books">Livros</string>
+    <string name="goal_zero_hint">Zero significa sem meta para aquele tipo.</string>
+    <string name="goal_progress">%1$d de %2$d</string>
+    <string name="goal_done">Meta alcançada!</string>
+    <string name="goal_pace">Faltam %1$d em %2$d dias</string>
 </resources>

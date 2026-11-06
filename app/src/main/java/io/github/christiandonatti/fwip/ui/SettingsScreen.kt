@@ -190,6 +190,14 @@ private fun entries(): List<SettingEntry> {
     )
 }
 
+/** Settings that match [query], for the library's search: (name, group name, target like "light/ink"). */
+internal fun searchSettings(query: String): List<Triple<String, String, String>> {
+    val q = plain(query.trim())
+    if (q.length < 2) return emptyList()
+    return entries().filter { e -> plain(e.title).contains(q) || plain(e.extra).contains(q) }
+        .map { e -> Triple(e.title, e.group.title, e.group.key + (e.key?.let { "/$it" } ?: "")) }
+}
+
 private fun plain(s: String): String =
     java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "").lowercase()
 

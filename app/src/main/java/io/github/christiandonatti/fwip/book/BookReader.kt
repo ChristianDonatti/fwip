@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
@@ -349,6 +351,12 @@ private fun BookReader(
         // A new font of the user's needs a new navigator to declare it; it opens where we were.
         key(UserFonts.version) {
             NavigatorHost(
+                // A paper margin above and below the text, as in a printed book; the bottom one holds the time left.
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.only(WindowInsetsSides.Top))
+                    .windowInsetsPadding(WindowInsets.navigationBarsIgnoringVisibility.only(WindowInsetsSides.Bottom))
+                    .padding(top = 18.dp, bottom = 30.dp),
                 publication = publication,
                 initial = remember { locator ?: initial },
                 preferences = prefs,
@@ -578,6 +586,7 @@ private fun BookReader(
 /** Hosts Readium's navigator fragment inside Compose. */
 @Composable
 private fun NavigatorHost(
+    modifier: Modifier,
     publication: Publication,
     initial: Locator?,
     preferences: EpubPreferences,
@@ -588,7 +597,7 @@ private fun NavigatorHost(
     val activity = LocalContext.current.activity() as? FragmentActivity ?: return
     val tag = remember { "fwip-epub-" + System.nanoTime() }
     AndroidView(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier,
         factory = { ctx ->
             FragmentContainerView(ctx).apply {
                 id = View.generateViewId()

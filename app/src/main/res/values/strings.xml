@@ -917,4 +917,17 @@
     <string name="undo_marked_read_n">%1$d marked as read</string>
     <string name="undo_marked_unread_n">%1$d marked as unread</string>
     <string name="detail_more_series">More from %1$s</string>
+    <string name="stats_books_finished">Books finished</string>
+    <string name="stats_month_books">%1$d books finished</string>
+    <string name="stats_minutes_a_day">Minutes a day</string>
+    <string name="goal_title">Goal for %1$d</string>
+    <string name="goal_set">Set a goal</string>
+    <string name="goal_change">Change</string>
+    <string name="goal_hint">How many comics and books do you want to finish this year? Fwip counts them as you go.</string>
+    <string name="goal_comics">Comics</string>
+    <string name="goal_books">Books</string>
+    <string name="goal_zero_hint">Zero means no goal for that kind.</string>
+    <string name="goal_progress">%1$d of %2$d</string>
+    <string name="goal_done">Goal reached!</string>
+    <string name="goal_pace">%1$d to go in %2$d days</string>
 </resources>

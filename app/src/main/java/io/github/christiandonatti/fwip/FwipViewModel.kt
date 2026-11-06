@@ -16,6 +16,7 @@ import io.github.christiandonatti.fwip.data.LibraryItem
 import io.github.christiandonatti.fwip.data.LibraryRepository
 import io.github.christiandonatti.fwip.data.alignTwins
 import io.github.christiandonatti.fwip.data.syncKey
+import io.github.christiandonatti.fwip.data.isBook
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -567,7 +568,7 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     fun saveProgress(comic: Comic, page: Int, pageCount: Int) {
         val before = repository.progressFor(comic.id)
         val justFinished = pageCount > 0 && page >= pageCount - 1 && before?.finished != true
-        stats.turned(comic.id, page, justFinished)
+        stats.turned(comic.id, page, justFinished, book = comic.format.isBook)
         repository.setProgress(comic.id, page, pageCount)
         scheduleSync(8000)
         comic.remote?.let { book ->
