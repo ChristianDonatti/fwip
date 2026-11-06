@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.christiandonatti.fwip.data.LibraryItem
+import io.github.christiandonatti.fwip.ui.theme.FwipColors
 
 /** Text laid on its side, read from top to bottom, as on a book's spine. */
 private fun Modifier.sideways(): Modifier = layout { measurable, constraints ->
