@@ -49,7 +49,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -536,14 +535,8 @@ private fun Reader(
         val scenePhoto = books3d.isPhoto(books3d.scene) && io.github.christiandonatti.fwip.book.scene.scenePhotoExists(context, books3d.scene)
         val sceneMotion = books3d.sceneMotion && !reduceMotion && light.ink == InkLook.Off
         val sceneParallax = books3d.parallax && !reduceMotion
-        // Test switches for the emulator check (no UI): leave parts of the 3D book out.
-        val dbg = remember { context.getSharedPreferences("fwip_debug", Context.MODE_PRIVATE) }
-        val noScene = dbg.getBoolean("noScene", false)
-        val noBody = dbg.getBoolean("noBody", false)
-        val noFront = dbg.getBoolean("noFront", false)
-        val noCover = dbg.getBoolean("noCover", false)
         if (in3d) {
-            if (!noScene) Box(
+            Box(
                 Modifier
                     .fillMaxSize()
                     .pointerInput(rtl, guide) {
@@ -561,16 +554,13 @@ private fun Reader(
                 io.github.christiandonatti.fwip.book.scene.SceneBackground(books3d.scene, scenePhoto, sceneMotion, sceneParallax)
             }
             val fraction = if (spreads.size > 1) spread.toFloat() / (spreads.size - 1) else 0f
-            if (!noBody) io.github.christiandonatti.fwip.book.BookBody(pageRect, double, board, paper3d, if (rtl) 1f - fraction else fraction)
+            io.github.christiandonatti.fwip.book.BookBody(pageRect, double, board, paper3d, if (rtl) 1f - fraction else fraction)
         }
         Box(
             if (in3d) {
                 Modifier
                     .offset { IntOffset(pageRect.left.roundToInt(), pageRect.top.roundToInt()) }
                     .size(with(density) { pageRect.width.toDp() }, with(density) { pageRect.height.toDp() })
-                    // The pages are drawn into their own picture first, then the book's shading goes on top.
-                    // Drawn straight under it, a page turn's clipped shapes upset some GPUs (the emulator's at least).
-                    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
                     .background(paper3d)
             } else Modifier.fillMaxSize(),
         ) {
@@ -613,9 +603,10 @@ private fun Reader(
         }
         }
         }
+        // No paper curve drawn over the comic's pages: the spine shadow of the spread already does it,
+        // and a layer over a page turn brought the emulator down.
         if (in3d) {
-            if (!noFront) io.github.christiandonatti.fwip.book.BookFront(pageRect, double)
-            if (!opened && !noCover) {
+            if (!opened) {
                 io.github.christiandonatti.fwip.book.CoverOpening(
                     pageRect, double, remember(cover) { cover?.asImageBitmap() }, board,
                     ready = cover != null,
