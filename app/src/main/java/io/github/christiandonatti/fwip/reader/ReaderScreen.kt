@@ -46,7 +46,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asImageBitmap
@@ -562,7 +561,6 @@ private fun Reader(
                 Modifier
                     .offset { IntOffset(pageRect.left.roundToInt(), pageRect.top.roundToInt()) }
                     .size(with(density) { pageRect.width.toDp() }, with(density) { pageRect.height.toDp() })
-                    .clipToBounds()
                     .background(paper3d)
             } else Modifier.fillMaxSize(),
         ) {
