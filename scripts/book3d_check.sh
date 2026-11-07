@@ -50,6 +50,32 @@ books book3d=true scene=Fireplace ambientSound=false "photoScenes=set:Fireplace"
 timeout 10 adb logcat -c -b crash
 timeout 20 adb shell am start -n $APP/.MainActivity; sleep 30
 
+# ---- Comics in 3D ----
+stopapp
+books scene=Library ambientSound=false "photoScenes=set:"
+python3 scripts/look_prefs.py comic3d=true > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
+timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/PepperCarrot_01.cbz"
+for k in 1 2 3 4 5 6 7 8; do sleep 0.6; quick c01-cover-$k; done
+shot c02-open 3
+crashes comic-open
+timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.35; quick c03a-turning; wait $!; sleep 0.2; quick c03b-turning
+shot c04-turned 2
+timeout 20 adb shell input swipe 1350 $(( H - 330 )) 700 $(( H - 420 )) 1500 & sleep 1.0; quick c05-dragging; wait $!
+shot c06-dragged 2
+tap $(( W / 2 )) $(( H / 2 ))
+shot c07-chrome 1
+crashes comic-turns
+stopapp
+books scene=Park ambientSound=false "photoScenes=set:Park"
+openb PepperCarrot_01.cbz 10
+shot c08-comic-park-photo 1
+crashes comic-photo
+
+stopapp
+books book3d=true scene=Fireplace ambientSound=false "photoScenes=set:Fireplace" sceneMotion=false parallax=false
+python3 scripts/look_prefs.py comic3d=false > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
+timeout 20 adb shell am start -n $APP/.MainActivity; sleep 8
+
 # ---- Opening, turning ----
 BOOK=Quiet_Street_1.epub
 [ -f books/Dom_Casmurro.epub ] && BOOK=Dom_Casmurro.epub
@@ -97,27 +123,6 @@ openb $BOOK 9
 timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick p01-flat-turning; wait $!
 shot p02-flat-turned 2
 crashes flat
-
-# ---- Comics in 3D ----
-stopapp
-books scene=Library ambientSound=false "photoScenes=set:"
-python3 scripts/look_prefs.py comic3d=true > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
-timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/PepperCarrot_01.cbz"
-for k in 1 2 3 4 5 6 7 8; do sleep 0.6; quick c01-cover-$k; done
-shot c02-open 3
-crashes comic-open
-timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.35; quick c03a-turning; wait $!; sleep 0.2; quick c03b-turning
-shot c04-turned 2
-timeout 20 adb shell input swipe 1350 $(( H - 330 )) 700 $(( H - 420 )) 1500 & sleep 1.0; quick c05-dragging; wait $!
-shot c06-dragged 2
-tap $(( W / 2 )) $(( H / 2 ))
-shot c07-chrome 1
-crashes comic-turns
-stopapp
-books scene=Park ambientSound=false "photoScenes=set:Park"
-openb PepperCarrot_01.cbz 10
-shot c08-comic-park-photo 1
-crashes comic-photo
 
 # ---- Phone ----
 stopapp
