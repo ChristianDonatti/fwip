@@ -60,10 +60,19 @@ private fun rememberSceneClock(running: Boolean): () -> Float {
 @Composable
 private fun rememberScenePhoto(scene: Scene, blur: Int): ImageBitmap? {
     val context = LocalContext.current
-    val photo by produceState<ImageBitmap?>(null, scene, blur) {
-        value = withContext(Dispatchers.IO) { loadPhoto(context, scene, blur) }
+    val photo by produceState(PhotoMemo.get(scene, blur), scene, blur) {
+        if (value == null) value = withContext(Dispatchers.IO) { loadPhoto(context, scene, blur) }?.also { PhotoMemo.put(scene, blur, it) }
     }
     return photo
+}
+
+/** The last couple of photos decoded, so a second view of the same place shows at once. */
+private object PhotoMemo {
+    private val map = object : LinkedHashMap<Pair<Scene, Int>, ImageBitmap>(4, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Pair<Scene, Int>, ImageBitmap>?) = size > 2
+    }
+    @Synchronized fun get(scene: Scene, blur: Int): ImageBitmap? = map[scene to blur]
+    @Synchronized fun put(scene: Scene, blur: Int, image: ImageBitmap) { map[scene to blur] = image }
 }
 
 /** A photo, made small and then stretched back: the cheapest good-looking blur there is. */

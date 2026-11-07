@@ -505,7 +505,17 @@ private fun BookReader(
         if (book3d) BookFront(pageRect, spread)
         TurnOverlay(turner, Color(pageBg))
         if (book3d && !opened) {
-            CoverOpening(pageRect, spread, remember(cover) { cover?.asImageBitmap() }, board, ready = pagePainted) { opened = true }
+            CoverOpening(
+                pageRect, spread, remember(cover) { cover?.asImageBitmap() }, board, ready = pagePainted,
+                place = {
+                    io.github.christiandonatti.fwip.book.scene.SceneBackground(
+                        scene = settings.scene,
+                        photo = settings.isPhoto(settings.scene) && io.github.christiandonatti.fwip.book.scene.scenePhotoExists(context, settings.scene),
+                        motion = settings.sceneMotion && !reduceMotion && ink == InkLook.Off,
+                        parallax = settings.parallax && !reduceMotion,
+                    )
+                },
+            ) { opened = true }
         }
 
         // ---------- What the navigator tells us ----------

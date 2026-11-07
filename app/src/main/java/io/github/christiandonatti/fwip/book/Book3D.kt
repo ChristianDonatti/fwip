@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -37,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import io.github.christiandonatti.fwip.reader.CurlPages
 import io.github.christiandonatti.fwip.reader.CurlRenderer
 import io.github.christiandonatti.fwip.reader.PageDraw
+import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -224,7 +227,15 @@ private fun paperArgb(c: Color): Int = android.graphics.Color.argb((c.alpha * 25
  * spine to the left, showing the inside of the board, then fades away.
  */
 @Composable
-fun CoverOpening(page: Rect, spread: Boolean, cover: ImageBitmap?, board: Color, ready: Boolean, onDone: () -> Unit) {
+fun CoverOpening(
+    page: Rect,
+    spread: Boolean,
+    cover: ImageBitmap?,
+    board: Color,
+    ready: Boolean,
+    place: @Composable () -> Unit = {},
+    onDone: () -> Unit,
+) {
     val angle = remember { Animatable(0f) }
     val fade = remember { Animatable(1f) }
     var done by remember { mutableStateOf(false) }
@@ -241,6 +252,22 @@ fun CoverOpening(page: Rect, spread: Boolean, cover: ImageBitmap?, board: Color,
     val density = LocalDensity.current
     val leaf = if (spread) Rect(page.center.x, page.top, page.right, page.bottom) else page
     val pad = with(density) { 6.dp.toPx() }
+    if (spread) {
+        // A shut book is only as wide as its cover: the place shows where the left page will be,
+        // until the cover swinging over has laid it open.
+        val a = angle.value
+        val reach = if (a <= 90f) 0f else -cos(Math.toRadians(a.toDouble())).toFloat() * leaf.width
+        val margin = with(density) { 64.dp.toPx() }
+        val hide = Rect(page.left - margin, page.top - margin, page.center.x - reach, page.bottom + margin * 1.4f)
+        if (hide.width > 1f) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = fade.value }
+                    .drawWithContent { clipRect(hide.left, hide.top, hide.right, hide.bottom) { this@drawWithContent.drawContent() } },
+            ) { place() }
+        }
+    }
     val w = leaf.width + pad
     val h = leaf.height + pad * 2
     Box(
