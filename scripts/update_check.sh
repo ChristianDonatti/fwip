@@ -20,6 +20,7 @@ adb shell pm clear $APP
 adb shell "run-as $APP mkdir -p shared_prefs"
 python3 scripts/look_prefs.py welcomed=true seenVersion=i:999999 > /tmp/ui.xml
 for k in 1 2 3; do put /tmp/ui.xml shared_prefs/fwip_ui.xml; adb shell "run-as $APP cat shared_prefs/fwip_ui.xml" | grep -q welcomed && break; done
+adb shell pm grant $APP android.permission.POST_NOTIFICATIONS
 note "before: $(version)"
 timeout 20 adb shell am start -n $APP/.MainActivity
 shot u01-banner 25
