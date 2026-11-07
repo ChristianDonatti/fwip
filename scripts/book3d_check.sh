@@ -1,0 +1,161 @@
+#!/bin/bash
+# Emulator walk through the 3D book: the cover opening, paper turns by tap and by finger,
+# every scene drawn and as a photo, the scene panel, and a phone.
+set -x
+APP=io.github.christiandonatti.fwip
+OUT=repro
+mkdir -p $OUT
+exec > >(tee $OUT/log.txt) 2>&1
+W=1920; H=1200
+D=/data/user/0/$APP/files/Baixadas
+note() { echo "::notice::$*"; }
+shot() {
+  sleep "${2:-2}"
+  timeout 40 adb shell screencap -p /sdcard/shot.png
+  timeout 40 adb pull /sdcard/shot.png "$OUT/$1.png" > /dev/null
+  note "$1"
+}
+quick() { timeout 40 adb shell screencap -p /sdcard/q.png; timeout 40 adb pull /sdcard/q.png "$OUT/$1.png" > /dev/null; note "$1"; }
+ui() { timeout 60 python3 scripts/ui.py "$1"; }
+put() { timeout 20 adb exec-in "run-as $APP sh -c 'cat > $2'" < "$1"; }
+openb() { timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/$1"; sleep "${2:-10}"; }
+tap() { timeout 20 adb shell input tap "$1" "$2"; sleep "${3:-1.5}"; }
+back() { timeout 20 adb shell input keyevent KEYCODE_BACK; sleep "${1:-2}"; }
+crashes() {
+  timeout 20 adb logcat -d -b crash > "$OUT/crash-$1.txt"
+  [ -s "$OUT/crash-$1.txt" ] && note "CRASH after $1: $(head -c 600 $OUT/crash-$1.txt | tr '\n' ' ')"
+  timeout 10 adb logcat -c -b crash
+  if ! timeout 10 adb shell pidof $APP > /dev/null; then
+    note "APP GONE after $1"
+    timeout 20 adb exec-out run-as $APP cat files/reports/last-crash.txt > "$OUT/gone-$1-report.txt" 2>/dev/null
+    timeout 20 adb logcat -d -b main,system,crash -t 1500 > "$OUT/gone-$1-logcat.txt"
+  fi
+}
+books() { python3 scripts/look_prefs.py "$@" > /tmp/books.xml; put /tmp/books.xml shared_prefs/fwip_books.xml; }
+stopapp() { timeout 20 adb shell am force-stop $APP; sleep 1; }
+
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell settings put system screen_off_timeout 1800000
+adb shell svc power stayon true
+# No "Viewing full screen" bubble over every shot.
+adb shell settings put secure immersive_mode_confirmations confirmed
+adb shell wm size ${W}x${H}
+adb shell wm density 240
+adb shell pm clear $APP
+adb shell "run-as $APP mkdir -p files/Baixadas shared_prefs"
+python3 scripts/look_prefs.py welcomed=true seenVersion=i:999999 > /tmp/ui.xml
+for k in 1 2 3; do put /tmp/ui.xml shared_prefs/fwip_ui.xml; adb shell "run-as $APP cat shared_prefs/fwip_ui.xml" | grep -q welcomed && break; done
+for f in books/Quiet_Street_1.epub books/Dom_Casmurro.epub comics/PepperCarrot_01.cbz; do [ -f "$f" ] && put "$f" "files/Baixadas/$(basename "$f")"; done
+books book3d=true scene=Fireplace ambientSound=false "photoScenes=set:Fireplace" sceneMotion=false parallax=false
+timeout 10 adb logcat -c -b crash
+timeout 20 adb shell am start -n $APP/.MainActivity; sleep 30
+
+# ---- Comics flat first: does the paper turn itself hold up on this emulator? ----
+stopapp
+python3 scripts/look_prefs.py comic3d=false > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
+openb PepperCarrot_01.cbz 10
+shot k01-flat-comic 1
+timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.35; quick k02-flat-turning; wait $!
+shot k03-flat-turned 2
+crashes comic-flat
+
+# ---- Comics in 3D ----
+stopapp
+# Everything the device says, live, so the last words before any trouble are kept.
+timeout 600 adb logcat -b main,system,crash,kernel -v threadtime > $OUT/live-logcat.txt 2>&1 &
+books scene=Library ambientSound=false "photoScenes=set:" sceneMotion=false parallax=false
+python3 scripts/look_prefs.py comic3d=true > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
+timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/PepperCarrot_01.cbz"
+for k in 1 2 3 4 5 6 7 8; do sleep 0.6; quick c01-cover-$k; done
+shot c02-open 3
+crashes comic-open
+timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.35; quick c03a-turning; wait $!; sleep 0.2; quick c03b-turning
+shot c04-turned 2
+timeout 20 adb shell input swipe 1350 $(( H - 330 )) 700 $(( H - 420 )) 1500 & sleep 1.0; quick c05-dragging; wait $!
+shot c06-dragged 2
+tap $(( W / 2 )) $(( H / 2 ))
+shot c07-chrome 1
+crashes comic-turns
+stopapp
+books scene=Park ambientSound=false "photoScenes=set:Park"
+openb PepperCarrot_01.cbz 10
+shot c08-comic-park-photo 1
+crashes comic-photo
+
+stopapp
+books book3d=true scene=Fireplace ambientSound=false "photoScenes=set:Fireplace" sceneMotion=false parallax=false
+python3 scripts/look_prefs.py comic3d=false > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
+timeout 20 adb shell am start -n $APP/.MainActivity; sleep 8
+
+# ---- Opening, turning ----
+BOOK=Quiet_Street_1.epub
+[ -f books/Dom_Casmurro.epub ] && BOOK=Dom_Casmurro.epub
+timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/$BOOK"
+# The cover waits for the first page to paint (slow on the emulator), then swings open.
+for k in 1 2 3 4 5 6 7 8 9 10 11 12; do sleep 0.7; quick t01-cover-$k; done
+shot t03-open 4
+crashes open
+# Turn by tap: catch it in the middle.
+timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick t04a-turning; wait $!; sleep 0.25; quick t04b-turning; sleep 0.3; quick t04c-turning
+shot t05-turned 2
+# Turn by finger, held in the middle of the drag.
+# On the book (right page, low corner), then from the scene beside it.
+timeout 20 adb shell input swipe 1400 $(( H - 330 )) 700 $(( H - 420 )) 1500 & sleep 1.0; quick t06-dragging; wait $!
+shot t06b-dragged 2
+timeout 20 adb shell input swipe $(( W - 150 )) $(( H / 2 )) 600 $(( H / 2 - 60 )) 1500 & sleep 1.0; quick t06c-dragging-scene; wait $!
+shot t07-dragged 2
+timeout 20 adb shell input tap 120 $(( H / 2 )) & sleep 0.45; quick t08-back-turning; wait $!
+shot t09-back 2
+crashes turns
+# The scene stands still here so uiautomator can settle and find the buttons.
+python3 -c "import sys; sys.path.insert(0, 'scripts'); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)" '^3D\|' || tap $(( W / 2 )) $(( H / 2 ))
+shot t10-chrome 1
+ui '^3D\|' ; shot t11-scene-panel 2
+timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 420 )) $(( W / 2 )) $(( H / 4 )) 500; shot t12-scene-panel-more 1
+back 2
+crashes panel
+
+# ---- Every scene, drawn and photo (checked before; set ALL_SCENES=1 to look again) ----
+for style in ${ALL_SCENES:+drawn photo}; do
+  for sc in Desk Library Fireplace Mountain Park Rain Beach Night; do
+    stopapp
+    if [ $style = photo ]; then ps="set:$sc"; else ps="set:"; fi
+    books book3d=true scene=$sc ambientSound=false "photoScenes=$ps"
+    openb $BOOK 14
+    shot s-$style-$sc 1
+    crashes $style-$sc
+  done
+done
+
+# ---- Paper turns without the 3D book ----
+stopapp
+books book3d=false turn=Paper
+openb $BOOK 9
+timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick p01-flat-turning; wait $!
+shot p02-flat-turned 2
+crashes flat
+
+# ---- Phone ----
+stopapp
+adb shell wm size 1080x2400
+adb shell wm density 420
+books book3d=true scene=Park ambientSound=false "photoScenes=set:Park"
+openb $BOOK 10
+shot f01-phone-3d 3
+shot f01b-phone-3d-later 10
+timeout 20 adb shell input tap 980 1200 & sleep 0.6; quick f02-phone-turning; wait $!; sleep 0.3; quick f02b-phone-turning
+shot f03-phone-turned 2
+tap 540 1200
+shot f04-phone-chrome 1
+tap 988 146; shot f05-phone-menu 1
+back 2
+crashes phone
+stopapp
+books scene=Night ambientSound=false "photoScenes=set:"
+python3 scripts/look_prefs.py comic3d=true > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
+openb PepperCarrot_01.cbz 10
+shot f06-phone-comic 1
+timeout 20 adb shell input tap 980 1200 & sleep 0.5; quick f07-phone-comic-turning; wait $!
+shot f08-phone-comic-turned 2
+crashes phone-comic
+note done

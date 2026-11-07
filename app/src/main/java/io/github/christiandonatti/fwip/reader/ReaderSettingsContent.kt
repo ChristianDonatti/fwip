@@ -148,7 +148,24 @@ fun ComicReadingSettings(settings: ReaderSettings) {
 
         Section(str(R.string.section_look))
         ReaderLookSettings(settings)
+
+        Section(str(R.string.comic3d_section))
+        ComicSceneSettings(settings)
     }
+}
+
+/** The 3D book for comics, in the same places (and with the same sound) as books. */
+@Composable
+fun ComicSceneSettings(settings: ReaderSettings) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    io.github.christiandonatti.fwip.book.BookSceneSettings(
+        io.github.christiandonatti.fwip.book.BookSettings.get(context),
+        threeD = settings.comic3d,
+        onThreeD = settings::updateComic3d,
+        toggleTitle = str(R.string.comic3d),
+        toggleHint = str(R.string.comic3d_hint),
+        toggleKey = "comic3d",
+    )
 }
 
 /** The light slider: the system's light at the far left switch, then down to below the minimum. */
@@ -292,8 +309,30 @@ private fun TimeChip(title: String, value: String, modifier: Modifier, onClick: 
 @Composable
 internal fun QuickSettings(settings: ReaderSettings, light: LightSettings, onDismiss: () -> Unit) {
     var more by rememberSaveable { mutableStateOf(false) }
+    var places by rememberSaveable { mutableStateOf(false) }
     if (more) {
         ReaderMoreSettings(settings, light, onDismiss = { more = false })
+        return
+    }
+    if (places) {
+        Dialog(onDismissRequest = { places = false }) {
+            Column(
+                Modifier
+                    .widthIn(max = 620.dp)
+                    .heightIn(max = 760.dp)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(FwipColors.Panel)
+                    .border(1.dp, FwipColors.Stroke, RoundedCornerShape(28.dp)),
+            ) {
+                Row(Modifier.padding(start = 24.dp, end = 16.dp, top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(str(R.string.comic3d_section), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    CircleIconButton(Icons.Filled.Close, str(R.string.close), { places = false }, size = 40.dp)
+                }
+                Column(Modifier.verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) {
+                    ComicSceneSettings(settings)
+                }
+            }
+        }
         return
     }
     Dialog(onDismissRequest = onDismiss) {
@@ -321,6 +360,8 @@ internal fun QuickSettings(settings: ReaderSettings, light: LightSettings, onDis
                 Choice(str(R.string.page_turn), TurnStyle.entries, settings.turnStyle, { it.label }, settings::updateTurn)
                 Choice(str(R.string.pages_on_screen), SpreadMode.entries, settings.spreadMode, { it.label }, settings::updateSpread)
                 Toggle(str(R.string.manga_mode), str(R.string.manga_mode_hint), settings.mangaMode, settings::updateManga)
+                Toggle(str(R.string.comic3d), str(R.string.comic3d_hint), settings.comic3d, settings::updateComic3d)
+                PillButton(str(R.string.comic3d_places), { places = true }, Modifier.fillMaxWidth(), style = PillStyle.Ghost, height = 48.dp)
                 PillButton(str(R.string.more_settings), { more = true }, Modifier.fillMaxWidth(), style = PillStyle.Ghost, height = 48.dp)
             }
         }

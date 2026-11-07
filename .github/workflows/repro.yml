@@ -3,14 +3,14 @@ name: Reader repro
 # Runs when a commit message contains [repro]; pushes screenshots to the repro-shots branch.
 on:
   push:
-    branches: [main, books]
+    branches: [main, books, book3d]
 
 permissions:
   contents: write
 
 jobs:
   repro:
-    if: contains(github.event.head_commit.message, '[repro]') || contains(github.event.head_commit.message, '[uicheck]') || contains(github.event.head_commit.message, '[nascheck]') || contains(github.event.head_commit.message, '[newcheck]') || contains(github.event.head_commit.message, '[lookcheck]') || contains(github.event.head_commit.message, '[setcheck]') || contains(github.event.head_commit.message, '[bookcheck]') || contains(github.event.head_commit.message, '[uxcheck]')
+    if: contains(github.event.head_commit.message, '[repro]') || contains(github.event.head_commit.message, '[uicheck]') || contains(github.event.head_commit.message, '[nascheck]') || contains(github.event.head_commit.message, '[newcheck]') || contains(github.event.head_commit.message, '[lookcheck]') || contains(github.event.head_commit.message, '[setcheck]') || contains(github.event.head_commit.message, '[bookcheck]') || contains(github.event.head_commit.message, '[uxcheck]') || contains(github.event.head_commit.message, '[3dcheck]') || contains(github.event.head_commit.message, '[updcheck]')
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     steps:
@@ -21,9 +21,17 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
       - name: Build for the emulator
+        env:
+          MSG: ${{ github.event.head_commit.message }}
         run: |
           chmod +x gradlew
+          # The update check starts from an old build, so the test build on GitHub is newer.
+          if echo "$MSG" | grep -q '\[updcheck\]'; then export FWIP_VERSION_CODE=5; fi
           ./gradlew assembleDebug -Pfwip.abis=x86_64 --console=plain
+          # The emulator needs the memory more than Gradle's idle daemons do.
+          ./gradlew --stop
+          pkill -f KotlinCompileDaemon || true
+          free -m
       - name: Test comics
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq rar > /dev/null
@@ -57,9 +65,14 @@ jobs:
           target: google_apis
           ram-size: 4096M
           disk-size: 4G
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          emulator-options: -no-window -gpu ${{ contains(github.event.head_commit.message, '[guestgpu]') && 'guest' || 'swiftshader_indirect' }} -noaudio -no-boot-anim -no-snapshot
           disable-animations: false
-          script: bash scripts/${{ contains(github.event.head_commit.message, '[uxcheck]') && 'ux_check.sh' || contains(github.event.head_commit.message, '[bookcheck]') && 'books_check.sh' || contains(github.event.head_commit.message, '[setcheck]') && 'settings_check.sh' || contains(github.event.head_commit.message, '[lookcheck]') && 'look_check.sh' || contains(github.event.head_commit.message, '[newcheck]') && 'new_check.sh' || (contains(github.event.head_commit.message, '[nascheck]') && 'nas_check.sh' || (contains(github.event.head_commit.message, '[uicheck]') && 'ui_check.sh' || 'repro.sh')) }}
+          script: bash scripts/${{ contains(github.event.head_commit.message, '[updcheck]') && 'update_check.sh' || contains(github.event.head_commit.message, '[3dcheck]') && 'book3d_check.sh' || contains(github.event.head_commit.message, '[uxcheck]') && 'ux_check.sh' || contains(github.event.head_commit.message, '[bookcheck]') && 'books_check.sh' || contains(github.event.head_commit.message, '[setcheck]') && 'settings_check.sh' || contains(github.event.head_commit.message, '[lookcheck]') && 'look_check.sh' || contains(github.event.head_commit.message, '[newcheck]') && 'new_check.sh' || (contains(github.event.head_commit.message, '[nascheck]') && 'nas_check.sh' || (contains(github.event.head_commit.message, '[uicheck]') && 'ui_check.sh' || 'repro.sh')) }}
+      - name: Host memory after the run
+        if: always()
+        run: |
+          free -m
+          sudo dmesg | grep -i -E "out of memory|killed process|oom" | tail -n 20 | tee repro/host-oom.txt || true
       - name: Push screenshots
         if: always()
         run: |

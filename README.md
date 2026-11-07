@@ -24,7 +24,9 @@ Fluid, simple and made to feel like reading a real comic book, or a good e-reade
 - EPUB, Kindle files without DRM (MOBI, AZW3, PRC), FB2 and TXT, laid out by Readium; Kindle files are rebuilt as EPUB with libmobi, TXT and FB2 converted once and kept
 - Comics and books share the library, collections and sync; with both, a switch at the top shows one or the other, and books can stand on a shelf by their spines
 - Text and page: seven page colours (paper, e-ink, calm, night and more), fonts made for reading (Literata, Bitter, Atkinson Hyperlegible, OpenDyslexic) or your own TTF and OTF files, size, line spacing, margins, justified text, hyphenation, bolder text, publisher styles, one or two columns
-- Page turns: instant, slide or continuous scroll
+- Page turns like paper (the page curls under your finger, as in the comics), or instant, slide or continuous scroll
+- 3D book (books and comics): the book lies in a place, with its boards, the stack of page edges growing on the left as you read, the curve of the paper at the spine, and the cover opening when you start; its size is up to you
+- Places, each drawn and as a photo, with moving touches: a desk, a library, by the fire, mountains, a park, a rainy window over a city, a beach at sunset, a starry night; ambient sound made live by the app (fire, rain, wind, birds, waves, crickets, a clock), and depth when you tilt the tablet
 - Time left in the chapter or the book at your own reading pace, like on a Kindle; tap the line to see page or percentage instead
 - Contents, bookmarks, search in the whole book, highlights in four colours with notes, shared as Markdown, and a dictionary lookup
 - Read aloud with the device's voices, with speed and a sleep timer (minutes or end of chapter)
@@ -79,7 +81,7 @@ Fluid, simple and made to feel like reading a real comic book, or a good e-reade
 - Sync between your tablet and phone without an account: progress, bookmarks and collections go through a folder both devices share (one kept in step by Syncthing or similar, or a network folder). Each device writes its own small file in a hidden `.fwip` folder there and reads the others', so sync tools never see conflicting edits. Comics are matched by file name and size
 - This device to the NAS: comics put in the tablet's folders are copied to a NAS folder by themselves (on Wi-Fi by default), keeping their subfolders. Nothing is ever deleted on the other side, and a comic in both places shows once and shares its progress, so you can delete it from the tablet and keep reading it from the NAS
 - Backup and restore in a single file (servers are saved without passwords)
-- A notice on the home screen when a new version is out on GitHub, and a crash report you can save and send
+- A notice on the home screen when a new version is out on GitHub; Update downloads and installs it inside the app (Android asks once to allow Fwip to install its own updates), and a crash report you can save and send
 - English and Portuguese (follows the system, or pick the app language on Android 13+)
 
 ## Install a test build
@@ -128,5 +130,7 @@ Speech balloon detection uses the YOLOv4-tiny model trained by [Seeneva](https:/
 Archives in RAR5 format are read with [7-Zip-JBinding-4Android](https://github.com/omicronapps/7-Zip-JBinding-4Android) (LGPL 2.1 with the unRAR restriction). SMB shares use [smbj](https://github.com/hierynomus/smbj) (Apache 2.0).
 
 Books are opened and laid out with the [Readium Kotlin Toolkit](https://github.com/readium/kotlin-toolkit) (BSD-3-Clause). Kindle files are read with [libmobi](https://github.com/bfabiszewski/libmobi) by Bartek Fabiszewski (LGPL-3.0-or-later), built from source in `app/src/main/cpp/libmobi`.
+
+Scene photos and the desk texture come from [Poly Haven](https://polyhaven.com) (CC0, see `app/src/main/assets/scenes/CREDITS.txt`). The drawn scenes and all ambient sounds are made in code by Fwip.
 
 Fonts: [Unbounded](https://github.com/googlefonts/unbounded) and [Manrope](https://github.com/sharanda/manrope) for the app, and [Literata](https://github.com/googlefonts/literata), [Bitter](https://github.com/solmatas/BitterPro) and [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) for books, all under the SIL Open Font License 1.1 (see `FONTS-OFL.txt`).

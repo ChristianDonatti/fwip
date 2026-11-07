@@ -31,8 +31,7 @@ sealed interface UpdateCheck {
 
 /**
  * Looks on GitHub for a newer Fwip. Official builds compare with the latest release; test builds
- * compare their build number with the current test build. Nothing is downloaded or installed
- * here: the download opens in the browser and Android asks before installing.
+ * compare their build number with the current test build. [UpdateInstaller] fetches and installs.
  */
 object Updates {
     private const val REPO = "ChristianDonatti/fwip"

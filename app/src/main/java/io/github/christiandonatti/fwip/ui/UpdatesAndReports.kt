@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -42,6 +43,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.christiandonatti.fwip.data.AppUpdate
 import io.github.christiandonatti.fwip.data.UpdateCheck
+import io.github.christiandonatti.fwip.data.UpdateInstaller
+import io.github.christiandonatti.fwip.data.UpdateStep
 import io.github.christiandonatti.fwip.data.Updates
 import io.github.christiandonatti.fwip.ui.theme.FwipColors
 import kotlinx.coroutines.launch
@@ -55,6 +58,38 @@ fun openLink(context: Context, url: String) {
 
 private fun updateTitle(u: AppUpdate) =
     if (u.test) str(R.string.update_test_title, u.version) else str(R.string.update_title, u.version)
+
+/**
+ * The one button that takes an update from found to installed: Update, the download's progress,
+ * Allow (once, for Android's permission), Installing, Install (Android's prompt), Try again.
+ */
+@Composable
+fun UpdateAction(update: AppUpdate, height: androidx.compose.ui.unit.Dp) {
+    val context = LocalContext.current
+    // Back from the system page that allows installing: carry on by itself.
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(owner) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME) UpdateInstaller.resume(context)
+        }
+        owner.lifecycle.addObserver(obs)
+        onDispose { owner.lifecycle.removeObserver(obs) }
+    }
+    when (val st = UpdateInstaller.step) {
+        is UpdateStep.Downloading -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CircularProgressIndicator(progress = { st.percent / 100f }, modifier = Modifier.size(20.dp), color = FwipColors.Amber, strokeWidth = 2.5.dp, trackColor = FwipColors.Text.copy(alpha = 0.12f))
+            Text(str(R.string.update_downloading, st.percent), style = MaterialTheme.typography.labelLarge, color = FwipColors.TextSoft)
+        }
+        UpdateStep.Installing -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CircularProgressIndicator(Modifier.size(20.dp), color = FwipColors.Amber, strokeWidth = 2.5.dp)
+            Text(str(R.string.update_installing), style = MaterialTheme.typography.labelLarge, color = FwipColors.TextSoft)
+        }
+        is UpdateStep.NeedsPermission -> PillButton(str(R.string.update_allow), { UpdateInstaller.openPermission(context) }, style = PillStyle.Amber, height = height)
+        is UpdateStep.NeedsConfirm -> PillButton(str(R.string.update_confirm), { UpdateInstaller.confirm(context) }, style = PillStyle.Amber, height = height)
+        is UpdateStep.Failed -> PillButton(str(R.string.update_retry), { UpdateInstaller.start(context, update) }, style = PillStyle.Amber, height = height)
+        null -> PillButton(str(R.string.update_install), { UpdateInstaller.start(context, update) }, style = PillStyle.Amber, height = height)
+    }
+}
 
 /** A small card at the bottom of the library when a newer Fwip is out. */
 @Composable
@@ -80,8 +115,8 @@ fun UpdateBanner(update: AppUpdate, onNotes: () -> Unit, modifier: Modifier = Mo
                 Text(it, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        PillButton(str(R.string.update_download), { openLink(context, update.apkUrl) }, style = PillStyle.Amber, height = 42.dp)
-        CircleIconButton(Icons.Filled.Close, str(R.string.update_later), { Updates.dismiss(context) }, size = 40.dp)
+        UpdateAction(update, height = 42.dp)
+        if (!UpdateInstaller.busy) CircleIconButton(Icons.Filled.Close, str(R.string.update_later), { Updates.dismiss(context) }, size = 40.dp)
     }
 }
 
@@ -159,10 +194,24 @@ fun UpdateDetails(update: AppUpdate) {
         if (update.notes.isNotBlank()) {
             Text(update.notes, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextSoft)
         }
-        Text(str(R.string.update_how), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PillButton(str(R.string.update_download), { openLink(context, update.apkUrl) }, style = PillStyle.Amber, height = 46.dp)
-            if (update.pageUrl.isNotBlank()) {
+        when (val st = UpdateInstaller.step) {
+            is UpdateStep.Downloading -> LinearProgressIndicator(
+                progress = { st.percent / 100f },
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                color = FwipColors.Amber,
+                trackColor = FwipColors.Text.copy(alpha = 0.12f),
+            )
+            is UpdateStep.NeedsPermission -> Text(str(R.string.update_allow_text), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextSoft)
+            is UpdateStep.Failed -> Text(str(R.string.update_error, st.message), style = MaterialTheme.typography.bodySmall, color = FwipColors.Danger)
+            else -> Text(str(R.string.update_how), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            UpdateAction(update, height = 46.dp)
+            if (UpdateInstaller.step is UpdateStep.Downloading) {
+                PillButton(str(R.string.cancel), { UpdateInstaller.cancel() }, style = PillStyle.Ghost, height = 46.dp)
+            } else if (UpdateInstaller.step is UpdateStep.Failed) {
+                PillButton(str(R.string.update_browser), { openLink(context, update.apkUrl) }, style = PillStyle.Ghost, height = 46.dp)
+            } else if (update.pageUrl.isNotBlank()) {
                 PillButton(str(R.string.update_page), { openLink(context, update.pageUrl) }, style = PillStyle.Ghost, height = 46.dp)
             }
         }

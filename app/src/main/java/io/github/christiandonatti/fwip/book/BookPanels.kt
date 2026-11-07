@@ -90,7 +90,7 @@ import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.services.search.search
 
-enum class BookPanel { Text, Contents, Search, Listen }
+enum class BookPanel { Text, Contents, Search, Listen, Scene }
 
 /** A sheet at the bottom of the reader (beside it on a wide tablet), with a veil behind. */
 @Composable
@@ -152,6 +152,9 @@ internal fun BookPanelHost(
         BookPanel.Contents -> ContentsPanel(book, title, author, notes, notesVersion, onNotesChanged, locator, onDismiss, onGo, onGoLink, onEditHighlight)
         BookPanel.Search -> Sheet(str(R.string.book_search), onDismiss) { SearchPanel(book, onGo) }
         BookPanel.Listen -> Sheet(str(R.string.book_listen), onDismiss) { ListenPanel(book, locator, speaker, settings, language) }
+        BookPanel.Scene -> Sheet(str(R.string.book_scene), onDismiss) {
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(start = 22.dp, end = 22.dp, bottom = 24.dp)) { BookSceneSettings(settings) }
+        }
     }
 }
 
@@ -596,5 +599,68 @@ internal fun HighlightDialog(highlight: BookHighlight, onSave: (BookHighlight) -
             Spacer(Modifier.weight(1f))
             PillButton(str(R.string.save), { onSave(highlight.copy(note = note.trim(), color = color)) }, style = PillStyle.Amber, height = 46.dp)
         }
+    }
+}
+
+
+// ---------------------------------------------------------------- The 3D book and its place
+
+/** The 3D book, where it lies, and the sound around it: in the reader and in Settings > Books. */
+@Composable
+fun BookSceneSettings(
+    settings: BookSettings,
+    threeD: Boolean = settings.book3d,
+    onThreeD: (Boolean) -> Unit = { settings.updateBook3d(it) },
+    toggleTitle: String = str(R.string.scene_book3d),
+    toggleHint: String = str(R.string.scene_book3d_hint),
+    toggleKey: String = "book3d",
+) {
+    val context = LocalContext.current
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Toggle(toggleTitle, toggleHint, threeD, onThreeD, key = toggleKey)
+        Section(str(R.string.scene_place))
+        FlowRow(
+            Modifier.settingAnchor("scene"),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            io.github.christiandonatti.fwip.book.scene.Scene.entries.forEach { sc ->
+                val on = sc == settings.scene
+                Column(
+                    Modifier
+                        .width(132.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable(role = Role.RadioButton) { settings.updateScene(sc); if (!threeD) onThreeD(true) },
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    io.github.christiandonatti.fwip.book.scene.SceneThumb(
+                        sc,
+                        photo = settings.isPhoto(sc) && io.github.christiandonatti.fwip.book.scene.scenePhotoExists(context, sc),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(84.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .border(if (on) 2.5.dp else 1.dp, if (on) FwipColors.Amber else FwipColors.Stroke, RoundedCornerShape(14.dp)),
+                    )
+                    Text(sc.label, style = MaterialTheme.typography.labelMedium, color = if (on) FwipColors.Text else FwipColors.TextSoft, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+        val sc = settings.scene
+        if (sc.hasPhoto && io.github.christiandonatti.fwip.book.scene.scenePhotoExists(context, sc)) {
+            Choice(
+                str(R.string.scene_style, sc.label),
+                listOf(false, true),
+                settings.isPhoto(sc),
+                { if (it) str(R.string.scene_photo) else str(R.string.scene_drawn) },
+                { settings.updatePhoto(sc, it) },
+                key = "sceneStyle",
+            )
+        }
+        LevelSlider(str(R.string.scene_size), (settings.bookScale - 0.6f) / 0.36f, 0f..1f, { settings.updateBookScale(0.6f + it * 0.36f) }, key = "bookScale", valueLabel = "${(settings.bookScale * 100).toInt()}%")
+        Toggle(str(R.string.scene_sound), str(R.string.scene_sound_hint), settings.ambientSound, { settings.updateAmbientSound(it) }, key = "ambientSound")
+        if (settings.ambientSound) LevelSlider(str(R.string.scene_volume), settings.ambientVolume, 0f..1f, { settings.updateAmbientVolume(it) }, key = "ambientVolume")
+        Toggle(str(R.string.scene_motion), str(R.string.scene_motion_hint), settings.sceneMotion, { settings.updateSceneMotion(it) }, key = "sceneMotion")
+        Toggle(str(R.string.scene_parallax), str(R.string.scene_parallax_hint), settings.parallax, { settings.updateParallax(it) }, key = "parallax")
     }
 }
