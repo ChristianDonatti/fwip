@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -567,6 +568,9 @@ private fun Reader(
                 Modifier
                     .offset { IntOffset(pageRect.left.roundToInt(), pageRect.top.roundToInt()) }
                     .size(with(density) { pageRect.width.toDp() }, with(density) { pageRect.height.toDp() })
+                    // The pages are drawn into their own picture first, then the book's shading goes on top.
+                    // Drawn straight under it, a page turn's clipped shapes upset some GPUs (the emulator's at least).
+                    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
                     .background(paper3d)
             } else Modifier.fillMaxSize(),
         ) {
