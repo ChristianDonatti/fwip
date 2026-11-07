@@ -45,7 +45,7 @@ adb shell pm clear $APP
 adb shell "run-as $APP mkdir -p files/Baixadas shared_prefs"
 python3 scripts/look_prefs.py welcomed=true seenVersion=i:999999 > /tmp/ui.xml
 for k in 1 2 3; do put /tmp/ui.xml shared_prefs/fwip_ui.xml; adb shell "run-as $APP cat shared_prefs/fwip_ui.xml" | grep -q welcomed && break; done
-for f in books/Quiet_Street_1.epub books/Dom_Casmurro.epub; do [ -f "$f" ] && put "$f" "files/Baixadas/$(basename "$f")"; done
+for f in books/Quiet_Street_1.epub books/Dom_Casmurro.epub comics/PepperCarrot_01.cbz; do [ -f "$f" ] && put "$f" "files/Baixadas/$(basename "$f")"; done
 books book3d=true scene=Fireplace ambientSound=false "photoScenes=set:Fireplace" sceneMotion=false parallax=false
 timeout 10 adb logcat -c -b crash
 timeout 20 adb shell am start -n $APP/.MainActivity; sleep 30
@@ -78,8 +78,8 @@ timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 420 )) $(( W / 2 )) $(( H 
 back 2
 crashes panel
 
-# ---- Every scene, drawn and photo ----
-for style in drawn photo; do
+# ---- Every scene, drawn and photo (checked before; set ALL_SCENES=1 to look again) ----
+for style in ${ALL_SCENES:+drawn photo}; do
   for sc in Desk Library Fireplace Mountain Park Rain Beach Night; do
     stopapp
     if [ $style = photo ]; then ps="set:$sc"; else ps="set:"; fi
@@ -98,6 +98,27 @@ timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick p
 shot p02-flat-turned 2
 crashes flat
 
+# ---- Comics in 3D ----
+stopapp
+books scene=Library ambientSound=false "photoScenes=set:"
+python3 scripts/look_prefs.py comic3d=true > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
+timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/PepperCarrot_01.cbz"
+for k in 1 2 3 4 5 6 7 8; do sleep 0.6; quick c01-cover-$k; done
+shot c02-open 3
+crashes comic-open
+timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.35; quick c03a-turning; wait $!; sleep 0.2; quick c03b-turning
+shot c04-turned 2
+timeout 20 adb shell input swipe 1350 $(( H - 330 )) 700 $(( H - 420 )) 1500 & sleep 1.0; quick c05-dragging; wait $!
+shot c06-dragged 2
+tap $(( W / 2 )) $(( H / 2 ))
+shot c07-chrome 1
+crashes comic-turns
+stopapp
+books scene=Park ambientSound=false "photoScenes=set:Park"
+openb PepperCarrot_01.cbz 10
+shot c08-comic-park-photo 1
+crashes comic-photo
+
 # ---- Phone ----
 stopapp
 adb shell wm size 1080x2400
@@ -113,4 +134,11 @@ shot f04-phone-chrome 1
 tap 988 146; shot f05-phone-menu 1
 back 2
 crashes phone
+stopapp
+books scene=Night ambientSound=false "photoScenes=set:"
+openb PepperCarrot_01.cbz 10
+shot f06-phone-comic 1
+timeout 20 adb shell input tap 980 1200 & sleep 0.5; quick f07-phone-comic-turning; wait $!
+shot f08-phone-comic-turned 2
+crashes phone-comic
 note done
