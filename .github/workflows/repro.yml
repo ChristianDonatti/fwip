@@ -61,7 +61,7 @@ jobs:
           target: google_apis
           ram-size: 4096M
           disk-size: 4G
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          emulator-options: -no-window -gpu ${{ contains(github.event.head_commit.message, '[guestgpu]') && 'guest' || 'swiftshader_indirect' }} -noaudio -no-boot-anim -no-snapshot
           disable-animations: false
           script: bash scripts/${{ contains(github.event.head_commit.message, '[updcheck]') && 'update_check.sh' || contains(github.event.head_commit.message, '[3dcheck]') && 'book3d_check.sh' || contains(github.event.head_commit.message, '[uxcheck]') && 'ux_check.sh' || contains(github.event.head_commit.message, '[bookcheck]') && 'books_check.sh' || contains(github.event.head_commit.message, '[setcheck]') && 'settings_check.sh' || contains(github.event.head_commit.message, '[lookcheck]') && 'look_check.sh' || contains(github.event.head_commit.message, '[newcheck]') && 'new_check.sh' || (contains(github.event.head_commit.message, '[nascheck]') && 'nas_check.sh' || (contains(github.event.head_commit.message, '[uicheck]') && 'ui_check.sh' || 'repro.sh')) }}
       - name: Push screenshots
