@@ -384,7 +384,7 @@
     <string name="update_none">You have the latest version.</string>
     <string name="update_failed">Could not reach GitHub: %1$s</string>
     <string name="update_check_now">Check now</string>
-    <string name="update_how">The file downloads in your browser; open it and Android asks before installing. Your library stays as it is.</string>
+    <string name="update_how">Fwip downloads and installs the update itself. The first time, Android asks you to allow Fwip to install apps. Your library stays as it is.</string>
     <string name="report_title">Error report</string>
     <string name="report_explain">Saves a text file you can send when something goes wrong. Nothing is sent by itself.</string>
     <string name="report_contents">It has the app version, the device model and Android version, your reading settings, how many comics and folders the library has, the last crash and the app\'s recent log (which can include comic file names).</string>
@@ -971,4 +971,17 @@
     <string name="news_scenes_text">A desk, a library, by the fire, mountains, a park, a rainy window, a beach at sunset or a starry night, each drawn or as a photo, with fire, leaves, rain and stars moving, and their own sound.</string>
     <string name="news_paper_books">Paper turns in books</string>
     <string name="news_paper_books_text">Book pages now curl like paper by default, even without the 3D book. Instant, slide and scroll are still in Aa.</string>
+    <string name="update_install">Update</string>
+    <string name="update_downloading">Downloading %1$d%%</string>
+    <string name="update_installing">Installing…</string>
+    <string name="update_confirm">Install</string>
+    <string name="update_allow">Allow</string>
+    <string name="update_allow_text">Android needs your OK once so Fwip can install its own updates. Turn on \"Allow from this source\" and come back: the update goes on by itself.</string>
+    <string name="update_retry">Try again</string>
+    <string name="update_browser">Download in browser</string>
+    <string name="update_error">The update did not install: %1$s</string>
+    <string name="update_cut">the download was cut short</string>
+    <string name="update_bad_file">the downloaded file is not a Fwip update</string>
+    <string name="update_not_newer">the file is not newer than the version installed</string>
+    <string name="update_other_key">the file is signed with a different key than the Fwip installed (a test build and an official version cannot replace each other)</string>
 </resources>

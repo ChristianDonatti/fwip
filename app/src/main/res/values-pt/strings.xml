@@ -383,7 +383,7 @@
     <string name="update_none">Você já tem a versão mais recente.</string>
     <string name="update_failed">Não deu para falar com o GitHub: %1$s</string>
     <string name="update_check_now">Procurar agora</string>
-    <string name="update_how">O arquivo baixa pelo navegador; abra o arquivo e o Android pergunta antes de instalar. Sua biblioteca continua como está.</string>
+    <string name="update_how">O Fwip baixa e instala a atualização sozinho. Na primeira vez, o Android pede para você permitir que o Fwip instale apps. Sua biblioteca continua igual.</string>
     <string name="report_title">Relatório de erro</string>
     <string name="report_explain">Salva um arquivo de texto para você mandar quando algo der errado. Nada é enviado sozinho.</string>
     <string name="report_contents">Ele traz a versão do app, o modelo do aparelho e a versão do Android, seus ajustes de leitura, quantas HQs e pastas a biblioteca tem, o último fechamento inesperado e o registro recente do app (que pode incluir nomes de arquivos das HQs).</string>
@@ -970,4 +970,17 @@
     <string name="news_scenes_text">Escrivaninha, biblioteca, lareira, montanha, parque, janela com chuva, praia ao pôr do sol ou noite estrelada, cada um em desenho ou foto, com fogo, folhas, chuva e estrelas em movimento e som próprio.</string>
     <string name="news_paper_books">Virada de papel nos livros</string>
     <string name="news_paper_books_text">As páginas dos livros agora viram como papel por padrão, mesmo sem o livro 3D. Instantâneo, deslizar e rolagem continuam no Aa.</string>
+    <string name="update_install">Atualizar</string>
+    <string name="update_downloading">Baixando %1$d%%</string>
+    <string name="update_installing">Instalando…</string>
+    <string name="update_confirm">Instalar</string>
+    <string name="update_allow">Permitir</string>
+    <string name="update_allow_text">O Android precisa da sua permissão uma vez para o Fwip instalar as próprias atualizações. Ative \"Permitir desta fonte\" e volte: a atualização continua sozinha.</string>
+    <string name="update_retry">Tentar de novo</string>
+    <string name="update_browser">Baixar no navegador</string>
+    <string name="update_error">A atualização não foi instalada: %1$s</string>
+    <string name="update_cut">o download foi interrompido</string>
+    <string name="update_bad_file">o arquivo baixado não é uma atualização do Fwip</string>
+    <string name="update_not_newer">o arquivo não é mais novo que a versão instalada</string>
+    <string name="update_other_key">o arquivo foi assinado com uma chave diferente da do Fwip instalado (versão de teste e versão oficial não se substituem)</string>
 </resources>

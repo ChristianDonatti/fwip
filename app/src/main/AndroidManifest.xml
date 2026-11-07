@@ -4,6 +4,9 @@
 
     <!-- Only used to talk to comic servers and network folders the user adds (Komga, Kavita, OPDS, SMB, WebDAV). -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Installing Fwip's own updates from inside the app (Android asks the user once). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
     <!-- The light tick on page turns (optional, in the reader settings). -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Copying new comics to the NAS keeps going with the screen off (only when that is turned on). -->
@@ -414,6 +417,9 @@
         </activity-alias>
         <!-- /Launcher icons -->
 
+        <receiver
+            android:name=".data.UpdateInstallReceiver"
+            android:exported="false" />
         <receiver
             android:name=".widget.ContinueReadingReceiver"
             android:exported="true"

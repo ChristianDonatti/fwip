@@ -120,7 +120,10 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                     }
                 }
                 // Quietly look for a newer Fwip (at most twice a day).
-                LaunchedEffect(Unit) { io.github.christiandonatti.fwip.data.Updates.checkInBackground(context) }
+                LaunchedEffect(Unit) {
+                    io.github.christiandonatti.fwip.data.UpdateInstaller.cleanUp(context)
+                    io.github.christiandonatti.fwip.data.Updates.checkInBackground(context)
+                }
                 // The app closed by itself last time: offer to save a report.
                 var crashed by remember { mutableStateOf(io.github.christiandonatti.fwip.data.Reports.unseenCrash(context)) }
                 if (crashed) {
