@@ -129,6 +129,9 @@ class ReaderSettings private constructor(context: Context) {
         private set
     var paperTexture by mutableStateOf(prefs.getBoolean("texture", false))
         private set
+    /** Comics as a 3D book in a place (the places and their sound are shared with books). */
+    var comic3d by mutableStateOf(prefs.getBoolean("comic3d", false))
+        private set
     /** The rustle of paper at each page turn. */
     var turnSound by mutableStateOf(prefs.getBoolean("sound", false))
         private set
@@ -177,6 +180,7 @@ class ReaderSettings private constructor(context: Context) {
     fun updateTapZones(value: TapZones) { tapZones = value; prefs.edit().putString("taps", value.name).apply() }
     fun updateGround(value: ReaderGround) { ground = value; prefs.edit().putString("ground", value.name).apply() }
     fun updateSpineShadow(value: Float) { spineShadow = value; prefs.edit().putFloat("spine", value).apply() }
+    fun updateComic3d(value: Boolean) { comic3d = value; prefs.edit().putBoolean("comic3d", value).apply() }
     fun updatePaperTexture(value: Boolean) { paperTexture = value; prefs.edit().putBoolean("texture", value).apply() }
     fun updateTurnHaptic(value: Boolean) { turnHaptic = value; prefs.edit().putBoolean("haptic", value).apply() }
     fun updateTurnSound(value: Boolean) { turnSound = value; prefs.edit().putBoolean("sound", value).apply() }
@@ -201,7 +205,7 @@ class ReaderSettings private constructor(context: Context) {
         updateTurnHaptic(true); updateTurnSound(false); updateFixColors(false); updateDenoise(false); updateSharpness(Sharpness.Off)
         updateSplitWide(false); updateFilmStrip(true); updateTurnSpeed(TurnSpeed.Normal); updateTurnLift(0.4f); updateFoldShade(0.5f)
         updateSoundKind(TurnSoundKind.Paper); updateGestureDoubleTap(GestureAction.Zoom); updateGestureLongPress(GestureAction.None)
-        updateGestureSwipeUp(GestureAction.Pages); updateGestureSwipeDown(GestureAction.Close)
+        updateGestureSwipeUp(GestureAction.Pages); updateGestureSwipeDown(GestureAction.Close); updateComic3d(false)
     }
 
     /** Everything worth carrying to another device in a backup. */
@@ -209,7 +213,7 @@ class ReaderSettings private constructor(context: Context) {
         .put("manga", mangaMode).put("turn", turnStyle.name).put("spread", spreadMode.name)
         .put("volume", volumeKeys).put("crop", cropMargins).put("taps", tapZones.name)
         .put("haptic", turnHaptic).put("sound", turnSound)
-        .put("ground", ground.name).put("spine", spineShadow.toDouble()).put("texture", paperTexture)
+        .put("ground", ground.name).put("spine", spineShadow.toDouble()).put("texture", paperTexture).put("comic3d", comic3d)
         .put("fixColors", fixColors).put("denoise", denoise).put("sharp", sharpness.name).put("splitWide", splitWide).put("filmStrip", filmStrip)
         .put("speed", turnSpeed.name).put("lift", turnLift.toDouble()).put("fold", foldShade.toDouble()).put("soundKind", soundKind.name)
         .put("gDouble", gestureDoubleTap.name).put("gLong", gestureLongPress.name).put("gUp", gestureSwipeUp.name).put("gDown", gestureSwipeDown.name)
@@ -226,6 +230,7 @@ class ReaderSettings private constructor(context: Context) {
         runCatching { updateGround(ReaderGround.valueOf(o.getString("ground"))) }
         if (o.has("spine")) updateSpineShadow(o.getDouble("spine").toFloat())
         if (o.has("texture")) updatePaperTexture(o.getBoolean("texture"))
+        if (o.has("comic3d")) updateComic3d(o.getBoolean("comic3d"))
         if (o.has("fixColors")) updateFixColors(o.getBoolean("fixColors"))
         if (o.has("denoise")) updateDenoise(o.getBoolean("denoise"))
         runCatching { updateSharpness(Sharpness.valueOf(o.getString("sharp"))) }

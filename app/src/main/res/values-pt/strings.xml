@@ -983,4 +983,8 @@
     <string name="update_bad_file">o arquivo baixado não é uma atualização do Fwip</string>
     <string name="update_not_newer">o arquivo não é mais novo que a versão instalada</string>
     <string name="update_other_key">o arquivo foi assinado com uma chave diferente da do Fwip instalado (versão de teste e versão oficial não se substituem)</string>
+    <string name="comic3d">HQ em 3D</string>
+    <string name="comic3d_hint">A HQ vira um livro de verdade deitado num ambiente, com capa, lateral das folhas e virada de papel.</string>
+    <string name="comic3d_section">HQ em 3D e ambiente</string>
+    <string name="comic3d_places">Escolher o ambiente</string>
 </resources>

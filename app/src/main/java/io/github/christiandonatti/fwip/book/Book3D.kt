@@ -46,14 +46,17 @@ import kotlin.math.roundToInt
 /** Proportions of a printed page (width over height), close to a paperback. */
 const val PAGE_ASPECT = 0.68f
 
+/** A comic book page (6.625 x 10.25 in). */
+const val COMIC_ASPECT = 0.65f
+
 /**
  * Where the pages of the 3D book go in a [w] x [h] area: a two-page spread on a wide screen
  * lying sideways, one page otherwise, [scale] of the room left by the bars.
  */
-fun bookPageRect(w: Float, h: Float, top: Float, bottom: Float, scale: Float, spread: Boolean): Rect {
+fun bookPageRect(w: Float, h: Float, top: Float, bottom: Float, scale: Float, spread: Boolean, page: Float = PAGE_ASPECT): Rect {
     val roomW = w * scale
     val roomH = (h - top - bottom) * scale
-    val aspect = if (spread) PAGE_ASPECT * 2f else PAGE_ASPECT
+    val aspect = if (spread) page * 2f else page
     var pw = roomW
     var ph = pw / aspect
     if (ph > roomH) { ph = roomH; pw = ph * aspect }

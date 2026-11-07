@@ -1,7 +1,7 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package io.github.christiandonatti.fwip.reader
 
-import io.github.christiandonatti.fwip.R
-import io.github.christiandonatti.fwip.str
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -14,20 +14,23 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -40,36 +43,42 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import io.github.christiandonatti.fwip.R
 import io.github.christiandonatti.fwip.balloons.BalloonStore
 import io.github.christiandonatti.fwip.balloons.Detection
 import io.github.christiandonatti.fwip.balloons.panelOrder
 import io.github.christiandonatti.fwip.balloons.readingOrder
 import io.github.christiandonatti.fwip.data.Comic
 import io.github.christiandonatti.fwip.data.ComicMeta
-import io.github.christiandonatti.fwip.data.LibraryItem
 import io.github.christiandonatti.fwip.data.ComicSource
 import io.github.christiandonatti.fwip.data.ComicSources
+import io.github.christiandonatti.fwip.data.LibraryItem
+import io.github.christiandonatti.fwip.str
 import io.github.christiandonatti.fwip.ui.PillButton
 import io.github.christiandonatti.fwip.ui.theme.FwipColors
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.roundToInt
 
 /** Everything the page views need to draw a comic, fixed for a given layout. */
 @Stable
@@ -193,7 +202,17 @@ private fun Reader(
     // With "remove animations" on, pages change at once whatever turn was chosen.
     val a11yContext = androidx.compose.ui.platform.LocalContext.current
     val reduceMotion = remember { io.github.christiandonatti.fwip.ui.A11y.reduceMotion(a11yContext) }
-    val turnStyle = if (reduceMotion && settings.turnStyle != TurnStyle.Scroll) TurnStyle.Instant else settings.turnStyle
+    // The 3D book: the comic lies in a place, as a book with boards and pages that curl.
+    val books3d = remember { io.github.christiandonatti.fwip.book.BookSettings.get(context) }
+    val in3d = settings.comic3d && !scroll
+    val turnStyle = when {
+        reduceMotion && settings.turnStyle != TurnStyle.Scroll -> TurnStyle.Instant
+        in3d -> TurnStyle.Curl
+        else -> settings.turnStyle
+    }
+    val paper3d = androidx.compose.ui.graphics.Color(0xFFF4F0E6)
+    SideEffect { if (in3d) FwipColors.ReaderBg = paper3d }
+    io.github.christiandonatti.fwip.book.scene.SceneSound(in3d && books3d.ambientSound, books3d.scene, books3d.ambientVolume)
     val a11yView = androidx.compose.ui.platform.LocalView.current
     val screenReader = remember { io.github.christiandonatti.fwip.ui.A11y.screenReader(a11yContext) }
 
@@ -256,8 +275,16 @@ private fun Reader(
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
-        val wPx = with(density) { maxWidth.toPx() }.roundToInt().coerceAtLeast(1)
-        val hPx = with(density) { maxHeight.toPx() }.roundToInt().coerceAtLeast(1)
+        val fullW = with(density) { maxWidth.toPx() }
+        val fullH = with(density) { maxHeight.toPx() }
+        // In 3D the pages are the book's, smaller than the screen; otherwise the whole screen.
+        val pageRect = if (in3d) {
+            val top = androidx.compose.foundation.layout.WindowInsets.statusBarsIgnoringVisibility.getTop(density) + with(density) { 20.dp.toPx() }
+            val bottom = androidx.compose.foundation.layout.WindowInsets.navigationBarsIgnoringVisibility.getBottom(density) + with(density) { 44.dp.toPx() }
+            io.github.christiandonatti.fwip.book.bookPageRect(fullW, fullH, top, bottom, books3d.bookScale, double, io.github.christiandonatti.fwip.book.COMIC_ASPECT)
+        } else Rect(0f, 0f, fullW, fullH)
+        val wPx = pageRect.width.roundToInt().coerceAtLeast(1)
+        val hPx = pageRect.height.roundToInt().coerceAtLeast(1)
         val host = remember(spreads, double, rtl, cache, wPx, hPx, shownWide) {
             ReaderHost(spreads, double, rtl, cache, if (double) wPx / 2 else wPx, hPx, shownWide)
         }
@@ -490,6 +517,45 @@ private fun Reader(
         val flatZoom = remember { ZoomState() }
         // The paper reader follows layout changes itself; the others start over with them.
         val readerKey: Any = if (scroll || turnStyle != TurnStyle.Curl) host else listOf(double, rtl, cache, wPx, hPx)
+        // ---------- The place and the book around the pages (3D) ----------
+        val cover by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, cache, in3d) {
+            if (in3d) value = runCatching { cache.get(0, host.wFor(0), host.decodeH) }.getOrNull()
+        }
+        val board = remember(cover, books3d.scene) { io.github.christiandonatti.fwip.book.boardColor(cover, androidx.compose.ui.graphics.Color(books3d.scene.cover)) }
+        var opened by rememberSaveable { mutableStateOf(false) }
+        val scenePhoto = books3d.isPhoto(books3d.scene) && io.github.christiandonatti.fwip.book.scene.scenePhotoExists(context, books3d.scene)
+        val sceneMotion = books3d.sceneMotion && !reduceMotion && light.ink == InkLook.Off
+        val sceneParallax = books3d.parallax && !reduceMotion
+        if (in3d) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .pointerInput(rtl, guide) {
+                        detectTapGestures { p ->
+                            val x = p.x / size.width
+                            val side = when { x < 0.3f -> -1; x > 0.7f -> 1; else -> 0 }
+                            if (guide != null && side != 0) { if ((side > 0) != rtl) nextStop() else prevStop(); return@detectTapGestures }
+                            when (val move = settings.tapZones.move(side, rtl)) {
+                                0 -> chrome = !chrome
+                                else -> commands.tryEmit(NavCommand.Go(move))
+                            }
+                        }
+                    },
+            ) {
+                io.github.christiandonatti.fwip.book.scene.SceneBackground(books3d.scene, scenePhoto, sceneMotion, sceneParallax)
+            }
+            val fraction = if (spreads.size > 1) spread.toFloat() / (spreads.size - 1) else 0f
+            io.github.christiandonatti.fwip.book.BookBody(pageRect, double, board, paper3d, if (rtl) 1f - fraction else fraction)
+        }
+        Box(
+            if (in3d) {
+                Modifier
+                    .offset { IntOffset(pageRect.left.roundToInt(), pageRect.top.roundToInt()) }
+                    .size(with(density) { pageRect.width.toDp() }, with(density) { pageRect.height.toDp() })
+                    .clipToBounds()
+                    .background(paper3d)
+            } else Modifier.fillMaxSize(),
+        ) {
         androidx.compose.runtime.CompositionLocalProvider(LocalPageGestures provides pageGestures) {
         key(readerKey, turnStyle, scroll) {
             if (scroll) {
@@ -528,6 +594,17 @@ private fun Reader(
             }
         }
         }
+        }
+        if (in3d) {
+            io.github.christiandonatti.fwip.book.BookFront(pageRect, double)
+            if (!opened) {
+                io.github.christiandonatti.fwip.book.CoverOpening(
+                    pageRect, double, remember(cover) { cover?.asImageBitmap() }, board,
+                    ready = cover != null,
+                    place = { io.github.christiandonatti.fwip.book.scene.SceneBackground(books3d.scene, scenePhoto, sceneMotion, sceneParallax) },
+                ) { opened = true }
+            }
+        }
 
         // Front light over the pages: warmth, the veil below the minimum, the matte e-ink film
         // (the controls stay true to colour).
@@ -541,7 +618,7 @@ private fun Reader(
         val z = zoom
         if (target != null && z != null) {
             GuideSpotlight(
-                Rect(z.toScreen(target.topLeft), z.toScreen(target.bottomRight)),
+                Rect(z.toScreen(target.topLeft), z.toScreen(target.bottomRight)).translate(pageRect.topLeft),
                 spotAlpha,
                 panel = guide == GuideKind.Panels,
             )

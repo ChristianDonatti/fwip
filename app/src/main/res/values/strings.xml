@@ -984,4 +984,8 @@
     <string name="update_bad_file">the downloaded file is not a Fwip update</string>
     <string name="update_not_newer">the file is not newer than the version installed</string>
     <string name="update_other_key">the file is signed with a different key than the Fwip installed (a test build and an official version cannot replace each other)</string>
+    <string name="comic3d">3D comic</string>
+    <string name="comic3d_hint">The comic becomes a real book lying in a place, with cover, page edges and paper turns.</string>
+    <string name="comic3d_section">3D comic and place</string>
+    <string name="comic3d_places">Choose the place</string>
 </resources>

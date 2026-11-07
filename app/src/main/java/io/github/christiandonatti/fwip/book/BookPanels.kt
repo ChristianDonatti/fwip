@@ -607,10 +607,17 @@ internal fun HighlightDialog(highlight: BookHighlight, onSave: (BookHighlight) -
 
 /** The 3D book, where it lies, and the sound around it: in the reader and in Settings > Books. */
 @Composable
-fun BookSceneSettings(settings: BookSettings) {
+fun BookSceneSettings(
+    settings: BookSettings,
+    threeD: Boolean = settings.book3d,
+    onThreeD: (Boolean) -> Unit = { settings.updateBook3d(it) },
+    toggleTitle: String = str(R.string.scene_book3d),
+    toggleHint: String = str(R.string.scene_book3d_hint),
+    toggleKey: String = "book3d",
+) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Toggle(str(R.string.scene_book3d), str(R.string.scene_book3d_hint), settings.book3d, { settings.updateBook3d(it) }, key = "book3d")
+        Toggle(toggleTitle, toggleHint, threeD, onThreeD, key = toggleKey)
         Section(str(R.string.scene_place))
         FlowRow(
             Modifier.settingAnchor("scene"),
@@ -623,7 +630,7 @@ fun BookSceneSettings(settings: BookSettings) {
                     Modifier
                         .width(132.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .clickable(role = Role.RadioButton) { settings.updateScene(sc); if (!settings.book3d) settings.updateBook3d(true) },
+                        .clickable(role = Role.RadioButton) { settings.updateScene(sc); if (!threeD) onThreeD(true) },
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     io.github.christiandonatti.fwip.book.scene.SceneThumb(

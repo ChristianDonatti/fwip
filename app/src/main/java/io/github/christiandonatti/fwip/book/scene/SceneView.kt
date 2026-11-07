@@ -177,3 +177,24 @@ private fun DrawScope.drawCover(image: ImageBitmap) {
     // A little darker, so the book stands out.
     drawRect(Color.Black.copy(alpha = 0.12f))
 }
+
+/** The sound of [scene] while [on] and the app is in front; quiet otherwise. */
+@Composable
+fun SceneSound(on: Boolean, scene: Scene, volume: Float, duck: Boolean = false) {
+    val ambient = remember { AmbientSound() }
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    var started by remember { androidx.compose.runtime.mutableStateOf(true) }
+    androidx.compose.runtime.DisposableEffect(lifecycle) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_START) started = true
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_STOP) started = false
+        }
+        lifecycle.addObserver(obs)
+        onDispose { lifecycle.removeObserver(obs); ambient.stop() }
+    }
+    ambient.volume = volume
+    ambient.duck = duck
+    androidx.compose.runtime.LaunchedEffect(on, scene, started) {
+        if (on && started) ambient.play(scene.sound) else ambient.stop()
+    }
+}

@@ -144,6 +144,7 @@ private fun entries(): List<SettingEntry> {
         e(SettingsGroup.Light, "awake", R.string.keep_screen_on),
         e(SettingsGroup.Light, "rotation", R.string.rotation),
         e(SettingsGroup.Comics, "turn", R.string.page_turn),
+        e(SettingsGroup.Comics, "comic3d", R.string.comic3d, "3d livro book lareira biblioteca montanha parque praia chuva noite escrivaninha ambiente lugar place scene"),
         e(SettingsGroup.Comics, "spread", R.string.pages_on_screen),
         e(SettingsGroup.Comics, "manga", R.string.manga_mode),
         e(SettingsGroup.Comics, "crop", R.string.crop_margins),
