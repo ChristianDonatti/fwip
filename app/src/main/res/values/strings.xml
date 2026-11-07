@@ -988,4 +988,8 @@
     <string name="comic3d_hint">The comic becomes a real book lying in a place, with cover, page edges and paper turns.</string>
     <string name="comic3d_section">3D comic and place</string>
     <string name="comic3d_places">Choose the place</string>
+    <string name="news_comic3d">Comics in 3D too</string>
+    <string name="news_comic3d_text">Comics can be read as a 3D book in the same places, with the cover opening and pages curling. Turn it on in the reader\'s settings.</string>
+    <string name="news_inapp_update">Updates inside the app</string>
+    <string name="news_inapp_update_text">When a new version is out, Update downloads and installs it right in Fwip, no browser needed. The first time, Android asks you to allow it.</string>
 </resources>

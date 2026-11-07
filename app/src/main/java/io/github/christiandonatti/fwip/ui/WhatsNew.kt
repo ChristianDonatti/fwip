@@ -51,6 +51,8 @@ object WhatsNew {
         NewsItem(3, GroupGlyph.Book, R.string.news_book3d, R.string.news_book3d_text, "books/book3d"),
         NewsItem(3, GroupGlyph.Sun, R.string.news_scenes, R.string.news_scenes_text, "books/scene"),
         NewsItem(3, GroupGlyph.Panels, R.string.news_paper_books, R.string.news_paper_books_text, "books/bookTurn"),
+        NewsItem(3, GroupGlyph.Panels, R.string.news_comic3d, R.string.news_comic3d_text, "comics/comic3d"),
+        NewsItem(3, GroupGlyph.Sync, R.string.news_inapp_update, R.string.news_inapp_update_text, null),
     )
 
     val latest: Int get() = items.maxOf { it.batch }

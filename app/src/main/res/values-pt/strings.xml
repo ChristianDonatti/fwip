@@ -987,4 +987,8 @@
     <string name="comic3d_hint">A HQ vira um livro de verdade deitado num ambiente, com capa, lateral das folhas e virada de papel.</string>
     <string name="comic3d_section">HQ em 3D e ambiente</string>
     <string name="comic3d_places">Escolher o ambiente</string>
+    <string name="news_comic3d">HQs em 3D também</string>
+    <string name="news_comic3d_text">As HQs também podem ser lidas como livro 3D nos mesmos ambientes, com a capa abrindo e as páginas virando. Ligue nos ajustes do leitor.</string>
+    <string name="news_inapp_update">Atualização dentro do app</string>
+    <string name="news_inapp_update_text">Quando sai uma versão nova, Atualizar baixa e instala direto no Fwip, sem navegador. Na primeira vez o Android pede sua permissão.</string>
 </resources>
