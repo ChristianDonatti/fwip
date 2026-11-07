@@ -12,6 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.size
@@ -74,6 +75,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -207,9 +209,17 @@ internal fun preferencesFor(s: BookSettings, ink: InkLook, spread: Boolean? = nu
 }
 
 /** The navigator's configuration: Fwip's fonts (shipped and the user's), the selection menu. */
-private fun navigatorConfiguration(context: Context, selection: ActionMode.Callback): EpubNavigatorFragment.Configuration =
+private fun navigatorConfiguration(context: Context, selection: ActionMode.Callback, twoColumns: Boolean): EpubNavigatorFragment.Configuration =
     EpubNavigatorFragment.Configuration {
         servedAssets = listOf("fonts/.*")
+        // Readium CSS only splits into two columns on views wider than 60em. The 3D book's pages are
+        // often narrower than that, so its two pages are asked for directly.
+        if (twoColumns) {
+            readiumCssRsProperties = org.readium.r2.navigator.epub.css.RsProperties(
+                colCount = org.readium.r2.navigator.epub.css.ColCount.TWO,
+                colWidth = org.readium.r2.navigator.epub.css.Length.Px(10.0),
+            )
+        }
         selectionActionModeCallback = selection
         fun shipped(family: String, file: String) = addFontFamilyDeclaration(FontFamily(family)) {
             addFontFace { addSource("fonts/$file-latin-400-normal.woff2"); setFontStyle(FontStyle.NORMAL); setFontWeight(FontWeight.NORMAL) }
@@ -427,6 +437,28 @@ private fun BookReader(
                 Modifier
                     .fillMaxSize()
                     .pointerInput(Unit) {
+                        // A page can be pulled from anywhere around the book, not only on it.
+                        val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                        var ours = false
+                        detectHorizontalDragGestures(
+                            onDragStart = { tracker.resetTracking() },
+                            onDragEnd = { if (ours) turner.dragEnd(tracker.calculateVelocity().x, finished = true); ours = false },
+                            onDragCancel = { if (ours) turner.dragEnd(0f, finished = false); ours = false },
+                        ) { change, dx ->
+                            tracker.addPosition(change.uptimeMillis, change.position)
+                            val r = turner.pageRect
+                            val p = change.position
+                            if (!ours) {
+                                val start = p - Offset(dx, 0f)
+                                ours = turner.dragStart(start.x - r.left, start.y.coerceIn(r.top, r.bottom) - r.top, dx)
+                            }
+                            if (ours) {
+                                change.consume()
+                                turner.dragMove(p.x - r.left, p.y.coerceIn(r.top, r.bottom) - r.top)
+                            }
+                        }
+                    }
+                    .pointerInput(Unit) {
                         detectTapGestures { p ->
                             val x = p.x / size.width
                             when {
@@ -448,7 +480,8 @@ private fun BookReader(
             BookBody(pageRect, spread, board, Color(pageBg), fraction)
         }
         // A new font of the user's needs a new navigator to declare it; it opens where we were.
-        key(UserFonts.version) {
+        val twoColumns = spread && (turner.enabled || book3d)
+        key(UserFonts.version, twoColumns) {
             NavigatorHost(
                 modifier = Modifier
                     .offset { IntOffset(pageRect.left.toInt(), pageRect.top.toInt()) }
@@ -457,7 +490,7 @@ private fun BookReader(
                 publication = publication,
                 initial = remember { locator ?: initial },
                 preferences = prefs,
-                configuration = remember { navigatorConfiguration(context, selection) },
+                configuration = remember { navigatorConfiguration(context, selection, twoColumns) },
                 onExternalLink = { url -> runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url.toString())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } },
                 onReady = { navigator = it; turner.navigator = it },
             )

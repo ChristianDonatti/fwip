@@ -100,10 +100,32 @@ class PageTurner(private val scope: CoroutineScope) {
         val moved = if (forward) n.goForward(animated = false) else n.goBackward(animated = false)
         if (!moved) return false
         val now = withTimeoutOrNull(900) { n.currentLocator.first { it != old } }
-        // The web view paints a frame or two after reporting where it is; a new chapter takes longer.
+        // The web view paints a frame or two after reporting where it is; a new chapter takes longer,
+        // so wait until the page shows something (up to about a second and a half).
         repeat(3) { withFrameNanos { } }
-        delay(if (now != null && now.href != old?.href) 180 else 40)
+        if (now != null && now.href != old?.href) {
+            delay(120)
+            repeat(14) {
+                if (capture()?.let(::hasInk) == true) return true
+                delay(100)
+            }
+        } else {
+            delay(40)
+        }
         return true
+    }
+
+    /** Whether a page picture has anything on it besides the paper (a blank web view has not painted yet). */
+    private fun hasInk(b: Bitmap): Boolean {
+        val bg = b.getPixel(b.width / 2, 2)
+        fun far(c: Int): Boolean {
+            val d = abs(((c shr 16) and 255) - ((bg shr 16) and 255)) + abs(((c shr 8) and 255) - ((bg shr 8) and 255)) + abs((c and 255) - (bg and 255))
+            return d > 60
+        }
+        for (gy in 1 until 40) for (gx in 1 until 24) {
+            if (far(b.getPixel(b.width * gx / 24, b.height * gy / 40))) return true
+        }
+        return false
     }
 
     /** A turn from a tap, a key or a page turner. */

@@ -37,6 +37,8 @@ stopapp() { timeout 20 adb shell am force-stop $APP; sleep 1; }
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell settings put system screen_off_timeout 1800000
 adb shell svc power stayon true
+# No "Viewing full screen" bubble over every shot.
+adb shell settings put secure immersive_mode_confirmations confirmed
 adb shell wm size ${W}x${H}
 adb shell wm density 240
 adb shell pm clear $APP
@@ -44,7 +46,7 @@ adb shell "run-as $APP mkdir -p files/Baixadas shared_prefs"
 python3 scripts/look_prefs.py welcomed=true seenVersion=i:999999 > /tmp/ui.xml
 for k in 1 2 3; do put /tmp/ui.xml shared_prefs/fwip_ui.xml; adb shell "run-as $APP cat shared_prefs/fwip_ui.xml" | grep -q welcomed && break; done
 for f in books/Quiet_Street_1.epub books/Dom_Casmurro.epub; do [ -f "$f" ] && put "$f" "files/Baixadas/$(basename "$f")"; done
-books book3d=true scene=Fireplace ambientSound=false "photoScenes=set:Fireplace"
+books book3d=true scene=Fireplace ambientSound=false "photoScenes=set:Fireplace" sceneMotion=false parallax=false
 timeout 10 adb logcat -c -b crash
 timeout 20 adb shell am start -n $APP/.MainActivity; sleep 30
 
@@ -57,15 +59,19 @@ sleep 0.6; quick t02-cover-opening
 shot t03-open 6
 crashes open
 # Turn by tap: catch it in the middle.
-timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick t04-turning; wait $!
+timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick t04a-turning; wait $!; sleep 0.25; quick t04b-turning; sleep 0.3; quick t04c-turning
 shot t05-turned 2
 # Turn by finger, held in the middle of the drag.
-timeout 20 adb shell input swipe $(( W - 260 )) $(( H - 300 )) $(( W / 2 )) $(( H - 380 )) 1500 & sleep 0.9; quick t06-dragging; wait $!
+# On the book (right page, low corner), then from the scene beside it.
+timeout 20 adb shell input swipe 1400 $(( H - 330 )) 700 $(( H - 420 )) 1500 & sleep 1.0; quick t06-dragging; wait $!
+shot t06b-dragged 2
+timeout 20 adb shell input swipe $(( W - 150 )) $(( H / 2 )) 600 $(( H / 2 - 60 )) 1500 & sleep 1.0; quick t06c-dragging-scene; wait $!
 shot t07-dragged 2
 timeout 20 adb shell input tap 120 $(( H / 2 )) & sleep 0.45; quick t08-back-turning; wait $!
 shot t09-back 2
 crashes turns
-tap $(( W / 2 )) $(( H / 2 ))
+# The scene stands still here so uiautomator can settle and find the buttons.
+python3 -c "import sys; sys.path.insert(0, 'scripts'); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)" '^3D\|' || tap $(( W / 2 )) $(( H / 2 ))
 shot t10-chrome 1
 ui '^3D\|' ; shot t11-scene-panel 2
 timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 150 )) $(( W / 2 )) $(( H / 3 )) 500; shot t12-scene-panel-more 1
@@ -99,11 +105,11 @@ adb shell wm density 420
 books book3d=true scene=Park ambientSound=false "photoScenes=set:Park"
 openb $BOOK 10
 shot f01-phone-3d 3
-timeout 20 adb shell input tap 980 1200 & sleep 0.45; quick f02-phone-turning; wait $!
+timeout 20 adb shell input tap 980 1200 & sleep 0.6; quick f02-phone-turning; wait $!; sleep 0.3; quick f02b-phone-turning
 shot f03-phone-turned 2
 tap 540 1200
 shot f04-phone-chrome 1
-ui '\|More options$' ; shot f05-phone-menu 1
+tap 988 146; shot f05-phone-menu 1
 back 2
 crashes phone
 note done
