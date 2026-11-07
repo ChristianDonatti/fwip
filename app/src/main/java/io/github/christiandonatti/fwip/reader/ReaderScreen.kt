@@ -535,8 +535,12 @@ private fun Reader(
         val scenePhoto = books3d.isPhoto(books3d.scene) && io.github.christiandonatti.fwip.book.scene.scenePhotoExists(context, books3d.scene)
         val sceneMotion = books3d.sceneMotion && !reduceMotion && light.ink == InkLook.Off
         val sceneParallax = books3d.parallax && !reduceMotion
+        // Test switches for the emulator check (no UI): leave parts of the 3D book out.
+        val dbg = remember { context.getSharedPreferences("fwip_debug", Context.MODE_PRIVATE) }
+        val noScene = dbg.getBoolean("noScene", false)
+        val noBody = dbg.getBoolean("noBody", false)
         if (in3d) {
-            Box(
+            if (!noScene) Box(
                 Modifier
                     .fillMaxSize()
                     .pointerInput(rtl, guide) {
@@ -554,7 +558,7 @@ private fun Reader(
                 io.github.christiandonatti.fwip.book.scene.SceneBackground(books3d.scene, scenePhoto, sceneMotion, sceneParallax)
             }
             val fraction = if (spreads.size > 1) spread.toFloat() / (spreads.size - 1) else 0f
-            io.github.christiandonatti.fwip.book.BookBody(pageRect, double, board, paper3d, if (rtl) 1f - fraction else fraction)
+            if (!noBody) io.github.christiandonatti.fwip.book.BookBody(pageRect, double, board, paper3d, if (rtl) 1f - fraction else fraction)
         }
         Box(
             if (in3d) {
@@ -604,8 +608,8 @@ private fun Reader(
         }
         }
         if (in3d) {
-            io.github.christiandonatti.fwip.book.BookFront(pageRect, double)
-            if (!opened) {
+            if (!noBody) io.github.christiandonatti.fwip.book.BookFront(pageRect, double)
+            if (!opened && !noBody) {
                 io.github.christiandonatti.fwip.book.CoverOpening(
                     pageRect, double, remember(cover) { cover?.asImageBitmap() }, board,
                     ready = cover != null,
