@@ -50,6 +50,15 @@ books book3d=true scene=Fireplace ambientSound=false "photoScenes=set:Fireplace"
 timeout 10 adb logcat -c -b crash
 timeout 20 adb shell am start -n $APP/.MainActivity; sleep 30
 
+# ---- Comics flat first: does the paper turn itself hold up on this emulator? ----
+stopapp
+python3 scripts/look_prefs.py comic3d=false > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
+openb PepperCarrot_01.cbz 10
+shot k01-flat-comic 1
+timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.35; quick k02-flat-turning; wait $!
+shot k03-flat-turned 2
+crashes comic-flat
+
 # ---- Comics in 3D ----
 stopapp
 # Everything the device says, live, so the last words before any trouble are kept.
