@@ -40,6 +40,8 @@ ui '^Update\|^UPDATE\|^Install\|^INSTALL' && note "confirmed"
 shot u06-installing 4
 for k in $(seq 1 20); do sleep 3; v=$(version); echo "$v" | grep -q 'versionCode=5 ' || break; done
 note "after: $(version)"
+note "notification: $(adb shell dumpsys notification --noredact | grep -c 'Fwip.*installed\|pkg=io.github.christiandonatti.fwip.*id=43')"
+timeout 20 adb shell cmd statusbar expand-notifications; shot u06b-notification 2; timeout 20 adb shell cmd statusbar collapse
 timeout 20 adb shell am start -n $APP/.MainActivity
 shot u07-after 8
 note done

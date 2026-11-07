@@ -972,7 +972,7 @@
     <string name="news_paper_books_text">As páginas dos livros agora viram como papel por padrão, mesmo sem o livro 3D. Instantâneo, deslizar e rolagem continuam no Aa.</string>
     <string name="update_install">Atualizar</string>
     <string name="update_downloading">Baixando %1$d%%</string>
-    <string name="update_installing">Instalando…</string>
+    <string name="update_installing">Instalando… o Fwip fecha por um instante</string>
     <string name="update_confirm">Instalar</string>
     <string name="update_allow">Permitir</string>
     <string name="update_allow_text">O Android precisa da sua permissão uma vez para o Fwip instalar as próprias atualizações. Ative \"Permitir desta fonte\" e volte: a atualização continua sozinha.</string>
@@ -991,4 +991,6 @@
     <string name="news_comic3d_text">As HQs também podem ser lidas como livro 3D nos mesmos ambientes, com a capa abrindo e as páginas virando. Ligue nos ajustes do leitor.</string>
     <string name="news_inapp_update">Atualização dentro do app</string>
     <string name="news_inapp_update_text">Quando sai uma versão nova, Atualizar baixa e instala direto no Fwip, sem navegador. Na primeira vez o Android pede sua permissão.</string>
+    <string name="updated_title">Fwip %1$s instalado</string>
+    <string name="updated_text">Toque para abrir a versão nova.</string>
 </resources>

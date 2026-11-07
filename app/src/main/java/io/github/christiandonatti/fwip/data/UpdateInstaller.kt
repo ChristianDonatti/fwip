@@ -211,6 +211,8 @@ object UpdateInstaller {
 
     private fun install(context: Context, file: File) {
         step = UpdateStep.Installing
+        // Android closes Fwip to replace it; this note lets the new version say it is ready.
+        context.getSharedPreferences("fwip_updates", Context.MODE_PRIVATE).edit().putLong("installing", System.currentTimeMillis()).apply()
         val installer = context.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(context.packageName)
@@ -259,4 +261,35 @@ object UpdateInstaller {
 /** Android's answer about an update session: ask the user, done, or why it failed. */
 class UpdateInstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) = UpdateInstaller.onResult(context, intent)
+}
+
+/**
+ * Fwip was just replaced by a newer version. Android closed it to do that and does not let an app
+ * reopen itself from the background, so after an update made inside the app a notification says
+ * it is ready and opens it with a tap.
+ */
+class UpdatedReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
+        val prefs = context.getSharedPreferences("fwip_updates", Context.MODE_PRIVATE)
+        val at = prefs.getLong("installing", 0L)
+        prefs.edit().remove("installing").apply()
+        if (at == 0L || System.currentTimeMillis() - at > 30 * 60 * 1000L) return
+        val nm = context.getSystemService(android.app.NotificationManager::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            nm.createNotificationChannel(
+                android.app.NotificationChannel("updates", context.getString(R.string.updates), android.app.NotificationManager.IMPORTANCE_HIGH),
+            )
+        }
+        val open = Intent(context, io.github.christiandonatti.fwip.MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val pending = PendingIntent.getActivity(context, 8, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val n = androidx.core.app.NotificationCompat.Builder(context, "updates")
+            .setSmallIcon(R.drawable.ic_stat_balloon)
+            .setContentTitle(context.getString(R.string.updated_title, BuildConfig.VERSION_NAME))
+            .setContentText(context.getString(R.string.updated_text))
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .build()
+        runCatching { androidx.core.app.NotificationManagerCompat.from(context).notify(43, n) }
+    }
 }
