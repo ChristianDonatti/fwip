@@ -285,6 +285,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                             startPage = start,
                             onClose = viewModel::closeReader,
                             onProgress = { page, count -> viewModel.saveProgress(comic, page, count) },
+                            coverPath = item?.coverPath,
                         ) else ReaderScreen(
                             comic = comic,
                             title = item?.title ?: comic.title,

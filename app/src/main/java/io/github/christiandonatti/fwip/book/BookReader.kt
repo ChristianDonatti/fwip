@@ -6,6 +6,19 @@
 
 package io.github.christiandonatti.fwip.book
 
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.BoxWithConstraints
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -159,7 +172,7 @@ internal fun pageColors(theme: BookTheme, ink: InkLook): Pair<Int, Int> = when {
     else -> 0xFFE6E3DA.toInt() to 0xFF1E1E21.toInt()
 }
 
-internal fun preferencesFor(s: BookSettings, ink: InkLook): EpubPreferences {
+internal fun preferencesFor(s: BookSettings, ink: InkLook, spread: Boolean? = null): EpubPreferences {
     val (bg, fg) = pageColors(s.theme, ink)
     val family = when (s.font) {
         BookFontKind.Original -> null
@@ -181,9 +194,15 @@ internal fun preferencesFor(s: BookSettings, ink: InkLook): EpubPreferences {
         pageMargins = s.margins.toDouble(),
         textAlign = if (s.publisherStyles) null else if (s.justify) ReadiumTextAlign.JUSTIFY else ReadiumTextAlign.START,
         hyphens = if (s.publisherStyles) null else s.hyphens,
-        columnCount = when (s.columns) { BookColumns.Auto -> ColumnCount.AUTO; BookColumns.One -> ColumnCount.ONE; BookColumns.Two -> ColumnCount.TWO },
+        // When pages turn like paper the turner must know where the spine is, so "automatic" is decided here.
+        columnCount = when {
+            spread != null -> if (spread) ColumnCount.TWO else ColumnCount.ONE
+            s.columns == BookColumns.One -> ColumnCount.ONE
+            s.columns == BookColumns.Two -> ColumnCount.TWO
+            else -> ColumnCount.AUTO
+        },
         publisherStyles = s.publisherStyles,
-        scroll = s.turn == BookTurn.Scroll,
+        scroll = s.turn == BookTurn.Scroll && !s.book3d,
     )
 }
 
@@ -220,6 +239,7 @@ fun BookReaderScreen(
     startPage: Int,
     onClose: () -> Unit,
     onProgress: (page: Int, pageCount: Int) -> Unit,
+    coverPath: String? = null,
 ) {
     val context = LocalContext.current
     val light = remember { LightSettings.get(context) }
@@ -246,7 +266,7 @@ fun BookReaderScreen(
                 Text(l.message, style = MaterialTheme.typography.bodyMedium, color = Color(fg).copy(alpha = 0.7f), textAlign = TextAlign.Center)
                 PillButton(str(R.string.back), onClose)
             }
-            is BookLoad.Ready -> BookReader(comic, title, author, l.book, startPage, settings, light, onClose, onProgress)
+            is BookLoad.Ready -> BookReader(comic, title, author, l.book, startPage, settings, light, onClose, onProgress, coverPath)
         }
     }
 }
@@ -262,9 +282,11 @@ private fun BookReader(
     light: LightSettings,
     onClose: () -> Unit,
     onProgress: (Int, Int) -> Unit,
+    coverPath: String?,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val turner = remember { PageTurner(scope) }
     val notes = remember(comic.id) { BookNotes.load(context, comic.id) }
     var notesVersion by remember { mutableIntStateOf(0) }
     var navigator by remember { mutableStateOf<EpubNavigatorFragment?>(null) }
@@ -286,6 +308,7 @@ private fun BookReader(
     val selection = remember {
         object : ActionMode.Callback {
             override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
+                turner.selecting = true
                 menu.add(0, 1, 0, str(R.string.book_highlight))
                 menu.add(0, 2, 1, str(R.string.book_note))
                 menu.add(0, 3, 2, str(R.string.book_copy))
@@ -341,48 +364,125 @@ private fun BookReader(
                 mode.finish()
                 return true
             }
-            override fun onDestroyActionMode(mode: ActionMode) {}
+            override fun onDestroyActionMode(mode: ActionMode) { turner.selecting = false }
         }
     }
 
     val ink = light.ink
-    val prefs = preferencesFor(settings, ink)
     val reduceMotion = remember { io.github.christiandonatti.fwip.ui.A11y.reduceMotion(context) }
+    val book3d = settings.book3d
     ImmersiveBars(visible = chrome || panel != null)
+    val feedback = io.github.christiandonatti.fwip.reader.rememberTurnFeedback()
+    val reader = remember { ReaderSettings.get(context) }
+    turner.onTurned = { feedback.turn(reader.turnHaptic, reader.turnSound, reader.soundKind) }
+    turner.enabled = (book3d || settings.turn == BookTurn.Paper) && !reduceMotion
+    // Ambient sound of the scene, only while reading in 3D and the app is in front.
+    val ambient = remember { io.github.christiandonatti.fwip.book.scene.AmbientSound() }
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    var resumed by remember { mutableStateOf(true) }
+    DisposableEffect(lifecycle) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_START) resumed = true
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_STOP) resumed = false
+        }
+        lifecycle.addObserver(obs)
+        onDispose { lifecycle.removeObserver(obs); ambient.stop() }
+    }
+    ambient.volume = settings.ambientVolume
+    ambient.duck = speaker.playing
+    LaunchedEffect(book3d, settings.ambientSound, settings.scene, resumed) {
+        if (book3d && settings.ambientSound && resumed) ambient.play(settings.scene.sound) else ambient.stop()
+    }
+    val cover = remember(coverPath) { coverPath?.let { runCatching { android.graphics.BitmapFactory.decodeFile(it) }.getOrNull() } }
+    val board = remember(cover, settings.scene) { boardColor(cover, Color(settings.scene.cover)) }
+    var opened by remember { mutableStateOf(false) }
 
-    Box(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val wPx = constraints.maxWidth.toFloat()
+        val hPx = constraints.maxHeight.toFloat()
+        val topInset = WindowInsets.statusBarsIgnoringVisibility.getTop(density).toFloat()
+        val bottomInset = WindowInsets.navigationBarsIgnoringVisibility.getBottom(density).toFloat()
+        val wide = maxWidth > maxHeight && maxWidth >= 600.dp
+        val spread = when {
+            book3d -> wide
+            settings.columns == BookColumns.One -> false
+            settings.columns == BookColumns.Two -> true
+            else -> wide
+        }
+        val pageRect = if (book3d) {
+            bookPageRect(wPx, hPx, topInset + with(density) { 20.dp.toPx() }, bottomInset + with(density) { 44.dp.toPx() }, settings.bookScale, spread)
+        } else {
+            // A paper margin above and below the text, as in a printed book; the bottom one holds the time left.
+            androidx.compose.ui.geometry.Rect(0f, topInset + with(density) { 18.dp.toPx() }, wPx, hPx - bottomInset - with(density) { 30.dp.toPx() })
+        }
+        turner.pageRect = pageRect
+        turner.spread = spread
+        val prefs = preferencesFor(settings, ink, spread = if (turner.enabled || book3d) spread else null)
+        val (pageBg, _) = pageColors(settings.theme, ink)
+        val fraction = locator?.locations?.totalProgression?.toFloat() ?: 0f
+
+        if (book3d) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures { p ->
+                            val x = p.x / size.width
+                            when {
+                                panel != null -> panel = null
+                                x < 0.3f -> turner.turnPage(false)
+                                x > 0.7f -> turner.turnPage(true)
+                                else -> chrome = !chrome
+                            }
+                        }
+                    },
+            ) {
+                io.github.christiandonatti.fwip.book.scene.SceneBackground(
+                    scene = settings.scene,
+                    photo = settings.isPhoto(settings.scene) && io.github.christiandonatti.fwip.book.scene.scenePhotoExists(context, settings.scene),
+                    motion = settings.sceneMotion && !reduceMotion && ink == InkLook.Off,
+                    parallax = settings.parallax && !reduceMotion,
+                )
+            }
+            BookBody(pageRect, spread, board, Color(pageBg), fraction)
+        }
         // A new font of the user's needs a new navigator to declare it; it opens where we were.
         key(UserFonts.version) {
             NavigatorHost(
-                // A paper margin above and below the text, as in a printed book; the bottom one holds the time left.
                 modifier = Modifier
-                    .fillMaxSize()
-                    .windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.only(WindowInsetsSides.Top))
-                    .windowInsetsPadding(WindowInsets.navigationBarsIgnoringVisibility.only(WindowInsetsSides.Bottom))
-                    .padding(top = 18.dp, bottom = 30.dp),
+                    .offset { IntOffset(pageRect.left.toInt(), pageRect.top.toInt()) }
+                    .size(with(density) { pageRect.width.toDp() }, with(density) { pageRect.height.toDp() }),
+                turner = turner,
                 publication = publication,
                 initial = remember { locator ?: initial },
                 preferences = prefs,
                 configuration = remember { navigatorConfiguration(context, selection) },
                 onExternalLink = { url -> runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url.toString())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } },
-                onReady = { navigator = it },
+                onReady = { navigator = it; turner.navigator = it },
             )
+        }
+        if (book3d) BookFront(pageRect, spread)
+        TurnOverlay(turner, Color(pageBg))
+        if (book3d && !opened) {
+            CoverOpening(pageRect, spread, remember(cover) { cover?.asImageBitmap() }, board) { opened = true }
         }
 
         // ---------- What the navigator tells us ----------
         val nav = navigator
         LaunchedEffect(nav, prefs) { nav?.submitPreferences(prefs) }
+        turner.onEnd = { chrome = true }
         LaunchedEffect(nav) {
             val n = nav ?: return@LaunchedEffect
-            val reader = ReaderSettings.get(context)
             n.addInputListener(object : InputListener {
                 override fun onTap(event: TapEvent): Boolean {
                     val w = n.publicationView.width.coerceAtLeast(1)
                     val x = event.point.x / w
                     val side = when { x < 0.28f -> -1; x > 0.72f -> 1; else -> 0 }
-                    val move = if (settings.turn == BookTurn.Scroll) 0 else reader.tapZones.move(side, rtl = false)
+                    val move = if (settings.turn == BookTurn.Scroll && !settings.book3d) 0 else reader.tapZones.move(side, rtl = false)
                     when {
                         panel != null -> panel = null
+                        move != 0 && turner.enabled -> turner.turnPage(move > 0)
                         move > 0 -> n.goForward(animated = settings.turn == BookTurn.Slide && !reduceMotion)
                         move < 0 -> n.goBackward(animated = settings.turn == BookTurn.Slide && !reduceMotion)
                         else -> chrome = !chrome
@@ -438,7 +538,11 @@ private fun BookReader(
             val n = nav ?: return@LaunchedEffect
             ReaderKeys.events.collect { k ->
                 val animated = settings.turn == BookTurn.Slide && !reduceMotion
-                if (k > 0) n.goForward(animated = animated) else n.goBackward(animated = animated)
+                when {
+                    turner.enabled -> turner.turnPage(k > 0)
+                    k > 0 -> n.goForward(animated = animated)
+                    else -> n.goBackward(animated = animated)
+                }
             }
         }
 
@@ -452,12 +556,13 @@ private fun BookReader(
             Text(
                 progressLabel(settings.progress, book, locator, notes),
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(pageColors(settings.theme, ink).second).copy(alpha = 0.55f),
+                color = if (book3d) Color.White.copy(alpha = 0.85f) else Color(pageColors(settings.theme, ink).second).copy(alpha = 0.55f),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.navigationBarsIgnoringVisibility)
-                    .padding(bottom = 6.dp)
+                    .padding(bottom = if (book3d) 10.dp else 6.dp)
                     .clip(RoundedCornerShape(10.dp))
+                    .background(if (book3d) Color.Black.copy(alpha = 0.35f) else Color.Transparent)
                     .clickable { settings.updateProgress(BookProgress.entries[(settings.progress.ordinal + 1) % BookProgress.entries.size]) }
                     .padding(horizontal = 12.dp, vertical = 4.dp),
             )
@@ -471,6 +576,7 @@ private fun BookReader(
             modifier = Modifier.align(Alignment.TopCenter),
         ) {
             val marked = remember(locator, notesVersion) { locator?.let { loc -> isMarked(notes, loc) } == true }
+            val compact = maxWidth < 600.dp
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -485,22 +591,44 @@ private fun BookReader(
                     Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(locator?.let { chapterTitle(publication, it) } ?: author.orEmpty(), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+                val toggleMark = {
+                    locator?.let { loc ->
+                        toggleMark(notes, publication, loc)
+                        notesVersion++
+                    }
+                    Unit
+                }
                 CircleIconButton(Icons.Filled.List, str(R.string.book_contents), { panel = BookPanel.Contents }, size = 44.dp)
-                CircleIconButton(Icons.Filled.Search, str(R.string.book_search), { panel = BookPanel.Search }, size = 44.dp)
-                TextIconButton("Aa", str(R.string.book_text_settings)) { panel = BookPanel.Text }
-                TextIconButton("♪", str(R.string.book_listen)) { panel = BookPanel.Listen }
-                CircleIconButton(
-                    Icons.Filled.Star,
-                    str(if (marked) R.string.book_unmark else R.string.book_mark),
-                    {
-                        locator?.let { loc ->
-                            toggleMark(notes, publication, loc)
-                            notesVersion++
+                if (compact) {
+                    // A phone: only what is used most; the rest in a menu.
+                    TextIconButton("Aa", str(R.string.book_text_settings)) { panel = BookPanel.Text }
+                    var menu by remember { mutableStateOf(false) }
+                    Box {
+                        CircleIconButton(Icons.Filled.MoreVert, str(R.string.more_options), { menu = true }, size = 44.dp)
+                        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = FwipColors.PanelHigh) {
+                            DropdownMenuItem(text = { Text(str(R.string.book_search)) }, leadingIcon = { Icon(Icons.Filled.Search, null) }, onClick = { menu = false; panel = BookPanel.Search })
+                            DropdownMenuItem(text = { Text(str(R.string.book_scene)) }, leadingIcon = { Text("3D", style = MaterialTheme.typography.labelMedium) }, onClick = { menu = false; panel = BookPanel.Scene })
+                            DropdownMenuItem(text = { Text(str(R.string.book_listen)) }, leadingIcon = { Text("♪") }, onClick = { menu = false; panel = BookPanel.Listen })
+                            DropdownMenuItem(
+                                text = { Text(str(if (marked) R.string.book_unmark else R.string.book_mark)) },
+                                leadingIcon = { Icon(Icons.Filled.Star, null, tint = if (marked) FwipColors.Amber else LocalContentColor.current) },
+                                onClick = { menu = false; toggleMark() },
+                            )
                         }
-                    },
-                    size = 44.dp,
-                    filled = marked,
-                )
+                    }
+                } else {
+                    CircleIconButton(Icons.Filled.Search, str(R.string.book_search), { panel = BookPanel.Search }, size = 44.dp)
+                    TextIconButton("Aa", str(R.string.book_text_settings)) { panel = BookPanel.Text }
+                    TextIconButton("3D", str(R.string.book_scene)) { panel = BookPanel.Scene }
+                    TextIconButton("♪", str(R.string.book_listen)) { panel = BookPanel.Listen }
+                    CircleIconButton(
+                        Icons.Filled.Star,
+                        str(if (marked) R.string.book_unmark else R.string.book_mark),
+                        toggleMark,
+                        size = 44.dp,
+                        filled = marked,
+                    )
+                }
             }
         }
         AnimatedVisibility(
@@ -591,6 +719,7 @@ private fun BookReader(
 @Composable
 private fun NavigatorHost(
     modifier: Modifier,
+    turner: PageTurner,
     publication: Publication,
     initial: Locator?,
     preferences: EpubPreferences,
@@ -603,7 +732,7 @@ private fun NavigatorHost(
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
-            FragmentContainerView(ctx).apply {
+            val container = FragmentContainerView(ctx).apply {
                 id = View.generateViewId()
                 doOnAttach {
                     val fm = activity.supportFragmentManager
@@ -619,6 +748,11 @@ private fun NavigatorHost(
                     fm.commitNow { add(id, EpubNavigatorFragment::class.java, android.os.Bundle(), tag) }
                     (fm.findFragmentByTag(tag) as? EpubNavigatorFragment)?.let(onReady)
                 }
+            }
+            // Swipes go to the page turner when pages turn like paper; everything else to the text.
+            TouchGate(ctx).apply {
+                this.turner = turner
+                addView(container, android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
             }
         },
     )

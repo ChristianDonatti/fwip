@@ -173,6 +173,10 @@ private fun entries(): List<SettingEntry> {
         e(SettingsGroup.Books, "bookColumns", R.string.book_columns),
         e(SettingsGroup.Books, "bookTurn", R.string.page_turn, "livro book"),
         e(SettingsGroup.Books, "bookProgress", R.string.book_progress, "kindle tempo time"),
+        e(SettingsGroup.Books, "book3d", R.string.scene_book3d, "3d livro book capa cover"),
+        e(SettingsGroup.Books, "scene", R.string.scene_place, "lareira biblioteca montanha parque praia chuva noite escrivaninha fire library mountain park beach rain night desk"),
+        e(SettingsGroup.Books, "ambientSound", R.string.scene_sound, "som sound"),
+        e(SettingsGroup.Books, "parallax", R.string.scene_parallax),
         e(SettingsGroup.Sync, "sync", R.string.sync_title),
         e(SettingsGroup.Sync, "upload", R.string.upload_title),
         e(SettingsGroup.Sync, "backup", R.string.backup_title),
@@ -539,6 +543,8 @@ private fun GroupPage(
         }
         SettingsGroup.Books -> Page(group.title, gutter, onBack, onReset = { io.github.christiandonatti.fwip.book.BookSettings.get(context).reset() }) {
             io.github.christiandonatti.fwip.book.BookTextSettings(io.github.christiandonatti.fwip.book.BookSettings.get(context), LightSettings.get(context))
+            Spacer(Modifier.height(20.dp))
+            io.github.christiandonatti.fwip.book.BookSceneSettings(io.github.christiandonatti.fwip.book.BookSettings.get(context))
         }
         SettingsGroup.Sync -> Page(group.title, gutter, onBack) { SyncSettings(state.sync, state.folders, state.servers, syncActions) }
         SettingsGroup.Wifi -> WifiScreen(state.folders, state.servers, gutter, onReceived = actions.refresh, onBack = onBack, handleBack = false)

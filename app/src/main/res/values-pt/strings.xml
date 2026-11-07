@@ -948,4 +948,20 @@
     <string name="scene_rain">Janela com chuva</string>
     <string name="scene_beach">Praia ao pôr do sol</string>
     <string name="scene_night">Noite estrelada</string>
+    <string name="more_options">Mais opções</string>
+    <string name="book_scene">Livro 3D e ambiente</string>
+    <string name="scene_book3d">Livro 3D</string>
+    <string name="scene_book3d_hint">A página vira um livro de verdade num ambiente, com capa, lateral das folhas e virada de papel.</string>
+    <string name="scene_place">Ambiente</string>
+    <string name="scene_style">%1$s em</string>
+    <string name="scene_photo">Foto</string>
+    <string name="scene_drawn">Desenho</string>
+    <string name="scene_size">Tamanho do livro</string>
+    <string name="scene_sound">Som ambiente</string>
+    <string name="scene_sound_hint">Fogo, chuva, pássaros, ondas, criados na hora pelo app. Fica mais baixo durante a leitura em voz alta.</string>
+    <string name="scene_volume">Volume do som</string>
+    <string name="scene_motion">Ambiente em movimento</string>
+    <string name="scene_motion_hint">Fogo, folhas, chuva e estrelas se mexem. Desligado fica parado e gasta menos bateria.</string>
+    <string name="scene_parallax">Profundidade ao inclinar</string>
+    <string name="scene_parallax_hint">O ambiente se move um pouco ao inclinar o tablet, e o livro parece flutuar na frente.</string>
 </resources>

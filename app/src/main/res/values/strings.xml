@@ -949,4 +949,20 @@
     <string name="scene_rain">Rainy window</string>
     <string name="scene_beach">Beach at sunset</string>
     <string name="scene_night">Starry night</string>
+    <string name="more_options">More options</string>
+    <string name="book_scene">3D book and place</string>
+    <string name="scene_book3d">3D book</string>
+    <string name="scene_book3d_hint">The page becomes a real book lying in a place, with cover, page edges and paper turns.</string>
+    <string name="scene_place">Place</string>
+    <string name="scene_style">%1$s as</string>
+    <string name="scene_photo">Photo</string>
+    <string name="scene_drawn">Drawing</string>
+    <string name="scene_size">Book size</string>
+    <string name="scene_sound">Ambient sound</string>
+    <string name="scene_sound_hint">Fire, rain, birds, waves, made live by the app. Quieter while the book is read aloud.</string>
+    <string name="scene_volume">Sound volume</string>
+    <string name="scene_motion">Moving scene</string>
+    <string name="scene_motion_hint">Fire, leaves, rain and stars move. Off keeps it still and saves battery.</string>
+    <string name="scene_parallax">Depth when tilting</string>
+    <string name="scene_parallax_hint">The place moves a little as you tilt the tablet, so the book seems to float in front.</string>
 </resources>
