@@ -365,8 +365,8 @@ internal class FireplacePainter : ScenePainter() {
 
     companion object {
         /** Where the fire is in the photo, as a share of the screen (set from the chosen picture). */
-        const val FIRE_X = 0.2f
-        const val FIRE_Y = 0.75f
+        const val FIRE_X = 0.12f
+        const val FIRE_Y = 0.8f
         /** Width over height of the scene photos (2400 x 1500). */
         const val PHOTO_ASPECT = 1.6f
     }

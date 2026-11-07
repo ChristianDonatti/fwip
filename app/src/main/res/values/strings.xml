@@ -965,4 +965,10 @@
     <string name="scene_motion_hint">Fire, leaves, rain and stars move. Off keeps it still and saves battery.</string>
     <string name="scene_parallax">Depth when tilting</string>
     <string name="scene_parallax_hint">The place moves a little as you tilt the tablet, so the book seems to float in front.</string>
+    <string name="news_book3d">The 3D book</string>
+    <string name="news_book3d_text">Books can now be read as a real book in a place: cover that opens, page edges that grow as you read, the curve of the paper and pages that turn under your finger. Turn it on with 3D in the reader.</string>
+    <string name="news_scenes">Places to read in</string>
+    <string name="news_scenes_text">A desk, a library, by the fire, mountains, a park, a rainy window, a beach at sunset or a starry night, each drawn or as a photo, with fire, leaves, rain and stars moving, and their own sound.</string>
+    <string name="news_paper_books">Paper turns in books</string>
+    <string name="news_paper_books_text">Book pages now curl like paper by default, even without the 3D book. Instant, slide and scroll are still in Aa.</string>
 </resources>
