@@ -502,7 +502,8 @@ private fun BookReader(
                 onReady = { navigator = it; turner.navigator = it },
             )
         }
-        if (book3d) BookFront(pageRect, spread)
+        // While a page turns, the turn covers the pages anyway (and one layer less over it is easier on GPUs).
+        if (book3d && turner.turn == null) BookFront(pageRect, spread)
         TurnOverlay(turner, Color(pageBg))
         if (book3d && !opened) {
             CoverOpening(

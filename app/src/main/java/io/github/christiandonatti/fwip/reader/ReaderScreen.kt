@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -561,6 +562,8 @@ private fun Reader(
                 Modifier
                     .offset { IntOffset(pageRect.left.roundToInt(), pageRect.top.roundToInt()) }
                     .size(with(density) { pageRect.width.toDp() }, with(density) { pageRect.height.toDp() })
+                    // The turn paints its whole canvas: kept to the book, or the place would vanish.
+                    .clipToBounds()
                     .background(paper3d)
             } else Modifier.fillMaxSize(),
         ) {
