@@ -1,0 +1,47 @@
+name: Scenes
+
+# Fetches CC0 photos for the book reader's scenes. "candidates" draws contact sheets to choose
+# from (pushed to repro-shots); "build" turns the chosen panoramas into scene images and commits them.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: candidates or build
+        default: candidates
+      spec:
+        description: JSON spec for build
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  scenes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pillow numpy
+      - name: Candidates
+        if: inputs.mode == 'candidates'
+        run: |
+          python3 scripts/scene_candidates.py out
+          cd out
+          git init -q -b repro-shots
+          git config user.name ci; git config user.email ci@example.com
+          git add -A; git commit -qm "scene candidates"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" repro-shots
+      - name: Build
+        if: inputs.mode == 'build'
+        env:
+          SPEC: ${{ inputs.spec }}
+        run: |
+          python3 scripts/scene_build.py app/src/main/assets/scenes preview
+          git config user.name ci; git config user.email ci@example.com
+          git add app/src/main/assets/scenes
+          git commit -qm "Scene photos from Poly Haven (CC0)" || true
+          git push -q origin HEAD:${{ github.ref_name }}
+          cd preview
+          git init -q -b repro-shots
+          git add -A; git commit -qm "scene previews"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" repro-shots
