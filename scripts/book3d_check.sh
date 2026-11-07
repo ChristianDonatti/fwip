@@ -60,14 +60,15 @@ shot k03-flat-turned 2
 crashes comic-flat
 
 # ---- Comics in 3D, part by part (each step adds a piece; the one that brings trouble shows) ----
-for variant in "noScene=true noFront=true noCover=true" "noScene=true noBody=true noCover=true" "noScene=true noBody=true noFront=true"; do
+for variant in "noScene=true noBody=true noFront=true noCover=true" "noScene=true noFront=true noCover=true" "noScene=true noBody=true noCover=true" "noScene=true noBody=true noFront=true" "noScene=true"; do
   stopapp
   python3 scripts/look_prefs.py $variant > /tmp/dbg.xml; put /tmp/dbg.xml shared_prefs/fwip_debug.xml
   python3 scripts/look_prefs.py comic3d=true > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
   tag=$(echo "$variant" | tr ' =' '__')
   openb PepperCarrot_01.cbz 10
   shot v-$tag-open 1
-  timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.35; quick v-$tag-turning; wait $!
+  # On the book's right page itself (no place around it to tap in these runs).
+  timeout 20 adb shell input tap 1420 $(( H / 2 )) & sleep 0.35; quick v-$tag-turning; wait $!
   shot v-$tag-turned 3
   crashes v-$tag
 done
