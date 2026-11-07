@@ -347,7 +347,14 @@ internal class FireplacePainter : ScenePainter() {
                 }
             }
         } else {
-            embers(Offset(size.width * FIRE_X, size.height * FIRE_Y), size.width * 0.12f, size.height * 0.45f, t, 22)
+            // The photo is cropped to fill the screen: find where its fire ended up.
+            val drawnW = maxOf(size.width, size.height * PHOTO_ASPECT)
+            val drawnH = drawnW / PHOTO_ASPECT
+            val fire = Offset((size.width - drawnW) / 2f + FIRE_X * drawnW, (size.height - drawnH) / 2f + FIRE_Y * drawnH)
+            if (fire.x in 0f..size.width) {
+                glow(fire, drawnW * 0.12f * (0.8f + 0.2f * fbm(t * 3f, 2)), Color(0xFFFF9A3A), 0.22f)
+                embers(fire, drawnW * 0.06f, size.height * 0.4f, t, 22)
+            }
         }
         // The whole room flickers with the fire.
         val f = fbm(t * 2.7f, 5)
@@ -358,8 +365,10 @@ internal class FireplacePainter : ScenePainter() {
 
     companion object {
         /** Where the fire is in the photo, as a share of the screen (set from the chosen picture). */
-        var FIRE_X = 0.2f
-        var FIRE_Y = 0.7f
+        const val FIRE_X = 0.2f
+        const val FIRE_Y = 0.75f
+        /** Width over height of the scene photos (2400 x 1500). */
+        const val PHOTO_ASPECT = 1.6f
     }
 }
 
