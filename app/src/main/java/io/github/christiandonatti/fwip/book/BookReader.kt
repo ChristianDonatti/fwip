@@ -406,6 +406,13 @@ private fun BookReader(
     val cover = remember(coverPath) { coverPath?.let { runCatching { android.graphics.BitmapFactory.decodeFile(it) }.getOrNull() } }
     val board = remember(cover, settings.scene) { boardColor(cover, Color(settings.scene.cover)) }
     var opened by remember { mutableStateOf(false) }
+    var pagePainted by remember { mutableStateOf(false) }
+    LaunchedEffect(navigator) {
+        if (navigator == null || pagePainted) return@LaunchedEffect
+        kotlinx.coroutines.delay(300)
+        turner.awaitPainted(6000)
+        pagePainted = true
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -498,7 +505,7 @@ private fun BookReader(
         if (book3d) BookFront(pageRect, spread)
         TurnOverlay(turner, Color(pageBg))
         if (book3d && !opened) {
-            CoverOpening(pageRect, spread, remember(cover) { cover?.asImageBitmap() }, board, ready = navigator != null && locator != null) { opened = true }
+            CoverOpening(pageRect, spread, remember(cover) { cover?.asImageBitmap() }, board, ready = pagePainted) { opened = true }
         }
 
         // ---------- What the navigator tells us ----------

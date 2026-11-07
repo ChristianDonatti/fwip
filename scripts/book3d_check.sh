@@ -54,9 +54,9 @@ timeout 20 adb shell am start -n $APP/.MainActivity; sleep 30
 BOOK=Quiet_Street_1.epub
 [ -f books/Dom_Casmurro.epub ] && BOOK=Dom_Casmurro.epub
 timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/$BOOK"
-sleep 1.2; quick t01-cover-closed
-sleep 0.6; quick t02-cover-opening
-shot t03-open 6
+# The cover waits for the first page to paint (slow on the emulator), then swings open.
+for k in 1 2 3 4 5 6 7 8 9 10 11 12; do sleep 0.7; quick t01-cover-$k; done
+shot t03-open 4
 crashes open
 # Turn by tap: catch it in the middle.
 timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick t04a-turning; wait $!; sleep 0.25; quick t04b-turning; sleep 0.3; quick t04c-turning
@@ -74,7 +74,7 @@ crashes turns
 python3 -c "import sys; sys.path.insert(0, 'scripts'); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)" '^3D\|' || tap $(( W / 2 )) $(( H / 2 ))
 shot t10-chrome 1
 ui '^3D\|' ; shot t11-scene-panel 2
-timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 150 )) $(( W / 2 )) $(( H / 3 )) 500; shot t12-scene-panel-more 1
+timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 420 )) $(( W / 2 )) $(( H / 4 )) 500; shot t12-scene-panel-more 1
 back 2
 crashes panel
 
@@ -84,7 +84,7 @@ for style in drawn photo; do
     stopapp
     if [ $style = photo ]; then ps="set:$sc"; else ps="set:"; fi
     books book3d=true scene=$sc ambientSound=false "photoScenes=$ps"
-    openb $BOOK 9
+    openb $BOOK 14
     shot s-$style-$sc 1
     crashes $style-$sc
   done
@@ -105,6 +105,7 @@ adb shell wm density 420
 books book3d=true scene=Park ambientSound=false "photoScenes=set:Park"
 openb $BOOK 10
 shot f01-phone-3d 3
+shot f01b-phone-3d-later 10
 timeout 20 adb shell input tap 980 1200 & sleep 0.6; quick f02-phone-turning; wait $!; sleep 0.3; quick f02b-phone-turning
 shot f03-phone-turned 2
 tap 540 1200

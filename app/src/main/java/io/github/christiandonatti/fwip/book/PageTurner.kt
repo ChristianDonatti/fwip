@@ -115,6 +115,15 @@ class PageTurner(private val scope: CoroutineScope) {
         return true
     }
 
+    /** Waits until the page view shows something (text or a picture), at most [maxMs]. */
+    suspend fun awaitPainted(maxMs: Long) {
+        val until = System.currentTimeMillis() + maxMs
+        while (System.currentTimeMillis() < until) {
+            if (capture()?.let(::hasInk) == true) return
+            delay(150)
+        }
+    }
+
     /** Whether a page picture has anything on it besides the paper (a blank web view has not painted yet). */
     private fun hasInk(b: Bitmap): Boolean {
         val bg = b.getPixel(b.width / 2, 2)

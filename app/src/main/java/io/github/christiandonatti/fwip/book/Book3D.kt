@@ -231,7 +231,7 @@ fun CoverOpening(page: Rect, spread: Boolean, cover: ImageBitmap?, board: Color,
     // The cover stays shut until the first page is there to be revealed.
     LaunchedEffect(ready) {
         if (!ready) return@LaunchedEffect
-        kotlinx.coroutines.delay(650)
+        kotlinx.coroutines.delay(250)
         angle.animateTo(180f, tween(1250, easing = FastOutSlowInEasing))
         fade.animateTo(0f, tween(260, easing = LinearEasing))
         done = true
