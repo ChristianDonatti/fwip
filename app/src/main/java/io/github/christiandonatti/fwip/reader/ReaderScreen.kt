@@ -19,10 +19,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -279,8 +282,8 @@ private fun Reader(
         val fullH = with(density) { maxHeight.toPx() }
         // In 3D the pages are the book's, smaller than the screen; otherwise the whole screen.
         val pageRect = if (in3d) {
-            val top = androidx.compose.foundation.layout.WindowInsets.statusBarsIgnoringVisibility.getTop(density) + with(density) { 20.dp.toPx() }
-            val bottom = androidx.compose.foundation.layout.WindowInsets.navigationBarsIgnoringVisibility.getBottom(density) + with(density) { 44.dp.toPx() }
+            val top = WindowInsets.statusBarsIgnoringVisibility.getTop(density) + with(density) { 20.dp.toPx() }
+            val bottom = WindowInsets.navigationBarsIgnoringVisibility.getBottom(density) + with(density) { 44.dp.toPx() }
             io.github.christiandonatti.fwip.book.bookPageRect(fullW, fullH, top, bottom, books3d.bookScale, double, io.github.christiandonatti.fwip.book.COMIC_ASPECT)
         } else Rect(0f, 0f, fullW, fullH)
         val wPx = pageRect.width.roundToInt().coerceAtLeast(1)
