@@ -26,7 +26,8 @@ enum class BookTheme(@androidx.annotation.StringRes private val labelRes: Int, v
 enum class BookFontKind { Original, Literata, Bitter, Atkinson, Serif, Sans, Dyslexic, Custom }
 
 enum class BookTurn(@androidx.annotation.StringRes private val labelRes: Int) {
-    Instant(R.string.turn_instant), Slide(R.string.turn_slide), Scroll(R.string.turn_scroll);
+    /** The page curls over like paper, under the finger or on a tap. */
+    Paper(R.string.turn_curl), Instant(R.string.turn_instant), Slide(R.string.turn_slide), Scroll(R.string.turn_scroll);
 
     val label: String get() = str(labelRes)
 }
@@ -76,7 +77,30 @@ class BookSettings private constructor(context: Context) {
         private set
     var columns by mutableStateOf(enumPref("columns", BookColumns.Auto))
         private set
-    var turn by mutableStateOf(enumPref("turn", BookTurn.Instant))
+    var turn by mutableStateOf(enumPref("turn", BookTurn.Paper))
+        private set
+
+    // ---------- The book in 3D, in a place ----------
+    /** The page shown as a real book lying in a scene, instead of filling the screen. */
+    var book3d by mutableStateOf(prefs.getBoolean("book3d", false))
+        private set
+    /** How much of the screen the book takes, 0.6 to 0.96. */
+    var bookScale by mutableFloatStateOf(prefs.getFloat("bookScale", 0.82f))
+        private set
+    var scene by mutableStateOf(enumPref("scene", io.github.christiandonatti.fwip.book.scene.Scene.Fireplace))
+        private set
+    /** Scenes shown as photos; the others are drawn. Each scene remembers its own choice. */
+    var photoScenes by mutableStateOf(prefs.getStringSet("photoScenes", setOf("Mountain", "Park", "Beach", "Library"))!!.toSet())
+        private set
+    var ambientSound by mutableStateOf(prefs.getBoolean("ambientSound", true))
+        private set
+    var ambientVolume by mutableFloatStateOf(prefs.getFloat("ambientVolume", 0.35f))
+        private set
+    /** The scene moves a little as the tablet tilts, so the book seems to float in front of it. */
+    var parallax by mutableStateOf(prefs.getBoolean("parallax", true))
+        private set
+    /** Fire, leaves, rain and the rest move; off keeps the scene still (and saves battery). */
+    var sceneMotion by mutableStateOf(prefs.getBoolean("sceneMotion", true))
         private set
     var progress by mutableStateOf(enumPref("progress", BookProgress.ChapterTime))
         private set
@@ -99,11 +123,25 @@ class BookSettings private constructor(context: Context) {
     fun updateTurn(v: BookTurn) { turn = v; prefs.edit().putString("turn", v.name).apply() }
     fun updateProgress(v: BookProgress) { progress = v; prefs.edit().putString("progress", v.name).apply() }
     fun updateTtsRate(v: Float) { ttsRate = v; prefs.edit().putFloat("ttsRate", v).apply() }
+    fun updateBook3d(v: Boolean) { book3d = v; prefs.edit().putBoolean("book3d", v).apply() }
+    fun updateBookScale(v: Float) { bookScale = v.coerceIn(0.6f, 0.96f); prefs.edit().putFloat("bookScale", bookScale).apply() }
+    fun updateScene(v: io.github.christiandonatti.fwip.book.scene.Scene) { scene = v; prefs.edit().putString("scene", v.name).apply() }
+    fun isPhoto(v: io.github.christiandonatti.fwip.book.scene.Scene): Boolean = v.name in photoScenes && v.hasPhoto
+    fun updatePhoto(v: io.github.christiandonatti.fwip.book.scene.Scene, photo: Boolean) {
+        photoScenes = if (photo) photoScenes + v.name else photoScenes - v.name
+        prefs.edit().putStringSet("photoScenes", photoScenes).apply()
+    }
+    fun updateAmbientSound(v: Boolean) { ambientSound = v; prefs.edit().putBoolean("ambientSound", v).apply() }
+    fun updateAmbientVolume(v: Float) { ambientVolume = v.coerceIn(0f, 1f); prefs.edit().putFloat("ambientVolume", ambientVolume).apply() }
+    fun updateParallax(v: Boolean) { parallax = v; prefs.edit().putBoolean("parallax", v).apply() }
+    fun updateSceneMotion(v: Boolean) { sceneMotion = v; prefs.edit().putBoolean("sceneMotion", v).apply() }
 
     fun reset() {
         updateTheme(BookTheme.Paper); updateFont(BookFontKind.Literata); updateFontSize(1f); updateLineHeight(1.5f)
         updateMargins(1f); updateJustify(true); updateHyphens(true); updateBold(false); updatePublisherStyles(false)
-        updateColumns(BookColumns.Auto); updateTurn(BookTurn.Instant); updateProgress(BookProgress.ChapterTime); updateTtsRate(1f)
+        updateColumns(BookColumns.Auto); updateTurn(BookTurn.Paper); updateProgress(BookProgress.ChapterTime); updateTtsRate(1f)
+        updateBook3d(false); updateBookScale(0.82f); updateScene(io.github.christiandonatti.fwip.book.scene.Scene.Fireplace)
+        updateAmbientSound(true); updateAmbientVolume(0.35f); updateParallax(true); updateSceneMotion(true)
     }
 
     fun toJson(): org.json.JSONObject = org.json.JSONObject()
@@ -111,6 +149,9 @@ class BookSettings private constructor(context: Context) {
         .put("lineHeight", lineHeight.toDouble()).put("margins", margins.toDouble()).put("justify", justify).put("hyphens", hyphens)
         .put("bold", bold).put("publisher", publisherStyles).put("columns", columns.name).put("turn", turn.name)
         .put("progress", progress.name).put("ttsRate", ttsRate.toDouble())
+        .put("book3d", book3d).put("bookScale", bookScale.toDouble()).put("scene", scene.name)
+        .put("photoScenes", org.json.JSONArray(photoScenes.toList())).put("ambientSound", ambientSound)
+        .put("ambientVolume", ambientVolume.toDouble()).put("parallax", parallax).put("sceneMotion", sceneMotion)
 
     fun fromJson(o: org.json.JSONObject) {
         runCatching { updateTheme(BookTheme.valueOf(o.getString("theme"))) }
@@ -126,6 +167,17 @@ class BookSettings private constructor(context: Context) {
         runCatching { updateTurn(BookTurn.valueOf(o.getString("turn"))) }
         runCatching { updateProgress(BookProgress.valueOf(o.getString("progress"))) }
         if (o.has("ttsRate")) updateTtsRate(o.getDouble("ttsRate").toFloat())
+        if (o.has("book3d")) updateBook3d(o.getBoolean("book3d"))
+        if (o.has("bookScale")) updateBookScale(o.getDouble("bookScale").toFloat())
+        runCatching { updateScene(io.github.christiandonatti.fwip.book.scene.Scene.valueOf(o.getString("scene"))) }
+        o.optJSONArray("photoScenes")?.let { a ->
+            photoScenes = (0 until a.length()).map { a.getString(it) }.toSet()
+            prefs.edit().putStringSet("photoScenes", photoScenes).apply()
+        }
+        if (o.has("ambientSound")) updateAmbientSound(o.getBoolean("ambientSound"))
+        if (o.has("ambientVolume")) updateAmbientVolume(o.getDouble("ambientVolume").toFloat())
+        if (o.has("parallax")) updateParallax(o.getBoolean("parallax"))
+        if (o.has("sceneMotion")) updateSceneMotion(o.getBoolean("sceneMotion"))
     }
 
     companion object {

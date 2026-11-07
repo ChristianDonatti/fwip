@@ -940,4 +940,12 @@
     <string name="welcome_books_title">Onde estão seus livros?</string>
     <string name="welcome_both_title">Onde estão suas HQs e livros?</string>
     <string name="a11y_page">Página %1$d de %2$d</string>
+    <string name="scene_desk">Escrivaninha</string>
+    <string name="scene_library">Biblioteca</string>
+    <string name="scene_fireplace">Lareira</string>
+    <string name="scene_mountain">Montanha</string>
+    <string name="scene_park">Parque</string>
+    <string name="scene_rain">Janela com chuva</string>
+    <string name="scene_beach">Praia ao pôr do sol</string>
+    <string name="scene_night">Noite estrelada</string>
 </resources>
