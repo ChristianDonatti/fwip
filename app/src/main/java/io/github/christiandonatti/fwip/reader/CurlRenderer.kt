@@ -137,6 +137,8 @@ class CurlRenderer {
         c.save()
         if (rtl) c.scale(-1f, 1f, width / 2f, 0f)
         c.drawColor(background)
+        // Half planes only need to reach past the page; huge coordinates make some GPUs choke.
+        big = 3f * maxOf(width, turn.leaf.bottom, 1f)
 
         // What lies underneath: the left page that stays, and the page that gets revealed.
         pages.fromLeft?.let { page(c, it, rtl, mirror = false) }
@@ -173,7 +175,7 @@ class CurlRenderer {
             intArrayOf(shade(0x88), 0x00000000),
             null, Shader.TileMode.CLAMP,
         )
-        c.drawRect(0f, 0f, width, leaf.bottom + 1000f, shadePaint)
+        c.drawRect(0f, 0f, width, leaf.bottom + 4f, shadePaint)
         c.restore()
 
         // 3. The flap: the lifted part, mirrored over the fold, showing the back of the page.
@@ -234,8 +236,9 @@ class CurlRenderer {
     }
 
     /** Fills [path] with the half plane on the [sign] side of the line through [m] with normal [n]. */
+    private var big = 4000f
+
     private fun halfPlane(m: Offset, n: Offset, sign: Float) {
-        val big = 100_000f
         val u = Offset(-n.y, n.x)
         val a = m + u * big
         val b = m - u * big
