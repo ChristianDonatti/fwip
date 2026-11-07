@@ -152,6 +152,7 @@ back 2
 crashes phone
 stopapp
 books scene=Night ambientSound=false "photoScenes=set:"
+python3 scripts/look_prefs.py comic3d=true > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
 openb PepperCarrot_01.cbz 10
 shot f06-phone-comic 1
 timeout 20 adb shell input tap 980 1200 & sleep 0.5; quick f07-phone-comic-turning; wait $!

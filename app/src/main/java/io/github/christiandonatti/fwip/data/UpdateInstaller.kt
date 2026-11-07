@@ -94,12 +94,10 @@ object UpdateInstaller {
     /** Opens the system page where Fwip is allowed to install apps. */
     fun openPermission(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        runCatching {
-            context.startActivity(
-                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + context.packageName))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            )
-        }
+        // Opened from Fwip's own screen, Back on that page comes straight back here and the update goes on.
+        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + context.packageName))
+        if (context !is android.app.Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(intent) }
     }
 
     /** Back from that page: go on if the permission is now there. */
