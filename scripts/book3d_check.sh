@@ -52,6 +52,8 @@ timeout 20 adb shell am start -n $APP/.MainActivity; sleep 30
 
 # ---- Comics in 3D ----
 stopapp
+# Everything the device says, live, so the last words before any trouble are kept.
+timeout 600 adb logcat -b main,system,crash,kernel -v threadtime > $OUT/live-logcat.txt 2>&1 &
 books scene=Library ambientSound=false "photoScenes=set:"
 python3 scripts/look_prefs.py comic3d=true > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
 timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/PepperCarrot_01.cbz"
