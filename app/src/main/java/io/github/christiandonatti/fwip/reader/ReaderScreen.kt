@@ -117,6 +117,9 @@ private enum class PendingStop { First, Last }
 
 enum class GuideKind { Panels, Balloons }
 
+/** The paper of the 3D book's pages. */
+private val PAPER_3D = androidx.compose.ui.graphics.Color(0xFFF4F0E6)
+
 @Composable
 fun ReaderScreen(
     comic: Comic,
@@ -149,7 +152,12 @@ fun ReaderScreen(
 
     BackHandler(onBack = onClose)
     // E-ink pages sit on e-ink paper (read here, so a change redraws at once).
-    val ground = if (light.ink != InkLook.Off) androidx.compose.ui.graphics.Color(0xFFE6E3DA) else androidx.compose.ui.graphics.Color(settings.ground.argb)
+    // In 3D the pages lie on paper (set here, in one place: two writers would keep redrawing each other).
+    val ground = when {
+        settings.comic3d && settings.turnStyle != TurnStyle.Scroll -> PAPER_3D
+        light.ink != InkLook.Off -> androidx.compose.ui.graphics.Color(0xFFE6E3DA)
+        else -> androidx.compose.ui.graphics.Color(settings.ground.argb)
+    }
     SideEffect {
         FwipColors.ReaderBg = ground
         ReaderLook.spine = settings.spineShadow
@@ -213,8 +221,7 @@ private fun Reader(
         in3d -> TurnStyle.Curl
         else -> settings.turnStyle
     }
-    val paper3d = androidx.compose.ui.graphics.Color(0xFFF4F0E6)
-    SideEffect { if (in3d) FwipColors.ReaderBg = paper3d }
+    val paper3d = PAPER_3D
     io.github.christiandonatti.fwip.book.scene.SceneSound(in3d && books3d.ambientSound, books3d.scene, books3d.ambientVolume)
     val a11yView = androidx.compose.ui.platform.LocalView.current
     val screenReader = remember { io.github.christiandonatti.fwip.ui.A11y.screenReader(a11yContext) }
