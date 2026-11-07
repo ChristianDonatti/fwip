@@ -28,9 +28,13 @@ for k in 1 2 3 4 5 6; do shot u02-download-$k 3; done
 # Android's permission, once: the app sends you to the page, you allow it, you come back.
 for k in $(seq 1 30); do ui '^Allow\|' > /dev/null && break; sleep 3; done
 shot u03-allow-page 3
-adb shell appops set $APP REQUEST_INSTALL_PACKAGES allow
+# As a person would: flip the switch on that page, then Back.
+ui '^Allow from this source\|' || adb shell appops set $APP REQUEST_INSTALL_PACKAGES allow
+shot u03b-allowed 2
+note "front: $(adb shell dumpsys activity activities | grep -m1 -E 'mResumedActivity|topResumedActivity' | tr -s ' ')"
 timeout 20 adb shell input keyevent KEYCODE_BACK
 shot u04-back 3
+note "front: $(adb shell dumpsys activity activities | grep -m1 -E 'mResumedActivity|topResumedActivity' | tr -s ' ')"
 shot u05-confirm 4
 ui '^Update\|^UPDATE\|^Install\|^INSTALL' && note "confirmed"
 shot u06-installing 4
