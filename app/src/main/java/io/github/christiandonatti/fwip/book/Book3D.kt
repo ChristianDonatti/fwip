@@ -224,12 +224,14 @@ private fun paperArgb(c: Color): Int = android.graphics.Color.argb((c.alpha * 25
  * spine to the left, showing the inside of the board, then fades away.
  */
 @Composable
-fun CoverOpening(page: Rect, spread: Boolean, cover: ImageBitmap?, board: Color, onDone: () -> Unit) {
+fun CoverOpening(page: Rect, spread: Boolean, cover: ImageBitmap?, board: Color, ready: Boolean, onDone: () -> Unit) {
     val angle = remember { Animatable(0f) }
     val fade = remember { Animatable(1f) }
     var done by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(350)
+    // The cover stays shut until the first page is there to be revealed.
+    LaunchedEffect(ready) {
+        if (!ready) return@LaunchedEffect
+        kotlinx.coroutines.delay(650)
         angle.animateTo(180f, tween(1250, easing = FastOutSlowInEasing))
         fade.animateTo(0f, tween(260, easing = LinearEasing))
         done = true
