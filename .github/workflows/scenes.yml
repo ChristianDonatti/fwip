@@ -43,5 +43,6 @@ jobs:
           git push -q origin HEAD:${{ github.ref_name }}
           cd preview
           git init -q -b repro-shots
+          git config user.name ci; git config user.email ci@example.com
           git add -A; git commit -qm "scene previews"
           git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" repro-shots
