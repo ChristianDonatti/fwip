@@ -1,0 +1,4 @@
+/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64/CMakeFiles/miniz.dir
+/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64/CMakeFiles/fwipmobi.dir
+/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64/CMakeFiles/edit_cache.dir
+/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,9 @@
+Scene photos and the desk texture are from Poly Haven (https://polyhaven.com), CC0 (public domain):
+fireplace: fireplace (Greg Zaal)
+library: christmas_photo_studio_01
+mountain: cape_hill
+park: je_gray_02
+beach: umhlanga_sunrise
+night: dikhololo_night
+rain: shanghai_bund
+desk: wood_table_001

@@ -1,0 +1,202 @@
++ adb install -r app/build/outputs/apk/debug/app-debug.apk
+Performing Streamed Install
+Success
++ adb shell settings put system screen_off_timeout 1800000
++ adb shell svc power stayon true
++ adb shell settings put secure immersive_mode_confirmations confirmed
++ adb shell pm clear io.github.christiandonatti.fwip
+Success
++ adb shell 'run-as io.github.christiandonatti.fwip mkdir -p shared_prefs'
++ python3 scripts/look_prefs.py welcomed=true seenVersion=i:999999
++ for k in 1 2 3
++ put /tmp/ui.xml shared_prefs/fwip_ui.xml
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_ui.xml'\'''
++ adb shell 'run-as io.github.christiandonatti.fwip cat shared_prefs/fwip_ui.xml'
++ grep -q welcomed
++ break
++ adb shell pm grant io.github.christiandonatti.fwip android.permission.POST_NOTIFICATIONS
+++ version
+++ grep -m1 versionCode
+++ adb shell dumpsys package io.github.christiandonatti.fwip
+++ tr -s ' '
++ note 'before:  versionCode=5 minSdk=26 targetSdk=35'
++ echo '::notice::before:  versionCode=5 minSdk=26 targetSdk=35'
+::notice::before:  versionCode=5 minSdk=26 targetSdk=35
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ shot u01-banner 25
++ sleep 25
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u01-banner.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 28.5 MB/s (122958 bytes in 0.004s)
++ note u01-banner
++ echo ::notice::u01-banner
+::notice::u01-banner
++ ui '^Update\|'
++ timeout 60 python3 scripts/ui.py '^Update\|'
++ note 'tapped Update'
++ echo '::notice::tapped Update'
+::notice::tapped Update
++ for k in 1 2 3 4 5 6
++ shot u02-download-1 3
++ sleep 3
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u02-download-1.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 12.9 MB/s (122978 bytes in 0.009s)
++ note u02-download-1
++ echo ::notice::u02-download-1
+::notice::u02-download-1
++ for k in 1 2 3 4 5 6
++ shot u02-download-2 3
++ sleep 3
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u02-download-2.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 41.7 MB/s (123086 bytes in 0.003s)
++ note u02-download-2
++ echo ::notice::u02-download-2
+::notice::u02-download-2
++ for k in 1 2 3 4 5 6
++ shot u02-download-3 3
++ sleep 3
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u02-download-3.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 34.7 MB/s (123124 bytes in 0.003s)
++ note u02-download-3
++ echo ::notice::u02-download-3
+::notice::u02-download-3
++ for k in 1 2 3 4 5 6
++ shot u02-download-4 3
++ sleep 3
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u02-download-4.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 37.6 MB/s (123124 bytes in 0.003s)
++ note u02-download-4
++ echo ::notice::u02-download-4
+::notice::u02-download-4
++ for k in 1 2 3 4 5 6
++ shot u02-download-5 3
++ sleep 3
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u02-download-5.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 38.1 MB/s (123067 bytes in 0.003s)
++ note u02-download-5
++ echo ::notice::u02-download-5
+::notice::u02-download-5
++ for k in 1 2 3 4 5 6
++ shot u02-download-6 3
++ sleep 3
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u02-download-6.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 15.2 MB/s (123067 bytes in 0.008s)
++ note u02-download-6
++ echo ::notice::u02-download-6
+::notice::u02-download-6
+++ seq 1 30
++ for k in $(seq 1 30)
++ ui '^Allow\|'
++ timeout 60 python3 scripts/ui.py '^Allow\|'
++ break
++ shot u03-allow-page 3
++ sleep 3
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u03-allow-page.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 13.0 MB/s (30370 bytes in 0.002s)
++ note u03-allow-page
++ echo ::notice::u03-allow-page
+::notice::u03-allow-page
++ ui '^Allow from this source\|'
++ timeout 60 python3 scripts/ui.py '^Allow from this source\|'
++ shot u03b-allowed 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u03b-allowed.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 3.4 MB/s (30045 bytes in 0.008s)
++ note u03b-allowed
++ echo ::notice::u03b-allowed
+::notice::u03b-allowed
+++ grep -m1 -E 'mResumedActivity|topResumedActivity'
+++ adb shell dumpsys activity activities
+++ tr -s ' '
++ note 'front:  topResumedActivity=ActivityRecord{5c8ba2 u0 com.android.settings/.spa.SpaActivity t8}'
++ echo '::notice::front:  topResumedActivity=ActivityRecord{5c8ba2 u0 com.android.settings/.spa.SpaActivity t8}'
+::notice::front:  topResumedActivity=ActivityRecord{5c8ba2 u0 com.android.settings/.spa.SpaActivity t8}
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ shot u04-back 3
++ sleep 3
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u04-back.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 14.4 MB/s (205101 bytes in 0.014s)
++ note u04-back
++ echo ::notice::u04-back
+::notice::u04-back
+++ tr -s ' '
+++ adb shell dumpsys activity activities
+++ grep -m1 -E 'mResumedActivity|topResumedActivity'
++ note 'front:  topResumedActivity=ActivityRecord{7d3f3cb u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}'
++ echo '::notice::front:  topResumedActivity=ActivityRecord{7d3f3cb u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}'
+::notice::front:  topResumedActivity=ActivityRecord{7d3f3cb u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}
++ shot u05-confirm 4
++ sleep 4
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u05-confirm.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 39.4 MB/s (186079 bytes in 0.005s)
++ note u05-confirm
++ echo ::notice::u05-confirm
+::notice::u05-confirm
++ ui '^Update\|^UPDATE\|^Install\|^INSTALL'
++ timeout 60 python3 scripts/ui.py '^Update\|^UPDATE\|^Install\|^INSTALL'
+not found: ^Update\|^UPDATE\|^Install\|^INSTALL ['Sat, Nov 7|Sat, Nov 7', '|Home', 'Phone|Phone', 'Messages|Messages', 'Fwip|Predicted app: Fwip', 'Chrome|Chrome', 'Camera|Camera', '|Search', '|Google app', '|Voice search', '|Google Lens']
++ shot u06-installing 4
++ sleep 4
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u06-installing.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 65.6 MB/s (205474 bytes in 0.003s)
++ note u06-installing
++ echo ::notice::u06-installing
+::notice::u06-installing
+++ seq 1 20
++ for k in $(seq 1 20)
++ sleep 3
+++ version
+++ adb shell dumpsys package io.github.christiandonatti.fwip
+++ grep -m1 versionCode
+++ tr -s ' '
++ v=' versionCode=124 minSdk=26 targetSdk=35'
++ grep -q 'versionCode=5 '
++ echo ' versionCode=124 minSdk=26 targetSdk=35'
++ break
+++ version
+++ adb shell dumpsys package io.github.christiandonatti.fwip
+++ grep -m1 versionCode
+++ tr -s ' '
++ note 'after:  versionCode=124 minSdk=26 targetSdk=35'
++ echo '::notice::after:  versionCode=124 minSdk=26 targetSdk=35'
+::notice::after:  versionCode=124 minSdk=26 targetSdk=35
+++ adb shell dumpsys notification --noredact
+++ grep -c 'Fwip.*installed\|pkg=io.github.christiandonatti.fwip.*id=43'
++ note 'notification: 2'
++ echo '::notice::notification: 2'
+::notice::notification: 2
++ timeout 20 adb shell cmd statusbar expand-notifications
++ shot u06b-notification 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u06b-notification.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 21.8 MB/s (34780 bytes in 0.002s)
++ note u06b-notification
++ echo ::notice::u06b-notification
+::notice::u06b-notification
++ timeout 20 adb shell cmd statusbar collapse
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ shot u07-after 8
++ sleep 8
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/u07-after.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 53.4 MB/s (121809 bytes in 0.002s)
++ note u07-after
++ echo ::notice::u07-after
+::notice::u07-after
++ note done
++ echo ::notice::done
+::notice::done

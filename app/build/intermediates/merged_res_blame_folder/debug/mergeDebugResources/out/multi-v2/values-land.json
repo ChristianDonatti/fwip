@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "io.github.christiandonatti.fwip.app-mergeDebugResources-72:/values-land/values-land.xml",
+            "map": [
+                {
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/a9b8fe61aa11a0da6b40bcc02afde77e/transformed/readium-navigator-3.1.2/res/values-land/values-land.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "70",
+                        "endOffsets": "121"
+                    },
+                    "to": {
+                        "startLines": "5",
+                        "startColumns": "4",
+                        "startOffsets": "264",
+                        "endColumns": "70",
+                        "endOffsets": "330"
+                    }
+                },
+                {
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/eeae0e5cb45b5cff8d05f84f275523b3/transformed/appcompat-1.7.1/res/values-land/values-land.xml",
+                    "from": {
+                        "startLines": "2,3,4",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,125,196",
+                        "endColumns": "69,70,67",
+                        "endOffsets": "120,191,259"
+                    }
+                }
+            ]
+        }
+    ]
+}

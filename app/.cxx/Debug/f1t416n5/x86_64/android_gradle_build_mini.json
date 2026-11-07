@@ -1,0 +1,32 @@
+{
+  "buildFiles": [
+    "/home/runner/work/fwip/fwip/app/src/main/cpp/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/usr/local/lib/android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/usr/local/lib/android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "fwipmobi::@6890427a1f51a3e7e1df": {
+      "artifactName": "fwipmobi",
+      "abi": "x86_64",
+      "output": "/home/runner/work/fwip/fwip/app/build/intermediates/cxx/Debug/f1t416n5/obj/x86_64/libfwipmobi.so",
+      "runtimeFiles": []
+    },
+    "miniz::@6890427a1f51a3e7e1df": {
+      "artifactName": "miniz",
+      "abi": "x86_64",
+      "runtimeFiles": []
+    }
+  }
+}

@@ -1,0 +1,4 @@
+/usr/local/lib/android/sdk/cmake/3.22.1/bin/ninja \
+  -C \
+  /home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64 \
+  fwipmobi

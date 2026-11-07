@@ -1,0 +1,77 @@
+[
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DMINIZ_NO_ARCHIVE_APIS -DMINIZ_NO_ARCHIVE_WRITING_APIS -DMINIZ_NO_STDIO -DMINIZ_NO_TIME -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES -D_POSIX_C_SOURCE=200112L -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -o CMakeFiles/miniz.dir/libmobi/miniz.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/miniz.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/miniz.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/mobi_jni.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/mobi_jni.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/mobi_jni.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/buffer.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/buffer.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/buffer.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/compression.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/compression.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/compression.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/debug.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/debug.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/debug.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/index.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/index.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/index.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/memory.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/memory.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/memory.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/meta.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/meta.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/meta.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/opf.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/opf.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/opf.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/parse_rawml.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/parse_rawml.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/parse_rawml.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/read.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/read.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/read.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/structure.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/structure.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/structure.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/util.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/util.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/util.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/write.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/write.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/write.c"
+},
+{
+  "directory": "/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64",
+  "command": "/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=x86_64-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DHAVE_ATTRIBUTE_NORETURN -DHAVE_STRDUP -DHAVE_UNISTD_H -DMOBI_INLINE=inline -DPACKAGE_VERSION=\\\"0.12\\\" -DUSE_MINIZ -DUSE_XMLWRITER -Dfwipmobi_EXPORTS -I/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -fno-limit-debug-info  -fPIC -O2 -w -o CMakeFiles/fwipmobi.dir/libmobi/xmlwriter.c.o -c /home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/xmlwriter.c",
+  "file": "/home/runner/work/fwip/fwip/app/src/main/cpp/libmobi/xmlwriter.c"
+}
+]
