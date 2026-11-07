@@ -285,7 +285,7 @@ class UpdatedReceiver : BroadcastReceiver() {
         val pending = PendingIntent.getActivity(context, 8, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val n = androidx.core.app.NotificationCompat.Builder(context, "updates")
             .setSmallIcon(R.drawable.ic_stat_balloon)
-            .setContentTitle(context.getString(R.string.updated_title, BuildConfig.VERSION_NAME))
+            .setContentTitle(context.getString(R.string.updated_title, if (BuildConfig.OFFICIAL) BuildConfig.VERSION_NAME else "(build ${BuildConfig.VERSION_CODE})"))
             .setContentText(context.getString(R.string.updated_text))
             .setContentIntent(pending)
             .setAutoCancel(true)
