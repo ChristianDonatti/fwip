@@ -539,6 +539,8 @@ private fun Reader(
         val dbg = remember { context.getSharedPreferences("fwip_debug", Context.MODE_PRIVATE) }
         val noScene = dbg.getBoolean("noScene", false)
         val noBody = dbg.getBoolean("noBody", false)
+        val noFront = dbg.getBoolean("noFront", false)
+        val noCover = dbg.getBoolean("noCover", false)
         if (in3d) {
             if (!noScene) Box(
                 Modifier
@@ -608,8 +610,8 @@ private fun Reader(
         }
         }
         if (in3d) {
-            if (!noBody) io.github.christiandonatti.fwip.book.BookFront(pageRect, double)
-            if (!opened && !noBody) {
+            if (!noFront) io.github.christiandonatti.fwip.book.BookFront(pageRect, double)
+            if (!opened && !noCover) {
                 io.github.christiandonatti.fwip.book.CoverOpening(
                     pageRect, double, remember(cover) { cover?.asImageBitmap() }, board,
                     ready = cover != null,

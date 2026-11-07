@@ -60,7 +60,7 @@ shot k03-flat-turned 2
 crashes comic-flat
 
 # ---- Comics in 3D, part by part (each step adds a piece; the one that brings trouble shows) ----
-for variant in "noScene=true noBody=true" "noScene=true" "noBody=true"; do
+for variant in "noScene=true noFront=true noCover=true" "noScene=true noBody=true noCover=true" "noScene=true noBody=true noFront=true"; do
   stopapp
   python3 scripts/look_prefs.py $variant > /tmp/dbg.xml; put /tmp/dbg.xml shared_prefs/fwip_debug.xml
   python3 scripts/look_prefs.py comic3d=true > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
