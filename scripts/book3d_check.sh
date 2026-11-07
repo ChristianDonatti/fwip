@@ -21,7 +21,16 @@ put() { timeout 20 adb exec-in "run-as $APP sh -c 'cat > $2'" < "$1"; }
 openb() { timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/$1"; sleep "${2:-10}"; }
 tap() { timeout 20 adb shell input tap "$1" "$2"; sleep "${3:-1.5}"; }
 back() { timeout 20 adb shell input keyevent KEYCODE_BACK; sleep "${1:-2}"; }
-crashes() { timeout 20 adb logcat -d -b crash > "$OUT/crash-$1.txt"; [ -s "$OUT/crash-$1.txt" ] && note "CRASH after $1: $(head -c 600 $OUT/crash-$1.txt | tr '\n' ' ')"; timeout 10 adb logcat -c -b crash; }
+crashes() {
+  timeout 20 adb logcat -d -b crash > "$OUT/crash-$1.txt"
+  [ -s "$OUT/crash-$1.txt" ] && note "CRASH after $1: $(head -c 600 $OUT/crash-$1.txt | tr '\n' ' ')"
+  timeout 10 adb logcat -c -b crash
+  if ! timeout 10 adb shell pidof $APP > /dev/null; then
+    note "APP GONE after $1"
+    timeout 20 adb exec-out run-as $APP cat files/reports/last-crash.txt > "$OUT/gone-$1-report.txt" 2>/dev/null
+    timeout 20 adb logcat -d -b main,system,crash -t 1500 > "$OUT/gone-$1-logcat.txt"
+  fi
+}
 books() { python3 scripts/look_prefs.py "$@" > /tmp/books.xml; put /tmp/books.xml shared_prefs/fwip_books.xml; }
 stopapp() { timeout 20 adb shell am force-stop $APP; sleep 1; }
 
@@ -48,12 +57,12 @@ sleep 0.6; quick t02-cover-opening
 shot t03-open 6
 crashes open
 # Turn by tap: catch it in the middle.
-timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick t04-turning; wait
+timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick t04-turning; wait $!
 shot t05-turned 2
 # Turn by finger, held in the middle of the drag.
-timeout 20 adb shell input swipe $(( W - 260 )) $(( H - 300 )) $(( W / 2 )) $(( H - 380 )) 1500 & sleep 0.9; quick t06-dragging; wait
+timeout 20 adb shell input swipe $(( W - 260 )) $(( H - 300 )) $(( W / 2 )) $(( H - 380 )) 1500 & sleep 0.9; quick t06-dragging; wait $!
 shot t07-dragged 2
-timeout 20 adb shell input tap 120 $(( H / 2 )) & sleep 0.45; quick t08-back-turning; wait
+timeout 20 adb shell input tap 120 $(( H / 2 )) & sleep 0.45; quick t08-back-turning; wait $!
 shot t09-back 2
 crashes turns
 tap $(( W / 2 )) $(( H / 2 ))
@@ -79,7 +88,7 @@ done
 stopapp
 books book3d=false turn=Paper
 openb $BOOK 9
-timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick p01-flat-turning; wait
+timeout 20 adb shell input tap $(( W - 120 )) $(( H / 2 )) & sleep 0.45; quick p01-flat-turning; wait $!
 shot p02-flat-turned 2
 crashes flat
 
@@ -90,7 +99,7 @@ adb shell wm density 420
 books book3d=true scene=Park ambientSound=false "photoScenes=set:Park"
 openb $BOOK 10
 shot f01-phone-3d 3
-timeout 20 adb shell input tap 980 1200 & sleep 0.45; quick f02-phone-turning; wait
+timeout 20 adb shell input tap 980 1200 & sleep 0.45; quick f02-phone-turning; wait $!
 shot f03-phone-turned 2
 tap 540 1200
 shot f04-phone-chrome 1
