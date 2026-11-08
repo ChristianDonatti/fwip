@@ -57,10 +57,11 @@ ui 'Pepper' ; sleep 6
 shot c01-comic-tips 1
 tap $(( W / 2 )) $(( H / 2 )); sleep 2
 shot c02-comic-after-tips 1
-for k in $(seq 1 30); do tap $(( W - 100 )) $(( H / 2 )); sleep 0.6; done
-shot c03-comic-end 2
+for k in $(seq 1 14); do tap $(( W - 100 )) $(( H / 2 )); sleep 1.2; has 'of .* read in|You have read all|Tap outside to stay' && break; done
+shot c03-comic-end 1
 labels
-home
+back 2; back 2
+ui '^Home\|' ; sleep 2
 crashes comic
 shot b02-home-up-next 2
 labels
@@ -75,8 +76,9 @@ ui '\|Refresh library$' ; sleep 6
 ui '^Library\|' ; sleep 2
 ui '^Search\||\|Search$' ; sleep 1
 timeout 20 adb shell input text "Broken"; sleep 2
+timeout 20 adb shell input keyevent 111; sleep 1
 shot e00-search-broken 1
-ui 'Broken' ; sleep 5
+ui 'Broken Issue' ; sleep 5
 shot e01-error 1
 labels
 home
@@ -107,7 +109,7 @@ tap $(( W / 2 )) $(( H / 2 )); sleep 2
 has '\|Contents$' || tap $(( W / 2 )) $(( H / 2 ))
 ui '\|Contents$' ; sleep 2
 ui '^Chapter 6' ; sleep 4
-for k in $(seq 1 30); do tap $(( W - 100 )) $(( H / 2 )); sleep 1.5; [ $(( k % 5 )) = 0 ] && has 'of .* read in|You have read all|Tap outside to stay' && break; done
+for k in $(seq 1 90); do tap $(( W - 100 )) $(( H / 2 )); sleep 1.3; [ $(( k % 4 )) = 0 ] && has 'of .* read in|You have read all|Tap outside to stay' && break; done
 shot d02-book-end 2
 labels
 home

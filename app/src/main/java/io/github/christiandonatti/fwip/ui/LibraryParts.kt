@@ -278,7 +278,7 @@ fun ComicRow(
             val bits = listOfNotNull(
                 item.meta?.publisher,
                 item.meta?.year?.toString(),
-                p?.pageCount?.takeIf { it > 0 }?.let { str(R.string.n_pages, it) },
+                p?.pageCount?.takeIf { it > 0 }?.let { (if (it == 1) str(R.string.one_page) else str(R.string.n_pages, it)) },
             ).ifEmpty { listOf(item.comic.folder) }
             Text(bits.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             when {
@@ -633,7 +633,7 @@ private fun ItemDetailPage(
                 Text(item.title, style = if (wide) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall, maxLines = 4, overflow = TextOverflow.Ellipsis)
                 val byline = if (item.isBook) item.author else listOfNotNull(item.meta?.writer, item.meta?.publisher).joinToString(" · ").ifBlank { null }
                 byline?.let { Text(it, style = MaterialTheme.typography.titleSmall, color = FwipColors.TextSoft, maxLines = 2) }
-                val pages = p?.pageCount?.takeIf { it > 0 && !item.isBook }?.let { str(R.string.n_pages, it) }
+                val pages = p?.pageCount?.takeIf { it > 0 && !item.isBook }?.let { (if (it == 1) str(R.string.one_page) else str(R.string.n_pages, it)) }
                 Text(
                     listOfNotNull(item.comic.format.label, pages, fileSizeLabel(item.comic.size).ifBlank { null }, item.meta?.year?.toString()).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,

@@ -1002,11 +1002,11 @@
     <string name="tips_menu">Toque no meio: menu</string>
     <string name="tips_pinch">Pinça</string>
     <string name="tips_drag_corner">Arrastar o canto</string>
-    <string name="tips_drag_corner_text">vira a página como papel</string>
+    <string name="tips_drag_corner_text">Vira a página como papel</string>
     <string name="tips_long_press_word">Toque longo numa palavra</string>
-    <string name="tips_long_press_word_text">destacar, anotar, copiar ou procurar</string>
+    <string name="tips_long_press_word_text">Destacar, anotar, copiar ou procurar</string>
     <string name="tips_menu_aa">Aa no menu</string>
-    <string name="tips_menu_aa_text">letra, tamanho, cores e margens</string>
+    <string name="tips_menu_aa_text">Letra, tamanho, cores e margens</string>
     <string name="tips_note_comics">Toques e gestos podem ser mudados em Ajustes, Leitura de HQs.</string>
     <string name="tips_note_books">Tudo sobre a página fica no Aa; os ajustes do leitor também estão em Ajustes, Leitura de livros.</string>
     <string name="end_series_progress">%1$d de %2$d lidos em %3$s</string>
@@ -1030,4 +1030,5 @@
     <string name="news_covers_text">Quatro estilos, com título, autor e série, escolhidos para cada livro.</string>
     <string name="news_end">Primeira e última página melhores</string>
     <string name="news_end_text">Um guia curto de toques e gestos na primeira leitura e, no fim, quanto falta da série. Mensagens mais claras quando um arquivo não abre.</string>
+    <string name="one_page">1 página</string>
 </resources>

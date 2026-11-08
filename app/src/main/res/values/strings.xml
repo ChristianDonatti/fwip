@@ -1003,11 +1003,11 @@
     <string name="tips_menu">Tap the middle: menu</string>
     <string name="tips_pinch">Pinch</string>
     <string name="tips_drag_corner">Drag a corner</string>
-    <string name="tips_drag_corner_text">turns the page like paper</string>
+    <string name="tips_drag_corner_text">Turns the page like paper</string>
     <string name="tips_long_press_word">Long press a word</string>
-    <string name="tips_long_press_word_text">highlight, note, copy or look it up</string>
+    <string name="tips_long_press_word_text">Highlight, note, copy or look it up</string>
     <string name="tips_menu_aa">Aa in the menu</string>
-    <string name="tips_menu_aa_text">font, size, colours and margins</string>
+    <string name="tips_menu_aa_text">Font, size, colours and margins</string>
     <string name="tips_note_comics">You can change taps and gestures in Settings, Comic reading.</string>
     <string name="tips_note_books">Everything about the page is in Aa; the reader\'s settings are also in Settings, Book reading.</string>
     <string name="end_series_progress">%1$d of %2$d read in %3$s</string>
@@ -1031,4 +1031,5 @@
     <string name="news_covers_text">Four designs, with the title, author and series, picked for each book.</string>
     <string name="news_end">Better first page and last page</string>
     <string name="news_end_text">A short guide to taps and gestures the first time you read, and at the end, how far you are in the series. Clearer messages when a file will not open.</string>
+    <string name="one_page">1 page</string>
 </resources>
