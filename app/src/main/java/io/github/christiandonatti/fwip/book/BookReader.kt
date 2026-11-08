@@ -553,7 +553,6 @@ private fun BookReader(
             scope.launch {
                 kotlinx.coroutines.delay(700)
                 val after = n.currentLocator.value
-                android.util.Log.d("FwipEnd", "same=${samePlace(after, before)} end=${atBookEnd(publication, before)} href=${before.href} p=${before.locations.progression} last=${publication.readingOrder.lastOrNull()?.url()}")
                 if (samePlace(after, before) && atBookEnd(publication, before)) showEnd = true
             }
         }
@@ -915,11 +914,11 @@ internal fun resourceIndex(book: OpenedBook, loc: Locator): Int {
 }
 
 /** The table of contents entry for [loc]: the last one starting in its chapter file. */
-/** On the last page of the last chapter (or close enough that nothing follows). */
+/** In the last chapter: with a turn that went nowhere, that is the last page (two pages on screen start at 0.5 or less). */
 internal fun atBookEnd(publication: Publication, loc: Locator?): Boolean {
     loc ?: return false
     val last = publication.readingOrder.lastOrNull()?.url()?.removeFragment()?.toString() ?: return false
-    return loc.href.removeFragment().toString() == last && (loc.locations.progression ?: 1.0) > 0.5
+    return loc.href.removeFragment().toString() == last
 }
 
 /** The same page, even if the navigator handed out a fresh locator for it. */
