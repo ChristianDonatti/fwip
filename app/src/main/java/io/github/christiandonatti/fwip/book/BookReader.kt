@@ -545,6 +545,16 @@ private fun BookReader(
         val nav = navigator
         LaunchedEffect(nav, prefs) { nav?.submitPreferences(prefs) }
         turner.onEnd = { showEnd = true }
+        turner.isEnd = { atBookEnd(publication, it) }
+        // A forward turn that went nowhere on the last page: the end of the book.
+        fun forward(n: EpubNavigatorFragment, animated: Boolean) {
+            val before = n.currentLocator.value
+            if (!n.goForward(animated = animated)) { showEnd = true; return }
+            scope.launch {
+                kotlinx.coroutines.delay(700)
+                if (n.currentLocator.value == before && atBookEnd(publication, before)) showEnd = true
+            }
+        }
         LaunchedEffect(nav) {
             val n = nav ?: return@LaunchedEffect
             n.addInputListener(object : InputListener {
@@ -556,7 +566,7 @@ private fun BookReader(
                     when {
                         panel != null -> panel = null
                         move != 0 && turner.enabled -> turner.turnPage(move > 0)
-                        move > 0 -> if (!n.goForward(animated = settings.turn == BookTurn.Slide && !reduceMotion)) showEnd = true
+                        move > 0 -> forward(n, settings.turn == BookTurn.Slide && !reduceMotion)
                         move < 0 -> n.goBackward(animated = settings.turn == BookTurn.Slide && !reduceMotion)
                         else -> chrome = !chrome
                     }
@@ -613,7 +623,7 @@ private fun BookReader(
                 val animated = settings.turn == BookTurn.Slide && !reduceMotion
                 when {
                     turner.enabled -> turner.turnPage(k > 0)
-                    k > 0 -> if (!n.goForward(animated = animated)) showEnd = true
+                    k > 0 -> forward(n, animated)
                     else -> n.goBackward(animated = animated)
                 }
             }
@@ -903,6 +913,13 @@ internal fun resourceIndex(book: OpenedBook, loc: Locator): Int {
 }
 
 /** The table of contents entry for [loc]: the last one starting in its chapter file. */
+/** On the last page of the last chapter (or close enough that nothing follows). */
+internal fun atBookEnd(publication: Publication, loc: Locator?): Boolean {
+    loc ?: return false
+    val last = publication.readingOrder.lastOrNull()?.url()?.removeFragment()?.toString() ?: return false
+    return loc.href.removeFragment().toString() == last && (loc.locations.progression ?: 0.0) > 0.5
+}
+
 internal fun chapterTitle(publication: Publication, loc: Locator): String? {
     val href = loc.href.removeFragment().toString()
     fun flatten(links: List<Link>): List<Link> = links.flatMap { listOf(it) + flatten(it.children) }

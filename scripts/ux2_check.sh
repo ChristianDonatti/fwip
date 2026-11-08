@@ -110,8 +110,8 @@ tap $(( W / 2 )) $(( H / 2 )); sleep 2
 tap $(( W / 2 )) $(( H / 2 )); sleep 2
 has '\|Contents$' || tap $(( W / 2 )) $(( H / 2 ))
 ui '\|Contents$' ; sleep 2
-ui '^Chapter 6' ; sleep 4
-for k in $(seq 1 90); do tap $(( W - 100 )) $(( H / 2 )); sleep 1.3; [ $(( k % 4 )) = 0 ] && has 'of .* read in|You have read all|Tap outside to stay' && break; done
+ui '^Chapter 6\||^Chapter 3\|' ; sleep 4
+for k in $(seq 1 40); do tap $(( W - 100 )) $(( H / 2 )); sleep 1.3; [ $(( k % 4 )) = 0 ] && has 'of .* read in|You have read all|Tap outside to stay' && break; done
 shot d02-book-end 2
 labels
 home

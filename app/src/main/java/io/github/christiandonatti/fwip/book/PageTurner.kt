@@ -53,6 +53,8 @@ class PageTurner(private val scope: CoroutineScope) {
     var selecting = false
     var onTurned: () -> Unit = {}
     var onEnd: () -> Unit = {}
+    /** Whether a place is on the book's last page; the navigator does not always say it cannot go on. */
+    var isEnd: (Locator?) -> Boolean = { false }
 
     var turn by mutableStateOf<CurlTurn?>(null)
         private set
@@ -100,6 +102,7 @@ class PageTurner(private val scope: CoroutineScope) {
         val moved = if (forward) n.goForward(animated = false) else n.goBackward(animated = false)
         if (!moved) return false
         val now = withTimeoutOrNull(900) { n.currentLocator.first { it != old } }
+        if (now == null && forward && isEnd(old)) return false
         // The web view paints a frame or two after reporting where it is; a new chapter takes longer,
         // so wait until the page shows something (up to about a second and a half).
         repeat(3) { withFrameNanos { } }
