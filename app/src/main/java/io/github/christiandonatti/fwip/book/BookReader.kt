@@ -552,7 +552,9 @@ private fun BookReader(
             if (!n.goForward(animated = animated)) { showEnd = true; return }
             scope.launch {
                 kotlinx.coroutines.delay(700)
-                if (n.currentLocator.value == before && atBookEnd(publication, before)) showEnd = true
+                val after = n.currentLocator.value
+                android.util.Log.d("FwipEnd", "same=${samePlace(after, before)} end=${atBookEnd(publication, before)} href=${before.href} p=${before.locations.progression} last=${publication.readingOrder.lastOrNull()?.url()}")
+                if (samePlace(after, before) && atBookEnd(publication, before)) showEnd = true
             }
         }
         LaunchedEffect(nav) {
@@ -917,7 +919,14 @@ internal fun resourceIndex(book: OpenedBook, loc: Locator): Int {
 internal fun atBookEnd(publication: Publication, loc: Locator?): Boolean {
     loc ?: return false
     val last = publication.readingOrder.lastOrNull()?.url()?.removeFragment()?.toString() ?: return false
-    return loc.href.removeFragment().toString() == last && (loc.locations.progression ?: 0.0) > 0.5
+    return loc.href.removeFragment().toString() == last && (loc.locations.progression ?: 1.0) > 0.5
+}
+
+/** The same page, even if the navigator handed out a fresh locator for it. */
+internal fun samePlace(a: Locator?, b: Locator?): Boolean {
+    if (a == null || b == null) return a == b
+    return a.href.removeFragment() == b.href.removeFragment() &&
+        kotlin.math.abs((a.locations.progression ?: 0.0) - (b.locations.progression ?: 0.0)) < 1e-6
 }
 
 internal fun chapterTitle(publication: Publication, loc: Locator): String? {

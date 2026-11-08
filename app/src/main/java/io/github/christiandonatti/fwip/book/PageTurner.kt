@@ -101,7 +101,7 @@ class PageTurner(private val scope: CoroutineScope) {
         val old: Locator? = n.currentLocator.value
         val moved = if (forward) n.goForward(animated = false) else n.goBackward(animated = false)
         if (!moved) return false
-        val now = withTimeoutOrNull(900) { n.currentLocator.first { it != old } }
+        val now = withTimeoutOrNull(900) { n.currentLocator.first { !samePlace(it, old) } }
         if (now == null && forward && isEnd(old)) return false
         // The web view paints a frame or two after reporting where it is; a new chapter takes longer,
         // so wait until the page shows something (up to about a second and a half).
