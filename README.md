@@ -52,6 +52,11 @@ Fluid, simple and made to feel like reading a real comic book, or a good e-reade
 - Your own folders (subfolders included): CBZ, CBR (RAR4 and RAR5, solid archives too), CB7 and PDF
 - Launcher-style home: cover carousel with an ambient glow that follows the selected comic, a swipeable shelf of series, collections and folders, and a roomier layout for tablets held upright
 - The cover you tap grows into the reader, and shrinks back into its place when you close it
+- Home follows your reading: finish an issue and the next one in the series waits at the top, marked Up next
+- In list view, swipe a row right to mark it read or left to add it to Want to read, with undo
+- Books without a cover get a generated one (four designs, with title, author and series)
+- A short guide to taps and gestures the first time you open each reader, and an end card that shows how far you are in the series
+- Clear messages when a file will not open (damaged, missing, offline, no access) with a retry, and a notice when a folder or server could not be read
 - Pinch to make covers bigger or smaller; a short welcome on first launch
 - Make it yours: six themes (Night, Paper, OLED, Comic, Manga, or follow the system) each with its own matching colours and title font; the highlight colour can also follow the selected cover or your wallpaper
 - Backdrops (cover glow, solid, slowly moving colours or your own picture), cover corners, shadows, titles and read marks (badge, ribbon or faded), a flat, tilted or fanned carousel

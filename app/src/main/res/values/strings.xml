@@ -1023,4 +1023,12 @@
     <string name="problem_no_access">Fwip lost access to %1$s. Choose it again to see what is in it.</string>
     <string name="problem_unreachable">%1$s did not answer. Showing what was there last time.</string>
     <string name="problem_choose_again">Choose again</string>
+    <string name="news_up_next">Home follows your reading</string>
+    <string name="news_up_next_text">Finish an issue and the next one in the series waits for you at the top, marked Up next.</string>
+    <string name="news_swipe">Swipe on list rows</string>
+    <string name="news_swipe_text">In list view, swipe right to mark read, left to add to Want to read. Undo is always there.</string>
+    <string name="news_covers">New covers for books without one</string>
+    <string name="news_covers_text">Four designs, with the title, author and series, picked for each book.</string>
+    <string name="news_end">Better first page and last page</string>
+    <string name="news_end_text">A short guide to taps and gestures the first time you read, and at the end, how far you are in the series. Clearer messages when a file will not open.</string>
 </resources>

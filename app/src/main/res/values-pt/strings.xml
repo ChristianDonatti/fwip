@@ -1022,4 +1022,12 @@
     <string name="problem_no_access">O Fwip perdeu o acesso a %1$s. Escolha a pasta de novo para ver o que tem nela.</string>
     <string name="problem_unreachable">%1$s não respondeu. Mostrando o que estava lá da última vez.</string>
     <string name="problem_choose_again">Escolher de novo</string>
+    <string name="news_up_next">O Início acompanha sua leitura</string>
+    <string name="news_up_next_text">Termine uma edição e a próxima da série espera por você no topo, marcada como A seguir.</string>
+    <string name="news_swipe">Deslize nas linhas da lista</string>
+    <string name="news_swipe_text">Na lista, deslize para a direita para marcar como lido e para a esquerda para pôr em Quero ler. Dá para desfazer.</string>
+    <string name="news_covers">Capas novas para livros sem capa</string>
+    <string name="news_covers_text">Quatro estilos, com título, autor e série, escolhidos para cada livro.</string>
+    <string name="news_end">Primeira e última página melhores</string>
+    <string name="news_end_text">Um guia curto de toques e gestos na primeira leitura e, no fim, quanto falta da série. Mensagens mais claras quando um arquivo não abre.</string>
 </resources>
