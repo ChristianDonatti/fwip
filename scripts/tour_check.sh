@@ -53,56 +53,69 @@ for f in comics/PepperCarrot_0*.cbz comics/*.cbz books/Quiet_Street_1.epub books
 done
 restart 35
 shot b01-home-first 1
+labels() { timeout 60 python3 scripts/ui.py '^@@nothing@@$' 2>&1 | head -c 1500; echo; }
 # Read a little: a comic and a book, so "continue reading" and progress show.
-timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/PepperCarrot_02.cbz"; sleep 8
+ui '^Start\|' ; sleep 6
 shot c01-comic-open 1
 tap $(( W - 100 )) $(( H / 2 )); sleep 2; tap $(( W - 100 )) $(( H / 2 )); sleep 2
 tap $(( W / 2 )) $(( H / 2 )); shot c02-comic-chrome 2
-ui '\|Reading settings$\|^Aa\|\|Settings$' ; shot c03-comic-quick-settings 2
+labels
+ui '\|Reading settings$\|\|Settings$\|\|Quick settings$' ; shot c03-comic-quick-settings 2
 back 1
-tap $(( W / 2 )) $(( H / 2 )); sleep 1
+has '\|Pages$' || tap $(( W / 2 )) $(( H / 2 ))
 ui '\|Pages$' ; shot c04-comic-pages 3
-back 1; back 2
+back 1
+has '^Home\|' || back 2
+has '^Home\|' || back 2
 shot b02-home-after-comic 2
-timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/Dom_Casmurro.epub"; sleep 10
+ui '^Books\|' ; sleep 2; shot b03-home-books 1
+ui '^Start\|^Continue\|' ; sleep 10
 shot d01-book-open 1
 tap $(( W - 100 )) $(( H / 2 )); sleep 2
 tap $(( W / 2 )) $(( H / 2 )); shot d02-book-chrome 2
-ui '^Aa\|\|Text settings$' ; shot d03-book-aa 2
+labels
+ui '^Aa\|\|Text settings$\|\|Text$' ; shot d03-book-aa 2
 back 1
-tap $(( W / 2 )) $(( H / 2 )); sleep 1
+has '\|Contents$' || tap $(( W / 2 )) $(( H / 2 ))
 ui '\|Contents$' ; shot d04-book-contents 2
-back 1; back 2
+back 1
+has '^Home\|' || back 2
+has '^Home\|' || back 2
 crashes readers
-shot b03-home 2
-timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 200 )) $(( W / 2 )) 300 600; shot b04-home-scrolled 2
-ui '^Library\|' ; shot b05-library 2
-timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 200 )) $(( W / 2 )) 300 600; shot b06-library-scrolled 2
-ui '^Collections\|' ; shot b07-collections 2
-ui '^Servers\|' ; shot b08-servers 2
+shot b04-home-books-after 2
+ui '^Comics\|' ; sleep 2
+shot b05-home 2
+timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 200 )) $(( W / 2 )) 300 600; shot b06-home-scrolled 2
+timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 200 )) $(( W / 2 )) 300 600; shot b07-home-scrolled-more 2
+ui '^Library\|' ; shot b08-library 2
+ui '^Collections\|' ; shot b09-collections 2
+ui '^Servers\|' ; shot b10-servers 2
 ui '^Home\|' ; sleep 2
-longpress 'Pepper' ; shot b09-detail 3
+longpress 'Pepper' ; shot b11-detail 3
+labels
 back 2
-ui '\|Search$' ; shot b10-search-empty 2
-timeout 20 adb shell input text "pepper"; shot b11-search-results 2
-back 1; back 2
-ui '\|Reading stats$\|\|Stats$' ; shot b12-stats 3
-back 2
+ui '\|Search$' ; shot b12-search-empty 2
+timeout 20 adb shell input text "pepper"; shot b13-search-results 2
+back 1; has '^Home\|' || back 2
 crashes library
 
 # ---- Settings ----
 ui '\|Settings$' ; shot e01-settings 2
+labels
 for g in 'Appearance' 'Comics' 'Books' 'Library' 'Light' 'Sync' 'Backup' 'About'; do
-  ui "^$g\\|" && shot e-$g 2
+  ui "^$g" && shot e-$g 2
 done
-back 2; back 2
+back 2; has '^Home\|' || back 2
 crashes settings
 
-# ---- Selection, sort, empty states ----
+# ---- Selection, stats ----
 ui '^Library\|' ; sleep 2
-longpress 'Quiet' ; shot f01-selection 2
+longpress 'Pepper' ; shot f01-selection 2
+labels
 back 2
-ui '\|Sort$\|^Sort\|\|Sort and filter$' ; shot f02-sort 2
+ui '^Home\|' ; sleep 2
+for k in 1 2 3; do timeout 20 adb shell input swipe $(( W / 2 )) $(( H - 200 )) $(( W / 2 )) 300 400; sleep 1; done
+ui 'last 7 days\|' ; shot f02-stats 3
 back 2
 crashes misc
 
@@ -116,13 +129,10 @@ ui '^Library\|' ; shot g03-phone-library 2
 ui '^Home\|' ; sleep 2
 longpress 'Pepper' ; shot g04-phone-detail 3
 back 2
-timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/PepperCarrot_02.cbz"; sleep 8
+ui '^Continue\|^Start\|' ; sleep 8
 shot g05-phone-comic 1
 tap 540 1200; shot g06-phone-comic-chrome 2
-back 1; back 2
-timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/Dom_Casmurro.epub"; sleep 10
-tap 540 1200; shot g07-phone-book-chrome 2
-back 1; back 2
+back 1; has '^Home\|' || back 2
 ui '\|Settings$' ; shot g08-phone-settings 2
 crashes phone
 note done
