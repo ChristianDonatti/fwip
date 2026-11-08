@@ -47,13 +47,13 @@ prefs welcomed=true seenVersion=i:999999
 for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2; do
   [ -f "$f" ] && put "$f" "files/Baixadas/$(basename "$f")"
 done
-head -c 40000 /dev/urandom > /tmp/Broken.cbz; put /tmp/Broken.cbz files/Baixadas/Broken_Issue.cbz
 restart 35
 shot b01-home 1
 labels
 
-# Comic: tips the first time, then read to the end.
-ui '^Start\|' ; sleep 6
+# Comic: tips the first time, then read to the end. The first issue, from the Library (sorted by name).
+ui '^Library\|' ; sleep 2
+ui 'Pepper' ; sleep 6
 shot c01-comic-tips 1
 tap $(( W / 2 )) $(( H / 2 )); sleep 2
 shot c02-comic-after-tips 1
@@ -65,27 +65,13 @@ crashes comic
 shot b02-home-up-next 2
 labels
 # The same reader again: no tips this time.
-ui '^Start\|^Continue\|' ; sleep 6
+ui '^Start\||^Continue\|' ; sleep 6
 shot c04-comic-no-tips 1
 home
 
-# Book: tips, then the last chapter and the end card.
-ui '^Books\|' ; sleep 2
-shot b03-books-covers 2
-ui '^Start\|^Continue\|' ; sleep 10
-shot d01-book-tips 1
-tap $(( W / 2 )) $(( H / 2 )); sleep 2
-tap $(( W / 2 )) $(( H / 2 )); sleep 2
-has '\|Contents$' || tap $(( W / 2 )) $(( H / 2 ))
-ui '\|Contents$' ; sleep 2
-ui '^Chapter 6' ; sleep 4
-for k in $(seq 1 40); do tap $(( W - 100 )) $(( H / 2 )); sleep 0.8; has 'of .* read in|You have read all|Tap outside to stay' && break; done
-shot d02-book-end 2
-labels
-home
-crashes book
-
 # The broken file: a friendly message, and what to do.
+head -c 40000 /dev/urandom > /tmp/Broken.cbz; put /tmp/Broken.cbz files/Baixadas/Broken_Issue.cbz
+ui '\|Refresh library$' ; sleep 6
 ui '^Library\|' ; sleep 2
 ui '^Search\||\|Search$' ; sleep 1
 timeout 20 adb shell input text "Broken"; sleep 2
@@ -98,7 +84,7 @@ crashes error
 
 # ---- List rows that swipe ----
 adb shell am force-stop $APP
-prefs welcomed=true comicTips=true bookTips=true seenVersion=i:999999 libraryList=true
+prefs welcomed=true comicTips=true seenVersion=i:999999 libraryList=true
 restart 20
 ui '^Library\|' ; sleep 2
 shot f01-library-list 1
@@ -109,6 +95,23 @@ xy=$(find_xy 'Pepper'); if [ -n "$xy" ]; then set -- $xy
   timeout 20 adb shell input swipe 1200 $2 500 $2 500; shot f03-swiped-left 1
 fi
 crashes swipe
+
+# Book: tips, then the last chapter and the end card.
+ui '^Home\|' ; sleep 2
+ui '^Books\|' ; sleep 2
+shot b03-books-covers 2
+ui '^Start\||^Continue\|' ; sleep 10
+shot d01-book-tips 1
+tap $(( W / 2 )) $(( H / 2 )); sleep 2
+tap $(( W / 2 )) $(( H / 2 )); sleep 2
+has '\|Contents$' || tap $(( W / 2 )) $(( H / 2 ))
+ui '\|Contents$' ; sleep 2
+ui '^Chapter 6' ; sleep 4
+for k in $(seq 1 30); do tap $(( W - 100 )) $(( H / 2 )); sleep 1.5; [ $(( k % 5 )) = 0 ] && has 'of .* read in|You have read all|Tap outside to stay' && break; done
+shot d02-book-end 2
+labels
+home
+crashes book
 
 # ---- Phone: welcome and home ----
 adb shell wm size 1080x2400

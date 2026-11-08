@@ -13,7 +13,11 @@ data class FriendlyError(val message: String, val detail: String?, val canRetry:
  */
 fun friendlyError(t: Throwable, comic: Comic?): FriendlyError {
     val chain = generateSequence(t) { it.cause }.take(6).toList()
-    val detail = (t.message ?: t.javaClass.simpleName).take(300)
+    // Paths inside the app's own storage mean nothing to a reader: keep the words, drop the path.
+    val detail = (t.message ?: t.javaClass.simpleName)
+        .replace(Regex("""\s*(from|in|at)?\s*(/[^\s/]+){3,}/?"""), "")
+        .trim().trimEnd(':').ifBlank { t.javaClass.simpleName }
+        .take(300)
     val net = comic?.remote != null || comic?.uri?.scheme in setOf("smb", "webdav", "dav", "davs", "http", "https")
     return when {
         chain.any { it is SecurityException } ->
