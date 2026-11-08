@@ -763,6 +763,11 @@ private fun BookReader(
                 onDismiss = { editing = null },
             )
         }
+        // The first time: where to tap, the long press on a word, the corner to drag.
+        val uiTips = remember { io.github.christiandonatti.fwip.ui.UiSettings.get(context) }
+        if (!uiTips.bookTips && !io.github.christiandonatti.fwip.ui.A11y.screenReader(context)) {
+            io.github.christiandonatti.fwip.reader.BookReaderTips(turner.enabled) { uiTips.setBookTipsSeen() }
+        }
     }
 }
 

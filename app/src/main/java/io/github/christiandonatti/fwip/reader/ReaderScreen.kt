@@ -711,6 +711,12 @@ private fun Reader(
                 onDismiss = { showEnd = false },
             )
         }
+
+        // The first time: where to tap and which gestures do what.
+        val uiTips = remember { io.github.christiandonatti.fwip.ui.UiSettings.get(context) }
+        if (!uiTips.comicTips && !screenReader) {
+            ComicReaderTips(settings, rtl) { uiTips.setComicTipsSeen() }
+        }
     }
 
     if (showSettings) {

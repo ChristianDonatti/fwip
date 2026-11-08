@@ -87,6 +87,8 @@ import io.github.christiandonatti.fwip.data.ComicCollection
 import io.github.christiandonatti.fwip.data.LibraryItem
 import io.github.christiandonatti.fwip.ui.theme.FwipColors
 import java.util.Locale
+import androidx.compose.foundation.gestures.draggable
+import kotlinx.coroutines.launch
 
 /** A cover in a grid: tap to read, hold for options. Finished comics get a check badge. */
 @Composable
@@ -288,6 +290,78 @@ fun ComicRow(
                 else -> {}
             }
         }
+    }
+}
+
+/**
+ * A list row that can be swiped: to the right marks it read (or unread when it already is), to the
+ * left puts it in Want to read (or takes it out). Past the line it clicks once; let go and it is
+ * done, with Undo in the bar at the bottom.
+ */
+@Composable
+fun SwipeRow(item: LibraryItem, actions: LibraryActions, enabled: Boolean = true, content: @Composable () -> Unit) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val offset = remember { androidx.compose.animation.core.Animatable(0f) }
+    val line = with(density) { 88.dp.toPx() }
+    val most = with(density) { 160.dp.toPx() }
+    var armed by remember { mutableStateOf(0) }
+    val read = item.progress?.finished == true
+    val wanted = item.wanted
+    val x = offset.value
+    Box(Modifier.fillMaxWidth()) {
+        if (x != 0f) {
+            val right = x > 0
+            val on = kotlin.math.abs(x) >= line
+            val tint = if (right) FwipColors.Amber else FwipColors.Glow
+            Row(
+                Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(tint.copy(alpha = if (on) 0.34f else 0.16f))
+                    .padding(horizontal = 22.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = if (right) Arrangement.Start else Arrangement.End,
+            ) {
+                Text(
+                    str(
+                        when {
+                            right && read -> R.string.mark_unread
+                            right -> R.string.mark_read
+                            wanted -> R.string.want_remove
+                            else -> R.string.want_add
+                        },
+                    ),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (on) FwipColors.Text else FwipColors.TextSoft,
+                )
+            }
+        }
+        Box(
+            Modifier
+                .offset { androidx.compose.ui.unit.IntOffset(offset.value.toInt(), 0) }
+                .draggable(
+                    enabled = enabled,
+                    orientation = androidx.compose.foundation.gestures.Orientation.Horizontal,
+                    state = androidx.compose.foundation.gestures.rememberDraggableState { d ->
+                        scope.launch { offset.snapTo((offset.value + d).coerceIn(-most, most)) }
+                        val now = when { offset.value >= line -> 1; offset.value <= -line -> -1; else -> 0 }
+                        if (now != armed) {
+                            armed = now
+                            if (now != 0) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        }
+                    },
+                    onDragStopped = {
+                        when (armed) {
+                            1 -> actions.setRead(listOf(item.comic.id), !read)
+                            -1 -> actions.setWantUndo(listOf(item.comic.id), !wanted)
+                        }
+                        armed = 0
+                        offset.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 500f))
+                    },
+                ),
+        ) { content() }
     }
 }
 

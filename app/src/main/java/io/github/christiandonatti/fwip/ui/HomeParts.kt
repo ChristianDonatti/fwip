@@ -295,6 +295,9 @@ private fun SmallChip(text: String, on: Boolean, onClick: () -> Unit) {
 private fun Modifier.horizontalScrollSafe(): Modifier =
     this.then(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()))
 
+/** Ids of the next issues to read (shown as "Up next" on the home cards). */
+internal val LocalUpNext = androidx.compose.runtime.staticCompositionLocalOf<Set<String>> { emptySet() }
+
 /** How the home screen is arranged on this screen. */
 internal enum class HomeLayout { Landscape, Upright, Phone }
 
@@ -331,6 +334,7 @@ internal fun Home(
         else -> 136.dp
     }
 
+    androidx.compose.runtime.CompositionLocalProvider(LocalUpNext provides state.upNextIds) {
     LazyColumn(
         contentPadding = PaddingValues(top = if (layout == HomeLayout.Landscape) 0.dp else 8.dp, bottom = if (wide) 40.dp else 110.dp),
         verticalArrangement = Arrangement.spacedBy(if (layout == HomeLayout.Phone) 24.dp else 30.dp),
@@ -399,6 +403,7 @@ internal fun Home(
             }
         }
     }
+    }
 }
 
 /** Tablet on its side: the story on the left, covers to flick through on the right. */
@@ -459,7 +464,7 @@ private fun HeroStory(
     ) { hero ->
         Column(Modifier.widthIn(max = 760.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(kicker(hero), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft, modifier = Modifier.weight(1f))
+                Text(kicker(hero, hero.comic.id in LocalUpNext.current), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft, modifier = Modifier.weight(1f))
                 if (arrows) {
                     CircleIconButton(Icons.Filled.KeyboardArrowLeft, str(R.string.previous), { onSelect((index - 1).coerceAtLeast(0)) }, size = 40.dp)
                     Spacer(Modifier.width(8.dp))
@@ -499,7 +504,7 @@ private fun PhoneHero(hero: LibraryItem, actions: LibraryActions, onMenu: (Libra
     ) {
         CoverImage(hero, Modifier.size(120.dp, 180.dp).coverShadow(12.dp, 14.dp), corner = 14.dp, titleSize = 16, track = true)
         Column(Modifier.weight(1f).height(180.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(kicker(hero), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
+            Text(kicker(hero, hero.comic.id in LocalUpNext.current), style = MaterialTheme.typography.labelSmall, color = FwipColors.TextSoft)
             Text(hero.title, style = MaterialTheme.typography.titleLarge, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Text(progressLine(hero), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             ProgressBar(hero.progress?.fraction ?: 0f, hero.glowColor(), Modifier.fillMaxWidth())

@@ -47,7 +47,7 @@ for k in 1 2 3 4 5; do
   timeout 20 adb shell "run-as $APP sh -c 'cat shared_prefs/fwip.xml'" | grep -q "nas/HQs" && break
   sleep 2
 done
-python3 scripts/look_prefs.py welcomed=true > /tmp/fwip_ui.xml
+python3 scripts/look_prefs.py welcomed=true comicTips=true bookTips=true > /tmp/fwip_ui.xml
 timeout 20 adb exec-in "run-as $APP sh -c 'cat > shared_prefs/fwip_ui.xml'" < /tmp/fwip_ui.xml
 python3 scripts/look_prefs.py target=fwip-net://nas/HQs wifi=false > /tmp/fwip_upload.xml
 timeout 20 adb exec-in "run-as $APP sh -c 'cat > shared_prefs/fwip_upload.xml'" < /tmp/fwip_upload.xml

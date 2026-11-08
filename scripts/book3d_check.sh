@@ -43,7 +43,7 @@ adb shell wm size ${W}x${H}
 adb shell wm density 240
 adb shell pm clear $APP
 adb shell "run-as $APP mkdir -p files/Baixadas shared_prefs"
-python3 scripts/look_prefs.py welcomed=true seenVersion=i:999999 > /tmp/ui.xml
+python3 scripts/look_prefs.py welcomed=true comicTips=true bookTips=true seenVersion=i:999999 > /tmp/ui.xml
 for k in 1 2 3; do put /tmp/ui.xml shared_prefs/fwip_ui.xml; adb shell "run-as $APP cat shared_prefs/fwip_ui.xml" | grep -q welcomed && break; done
 for f in books/Quiet_Street_1.epub books/Dom_Casmurro.epub comics/PepperCarrot_01.cbz; do [ -f "$f" ] && put "$f" "files/Baixadas/$(basename "$f")"; done
 books book3d=true scene=Fireplace ambientSound=false "photoScenes=set:Fireplace" sceneMotion=false parallax=false

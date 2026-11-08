@@ -994,4 +994,20 @@
     <string name="news_inapp_update_text">When a new version is out, Update downloads and installs it right in Fwip, no browser needed. The first time, Android asks you to allow it.</string>
     <string name="updated_title">Fwip %1$s is installed</string>
     <string name="updated_text">Tap to open the new version.</string>
+    <string name="undo_wanted">Added to Want to read</string>
+    <string name="undo_unwanted">Removed from Want to read</string>
+    <string name="tips_title">How to read here</string>
+    <string name="tips_done">Got it</string>
+    <string name="tips_next">Tap here: next page</string>
+    <string name="tips_back">Tap here: previous page</string>
+    <string name="tips_menu">Tap the middle: menu</string>
+    <string name="tips_pinch">Pinch</string>
+    <string name="tips_drag_corner">Drag a corner</string>
+    <string name="tips_drag_corner_text">turns the page like paper</string>
+    <string name="tips_long_press_word">Long press a word</string>
+    <string name="tips_long_press_word_text">highlight, note, copy or look it up</string>
+    <string name="tips_menu_aa">Aa in the menu</string>
+    <string name="tips_menu_aa_text">font, size, colours and margins</string>
+    <string name="tips_note_comics">You can change taps and gestures in Settings, Comic reading.</string>
+    <string name="tips_note_books">Everything about the page is in Aa; the reader\'s settings are also in Settings, Book reading.</string>
 </resources>

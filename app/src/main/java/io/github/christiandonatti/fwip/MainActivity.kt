@@ -198,6 +198,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                         deleteCollection = viewModel::deleteCollectionWithUndo,
                         setInCollection = viewModel::setInCollection,
                         setWant = viewModel::setWant,
+                        setWantUndo = viewModel::setWantWithUndo,
                     )
                 }
 

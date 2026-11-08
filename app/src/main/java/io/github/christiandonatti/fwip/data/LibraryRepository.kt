@@ -234,7 +234,8 @@ class LibraryRepository(private val context: Context) {
 
     // ---------- Covers ----------
 
-    fun coverFile(comic: Comic): File = File(coversDir, sha1(comic.id) + ".jpg")
+    // Book covers carry a version: when the covers drawn for books without one change, they are made again.
+    fun coverFile(comic: Comic): File = File(coversDir, sha1(comic.id) + (if (comic.format.isBook) "-b2" else "") + ".jpg")
 
     fun coverPathIfReady(comic: Comic): String? =
         customCoverFor(comic)?.absolutePath ?: coverFile(comic).takeIf { it.exists() }?.absolutePath

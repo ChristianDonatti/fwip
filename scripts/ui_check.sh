@@ -27,7 +27,7 @@ restart() { timeout 20 adb shell am force-stop $APP; timeout 20 adb shell am sta
 # Writes the look settings (key=value ...) and restarts the app.
 look() {
   timeout 20 adb shell am force-stop $APP
-  python3 scripts/look_prefs.py welcomed=true "$@" > /tmp/fwip_ui.xml
+  python3 scripts/look_prefs.py welcomed=true comicTips=true bookTips=true "$@" > /tmp/fwip_ui.xml
   timeout 20 adb exec-in "run-as $APP sh -c 'mkdir -p shared_prefs; cat > shared_prefs/fwip_ui.xml'" < /tmp/fwip_ui.xml
   restart 14
 }

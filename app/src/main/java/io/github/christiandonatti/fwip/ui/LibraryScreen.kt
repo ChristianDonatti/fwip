@@ -117,6 +117,8 @@ class LibraryActions(
     val deleteCollection: (String) -> Unit,
     val setInCollection: (String, List<String>, Boolean) -> Unit,
     val setWant: (List<String>, Boolean) -> Unit,
+    /** The same, offering Undo; used where it happens in one gesture (a swipe). */
+    val setWantUndo: (List<String>, Boolean) -> Unit = setWant,
     /** Opens a comic from a collection, whose order then decides what comes next. */
     val openIn: (LibraryItem, String?) -> Unit,
     val reorderCollection: (String, List<String>) -> Unit,
@@ -679,7 +681,8 @@ private fun Chip(text: String, on: Boolean, onClick: () -> Unit) {
     }
 }
 
-internal fun kicker(item: LibraryItem): String = when {
+internal fun kicker(item: LibraryItem, upNext: Boolean = false): String = when {
+    upNext && item.progress?.started != true -> str(R.string.up_next)
     item.progress?.finished == true -> str(R.string.kicker_again)
     item.progress?.started == true -> str(R.string.kicker_continue)
     else -> str(R.string.kicker_start)
@@ -930,7 +933,7 @@ private fun LibraryTab(
                     item(span = { GridItemSpan(maxLineSpan) }) { Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 6.dp)) }
                 }
                 items(hits, key = { it.comic.id }) { it ->
-                    if (ui.libraryList) ComicRow(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, selection = selection)
+                    if (ui.libraryList) SwipeRow(it, actions, enabled = !selection.active) { ComicRow(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, selection = selection) }
                     else CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
                 }
             }
@@ -992,7 +995,7 @@ private fun LibraryTab(
                         BookShelf(list, onOpen = { actions.open(it) }, onMenu = onMenu, wide = wide)
                     }
                 } else items(list, key = { it.comic.id }) { it ->
-                    if (ui.libraryList) ComicRow(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, selection = selection)
+                    if (ui.libraryList) SwipeRow(it, actions, enabled = !selection.active) { ComicRow(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, selection = selection) }
                     else CoverTile(it, onOpen = { actions.open(it) }, onMenu = { onMenu(it) }, wide = bigTitles, selection = selection)
                 }
             }

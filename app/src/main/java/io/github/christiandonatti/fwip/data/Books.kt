@@ -303,82 +303,228 @@ internal class BookCoverSource(private val context: Context, private val info: B
 
     override fun decodePage(index: Int, maxWidth: Int, maxHeight: Int): Bitmap? =
         info.cover?.let { bytes -> ImageDecoding.decode({ bytes.inputStream() }, maxWidth, maxHeight) }
-            ?: GeneratedCover.draw(context, info.title ?: fallbackTitle, info.authors.firstOrNull(), maxWidth, maxHeight)
+            ?: GeneratedCover.draw(context, info.title ?: fallbackTitle, info.authors.firstOrNull(), maxWidth, maxHeight, info.series, info.seriesIndex)
 
     override fun readComicInfo(): ByteArray = info.copy(title = info.title ?: fallbackTitle).toComicInfo()
 
     override fun close() {}
 }
 
-/** Typeset covers for books that come without one: the title large, the author small, a colour of its own. */
+/**
+ * Typeset covers for books that come without one. Each book gets one of four designs and a colour
+ * of its own (from its title, so it never changes): a cloth binding with a frame, a modern block,
+ * a three-band paperback, and a quiet cream page. The series and its number sit above the title.
+ */
 object GeneratedCover {
     private val palette = intArrayOf(
         0xFF2F4858.toInt(), 0xFF6B2D3C.toInt(), 0xFF33658A.toInt(), 0xFF5B4E3A.toInt(),
         0xFF3D5A3A.toInt(), 0xFF4A3B6B.toInt(), 0xFF7A4B24.toInt(), 0xFF283B59.toInt(),
+        0xFF8C3B2E.toInt(), 0xFF2E5E57.toInt(),
     )
+    private const val CREAM = 0xFFF2EBDA.toInt()
+    private const val INK = 0xFF1F1B16.toInt()
 
-    fun colorFor(title: String): Int = palette[(title.hashCode() and 0x7fffffff) % palette.size]
+    private fun hash(title: String) = title.hashCode() and 0x7fffffff
 
-    fun draw(context: Context, title: String, author: String?, maxWidth: Int, maxHeight: Int): Bitmap {
+    fun colorFor(title: String): Int = palette[hash(title) % palette.size]
+
+    fun draw(
+        context: Context,
+        title: String,
+        author: String?,
+        maxWidth: Int,
+        maxHeight: Int,
+        series: String? = null,
+        index: String? = null,
+    ): Bitmap {
         // Book proportions (2:3) inside the box asked for.
         val h = maxHeight.coerceAtLeast(300)
         val w = minOf(maxWidth.coerceAtLeast(200), h * 2 / 3)
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         val base = colorFor(title)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.shader = LinearGradient(0f, 0f, 0f, h.toFloat(), lighten(base, 0.12f), darken(base, 0.18f), Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
-        paint.shader = null
-        // A spine shadow and a thin frame, like a cloth-bound book.
-        paint.color = Color.argb(60, 0, 0, 0)
-        c.drawRect(0f, 0f, w * 0.045f, h.toFloat(), paint)
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = w * 0.006f
-        paint.color = Color.argb(150, 236, 225, 196)
-        val m = w * 0.09f
-        c.drawRect(m, m, w - m * 0.8f, h - m, paint)
-        paint.style = Paint.Style.FILL
-
-        val serif = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, io.github.christiandonatti.fwip.R.font.fraunces_700) }.getOrNull()
-            ?: android.graphics.Typeface.SERIF
-        val sans = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, io.github.christiandonatti.fwip.R.font.manrope_600) }.getOrNull()
-            ?: android.graphics.Typeface.SANS_SERIF
-        val tp = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(244, 236, 216)
-            typeface = serif
-            textSize = w * 0.11f
+        val fonts = Fonts(context)
+        val line = series?.takeIf { it.isNotBlank() && !title.contains(it, ignoreCase = true) }?.let { sr ->
+            val n = index?.trim()?.removeSuffix(".0")?.takeIf { it.isNotEmpty() }
+            if (n != null) "$sr · $n" else sr
+        } ?: index?.trim()?.removeSuffix(".0")?.takeIf { it.isNotEmpty() && series != null }?.let { "#$it" }
+        when ((hash(title) / palette.size) % 4) {
+            0 -> cloth(c, w, h, base, title, author, line, fonts)
+            1 -> block(c, w, h, base, title, author, line, fonts)
+            2 -> bands(c, w, h, base, title, author, line, fonts)
+            else -> cream(c, w, h, base, title, author, line, fonts)
         }
-        val textWidth = (w - m * 3).toInt()
-        var layout = StaticLayout.Builder.obtain(title, 0, title.length, tp, textWidth).setAlignment(Layout.Alignment.ALIGN_CENTER).setLineSpacing(0f, 1.05f).build()
-        // Long titles get smaller type rather than running off the cover.
-        while (layout.height > h * 0.5f && tp.textSize > w * 0.05f) {
-            tp.textSize *= 0.88f
-            layout = StaticLayout.Builder.obtain(title, 0, title.length, tp, textWidth).setAlignment(Layout.Alignment.ALIGN_CENTER).setLineSpacing(0f, 1.05f).build()
-        }
-        c.save()
-        c.translate(m * 1.6f, h * 0.24f)
-        layout.draw(c)
-        c.restore()
-        // A small rule under the title.
-        paint.color = Color.argb(170, 236, 225, 196)
-        val ruleY = h * 0.24f + layout.height + h * 0.04f
-        c.drawRect(w / 2f - w * 0.08f, ruleY, w / 2f + w * 0.08f, ruleY + w * 0.008f, paint)
-        if (!author.isNullOrBlank()) {
-            val ap = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.argb(225, 236, 225, 196)
-                typeface = sans
-                textSize = w * 0.055f
-                letterSpacing = 0.08f
-            }
-            val a = author.uppercase()
-            val al = StaticLayout.Builder.obtain(a, 0, a.length, ap, textWidth).setAlignment(Layout.Alignment.ALIGN_CENTER).setMaxLines(2).build()
-            c.save()
-            c.translate(m * 1.6f, h * 0.8f - al.height)
-            al.draw(c)
-            c.restore()
-        }
+        grain(c, w, h, hash(title))
         return bmp
+    }
+
+    private class Fonts(context: Context) {
+        val serif: android.graphics.Typeface = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, io.github.christiandonatti.fwip.R.font.fraunces_700) }.getOrNull()
+            ?: android.graphics.Typeface.SERIF
+        val sans: android.graphics.Typeface = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, io.github.christiandonatti.fwip.R.font.manrope_600) }.getOrNull()
+            ?: android.graphics.Typeface.SANS_SERIF
+        val display: android.graphics.Typeface = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, io.github.christiandonatti.fwip.R.font.unbounded_600) }.getOrNull()
+            ?: android.graphics.Typeface.DEFAULT_BOLD
+    }
+
+    /** Text set in [width], shrunk until it fits in [maxHeight] (long titles get smaller type, never cut). */
+    private fun fit(
+        text: String,
+        typeface: android.graphics.Typeface,
+        size: Float,
+        color: Int,
+        width: Int,
+        maxHeight: Float,
+        align: Layout.Alignment,
+        spacing: Float = 1.04f,
+        tracking: Float = 0f,
+        maxLines: Int = Int.MAX_VALUE,
+    ): StaticLayout {
+        val tp = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; this.typeface = typeface; textSize = size; letterSpacing = tracking }
+        fun build() = StaticLayout.Builder.obtain(text, 0, text.length, tp, width).setAlignment(align)
+            .setLineSpacing(0f, spacing).setMaxLines(maxLines).setEllipsize(if (maxLines < Int.MAX_VALUE) android.text.TextUtils.TruncateAt.END else null)
+            .setBreakStrategy(Layout.BREAK_STRATEGY_BALANCED).build()
+        var l = build()
+        while (l.height > maxHeight && tp.textSize > size * 0.35f) {
+            tp.textSize *= 0.9f
+            l = build()
+        }
+        return l
+    }
+
+    private fun Canvas.at(x: Float, y: Float, l: StaticLayout) { save(); translate(x, y); l.draw(this); restore() }
+
+    private fun alpha(color: Int, a: Int) = Color.argb(a, Color.red(color), Color.green(color), Color.blue(color))
+
+    /** The cloth binding: a soft gradient, a spine shadow, a gold frame and centred serif type. */
+    private fun cloth(c: Canvas, w: Int, h: Int, base: Int, title: String, author: String?, line: String?, f: Fonts) {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.shader = LinearGradient(0f, 0f, w.toFloat(), h.toFloat(), lighten(base, 0.14f), darken(base, 0.22f), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+        paint.shader = LinearGradient(0f, 0f, w * 0.07f, 0f, Color.argb(90, 0, 0, 0), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w * 0.07f, h.toFloat(), paint)
+        paint.shader = null
+        val gold = Color.rgb(222, 196, 140)
+        val m = w * 0.1f
+        paint.style = Paint.Style.STROKE
+        paint.color = alpha(gold, 170)
+        paint.strokeWidth = w * 0.006f
+        c.drawRect(m, m, w - m * 0.85f, h - m, paint)
+        paint.strokeWidth = w * 0.0025f
+        c.drawRect(m + w * 0.018f, m + w * 0.018f, w - m * 0.85f - w * 0.018f, h - m - w * 0.018f, paint)
+        paint.style = Paint.Style.FILL
+        val tw = (w - m * 3.2f).toInt()
+        val x = m * 1.65f
+        var y = h * 0.2f
+        line?.let {
+            val l = fit(it.uppercase(), f.sans, w * 0.042f, alpha(gold, 220), tw, h * 0.08f, Layout.Alignment.ALIGN_CENTER, tracking = 0.14f, maxLines = 2)
+            c.at(x, y, l); y += l.height + h * 0.035f
+        }
+        val t = fit(title, f.serif, w * 0.115f, Color.rgb(246, 238, 220), tw, h * 0.42f, Layout.Alignment.ALIGN_CENTER)
+        c.at(x, y, t); y += t.height + h * 0.04f
+        paint.color = alpha(gold, 200)
+        c.drawCircle(w / 2f, y, w * 0.012f, paint)
+        c.drawRect(w / 2f - w * 0.12f, y - w * 0.002f, w / 2f - w * 0.03f, y + w * 0.002f, paint)
+        c.drawRect(w / 2f + w * 0.03f, y - w * 0.002f, w / 2f + w * 0.12f, y + w * 0.002f, paint)
+        author?.takeIf { it.isNotBlank() }?.let {
+            val a = fit(it.uppercase(), f.sans, w * 0.05f, alpha(Color.rgb(246, 238, 220), 225), tw, h * 0.1f, Layout.Alignment.ALIGN_CENTER, tracking = 0.1f, maxLines = 2)
+            c.at(x, h * 0.82f - a.height, a)
+        }
+    }
+
+    /** A modern block: one strong colour, a big left-set title, the author on a bar at the foot. */
+    private fun block(c: Canvas, w: Int, h: Int, base: Int, title: String, author: String?, line: String?, f: Fonts) {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        c.drawColor(base)
+        // A large soft circle for depth.
+        paint.color = alpha(lighten(base, 0.25f), 70)
+        c.drawCircle(w * 0.95f, h * 0.18f, w * 0.62f, paint)
+        val m = w * 0.1f
+        val tw = (w - m * 2).toInt()
+        var y = m * 1.4f
+        line?.let {
+            val l = fit(it.uppercase(), f.sans, w * 0.045f, alpha(CREAM, 200), tw, h * 0.08f, Layout.Alignment.ALIGN_NORMAL, tracking = 0.12f, maxLines = 2)
+            c.at(m, y, l); y += l.height + h * 0.03f
+        }
+        val t = fit(title, f.display, w * 0.12f, CREAM, tw, h * 0.5f, Layout.Alignment.ALIGN_NORMAL, spacing = 0.98f)
+        c.at(m, y, t)
+        val barH = h * 0.16f
+        paint.color = CREAM
+        c.drawRect(0f, h - barH, w.toFloat(), h.toFloat(), paint)
+        paint.color = base
+        c.drawRect(m, h - barH, m + w * 0.16f, h - barH + w * 0.014f, paint)
+        author?.takeIf { it.isNotBlank() }?.let {
+            val a = fit(it, f.sans, w * 0.058f, INK, tw, barH * 0.7f, Layout.Alignment.ALIGN_NORMAL, maxLines = 2)
+            c.at(m, h - barH / 2f - a.height / 2f, a)
+        }
+    }
+
+    /** The three-band paperback: colour, a cream band with the title and author, colour. */
+    private fun bands(c: Canvas, w: Int, h: Int, base: Int, title: String, author: String?, line: String?, f: Fonts) {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        c.drawColor(base)
+        val top = h * 0.3f
+        val bottom = h * 0.74f
+        paint.color = CREAM
+        c.drawRect(0f, top, w.toFloat(), bottom, paint)
+        paint.color = alpha(INK, 40)
+        c.drawRect(0f, top, w.toFloat(), top + h * 0.004f, paint)
+        c.drawRect(0f, bottom - h * 0.004f, w.toFloat(), bottom, paint)
+        val m = w * 0.1f
+        val tw = (w - m * 2).toInt()
+        line?.let {
+            val l = fit(it.uppercase(), f.sans, w * 0.045f, alpha(CREAM, 225), tw, top * 0.5f, Layout.Alignment.ALIGN_CENTER, tracking = 0.14f, maxLines = 2)
+            c.at(m, top / 2f - l.height / 2f, l)
+        }
+        val band = bottom - top
+        val a = author?.takeIf { it.isNotBlank() }?.let { fit(it, f.sans, w * 0.055f, alpha(INK, 200), tw, band * 0.22f, Layout.Alignment.ALIGN_CENTER, maxLines = 2) }
+        val t = fit(title, f.serif, w * 0.105f, INK, tw, band * (if (a != null) 0.6f else 0.8f), Layout.Alignment.ALIGN_CENTER)
+        val gap = h * 0.03f
+        val total = t.height + (a?.let { it.height + gap } ?: 0)
+        var y = top + band / 2f - total / 2f
+        c.at(m, y, t); y += t.height + gap
+        a?.let { c.at(m, y, it) }
+        // A small mark in the lower band.
+        paint.color = alpha(CREAM, 200)
+        c.drawCircle(w / 2f, bottom + (h - bottom) / 2f, w * 0.035f, paint)
+        paint.color = base
+        c.drawCircle(w / 2f, bottom + (h - bottom) / 2f, w * 0.02f, paint)
+    }
+
+    /** A quiet cream page: coloured title, a thin rule, the author, a coloured edge. */
+    private fun cream(c: Canvas, w: Int, h: Int, base: Int, title: String, author: String?, line: String?, f: Fonts) {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        c.drawColor(CREAM)
+        paint.color = base
+        c.drawRect(0f, 0f, w * 0.05f, h.toFloat(), paint)
+        val m = w * 0.14f
+        val tw = (w - m * 1.8f).toInt()
+        var y = h * 0.16f
+        line?.let {
+            val l = fit(it.uppercase(), f.sans, w * 0.042f, base, tw, h * 0.08f, Layout.Alignment.ALIGN_NORMAL, tracking = 0.14f, maxLines = 2)
+            c.at(m, y, l); y += l.height + h * 0.03f
+        }
+        val t = fit(title, f.serif, w * 0.12f, darken(base, 0.15f), tw, h * 0.5f, Layout.Alignment.ALIGN_NORMAL)
+        c.at(m, y, t); y += t.height + h * 0.04f
+        paint.color = alpha(INK, 120)
+        c.drawRect(m, y, m + w * 0.22f, y + w * 0.005f, paint)
+        author?.takeIf { it.isNotBlank() }?.let {
+            val a = fit(it, f.sans, w * 0.056f, alpha(INK, 210), tw, h * 0.12f, Layout.Alignment.ALIGN_NORMAL, maxLines = 2)
+            c.at(m, y + h * 0.035f, a)
+        }
+    }
+
+    /** A faint paper grain, so the cover reads as printed rather than flat. */
+    private fun grain(c: Canvas, w: Int, h: Int, seed: Int) {
+        val r = java.util.Random(seed.toLong())
+        val p = Paint()
+        val n = (w * h) / 900
+        repeat(n) {
+            p.color = if (r.nextBoolean()) Color.argb(14, 255, 255, 255) else Color.argb(16, 0, 0, 0)
+            val x = r.nextFloat() * w
+            val y = r.nextFloat() * h
+            c.drawRect(x, y, x + 1.5f, y + 1.5f, p)
+        }
     }
 
     private fun lighten(c: Int, k: Float) = Color.rgb(

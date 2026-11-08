@@ -23,6 +23,10 @@ for f in comics/*.cbz; do
   adb exec-in "run-as $APP sh -c 'cat > files/Baixadas/$b'" < "$f"
 done
 echo "::notice::in app storage: $(adb shell "run-as $APP ls files/Baixadas" | wc -l) comics"
+# The one-time reading hints would cover the reader in the pictures.
+adb shell "run-as $APP mkdir -p shared_prefs"
+python3 scripts/look_prefs.py comicTips=true bookTips=true > /tmp/ui.xml
+adb exec-in "run-as $APP sh -c 'cat > shared_prefs/fwip_ui.xml'" < /tmp/ui.xml
 adb shell settings put system screen_off_timeout 1800000
 adb shell settings put secure immersive_mode_confirmations confirmed
 adb shell svc power stayon true

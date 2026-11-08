@@ -139,6 +139,13 @@ class UiSettings private constructor(context: Context) {
     /** Cover size in grids, changed by pinching: 1 = default. */
     var coverScale by mutableFloatStateOf(prefs.getFloat("coverScale", 1f))
         private set
+    /** The one-time hints over the comic and book readers (where to tap, which gestures do what). */
+    var comicTips by mutableStateOf(prefs.getBoolean("comicTips", false))
+        private set
+    var bookTips by mutableStateOf(prefs.getBoolean("bookTips", false))
+        private set
+    fun setComicTipsSeen(seen: Boolean = true) { comicTips = seen; prefs.edit().putBoolean("comicTips", seen).apply() }
+    fun setBookTipsSeen(seen: Boolean = true) { bookTips = seen; prefs.edit().putBoolean("bookTips", seen).apply() }
     var welcomed by mutableStateOf(prefs.getBoolean("welcomed", false))
         private set
     /** Bumped when the background picture changes, so it is read again. */

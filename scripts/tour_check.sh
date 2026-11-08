@@ -46,7 +46,7 @@ crashes welcome
 # ---- A reader with a library ----
 adb shell pm clear $APP
 adb shell "run-as $APP mkdir -p files/Baixadas shared_prefs"
-python3 scripts/look_prefs.py welcomed=true seenVersion=i:999999 > /tmp/ui.xml
+python3 scripts/look_prefs.py welcomed=true comicTips=true bookTips=true seenVersion=i:999999 > /tmp/ui.xml
 for k in 1 2 3; do put /tmp/ui.xml shared_prefs/fwip_ui.xml; adb shell "run-as $APP cat shared_prefs/fwip_ui.xml" | grep -q welcomed && break; done
 for f in comics/PepperCarrot_0*.cbz comics/*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2 books/Dom_Casmurro.epub; do
   [ -f "$f" ] && put "$f" "files/Baixadas/$(basename "$f")"

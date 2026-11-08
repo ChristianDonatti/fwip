@@ -78,13 +78,43 @@ data class LibraryState(
         get() = items.filter { it.progress?.started == true && it.progress.finished.not() }
             .sortedByDescending { it.progress?.lastRead ?: 0L }
 
-    /** What the home carousel shows: in-progress first, then the rest of the library. */
-    val homeRow: List<LibraryItem>
-        get() {
-            val first = continueReading
-            val ids = first.map { it.comic.id }.toSet()
-            return first + items.filter { it.comic.id !in ids }
-        }
+    /**
+     * The next issue of each series (or reading list) you finished most recently, when it is not
+     * started yet: what you would pick up next. Most recent first.
+     */
+    val upNext: List<LibraryItem> by lazy {
+        val reading = continueReading.map { it.comic.id }.toSet()
+        items.asSequence()
+            .filter { it.progress?.finished == true }
+            .sortedByDescending { it.progress?.lastRead ?: 0L }
+            .take(40)
+            .mapNotNull { done -> nextAfter(done) }
+            .filter { it.progress?.started != true && it.comic.id !in reading }
+            .distinctBy { it.comic.id }
+            .take(12)
+            .toList()
+    }
+
+    /**
+     * What the home carousel shows, in the order you would want it: what you are reading, the next
+     * issue of what you just finished, what you marked to read, new arrivals not opened yet, the
+     * rest, and last what you have finished.
+     */
+    val homeRow: List<LibraryItem> by lazy {
+        val seen = HashSet<String>()
+        val out = ArrayList<LibraryItem>(items.size)
+        fun add(list: List<LibraryItem>) { list.forEach { if (seen.add(it.comic.id)) out += it } }
+        add(continueReading)
+        add(upNext)
+        add(items.filter { it.wanted && it.progress?.finished != true }.sortedByDescending { it.wantedAt ?: 0L })
+        val (done, rest) = items.partition { it.progress?.finished == true }
+        add(rest.sortedByDescending { it.comic.lastModified })
+        add(done.sortedByDescending { it.progress?.lastRead ?: 0L })
+        out
+    }
+
+    /** Ids in [upNext], for the label on their cards. */
+    val upNextIds: Set<String> by lazy { upNext.mapTo(HashSet()) { it.comic.id } }
 
     val openComic: Comic? get() = items.firstOrNull { it.comic.id == openComicId }?.comic
 
@@ -875,6 +905,12 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
         offerUndo(str(R.string.undo_collection_deleted, removed.name)) {
             updateCollections { list -> if (list.any { it.id == id }) list else list.toMutableList().apply { add(index.coerceAtMost(size), removed) } }
         }
+    }
+
+    /** Adding to or taking off "Want to read", with Undo (used by the swipe on list rows). */
+    fun setWantWithUndo(ids: List<String>, on: Boolean) {
+        setWant(ids, on)
+        offerUndo(str(if (on) R.string.undo_wanted else R.string.undo_unwanted)) { setWant(ids, !on) }
     }
 
     /** Marking read or unread, with the old place kept for Undo. */

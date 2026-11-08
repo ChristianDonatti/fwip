@@ -993,4 +993,20 @@
     <string name="news_inapp_update_text">Quando sai uma versão nova, Atualizar baixa e instala direto no Fwip, sem navegador. Na primeira vez o Android pede sua permissão.</string>
     <string name="updated_title">Fwip %1$s instalado</string>
     <string name="updated_text">Toque para abrir a versão nova.</string>
+    <string name="undo_wanted">Adicionado a Quero ler</string>
+    <string name="undo_unwanted">Removido de Quero ler</string>
+    <string name="tips_title">Como ler aqui</string>
+    <string name="tips_done">Entendi</string>
+    <string name="tips_next">Toque aqui: próxima página</string>
+    <string name="tips_back">Toque aqui: página anterior</string>
+    <string name="tips_menu">Toque no meio: menu</string>
+    <string name="tips_pinch">Pinça</string>
+    <string name="tips_drag_corner">Arrastar o canto</string>
+    <string name="tips_drag_corner_text">vira a página como papel</string>
+    <string name="tips_long_press_word">Toque longo numa palavra</string>
+    <string name="tips_long_press_word_text">destacar, anotar, copiar ou procurar</string>
+    <string name="tips_menu_aa">Aa no menu</string>
+    <string name="tips_menu_aa_text">letra, tamanho, cores e margens</string>
+    <string name="tips_note_comics">Toques e gestos podem ser mudados em Ajustes, Leitura de HQs.</string>
+    <string name="tips_note_books">Tudo sobre a página fica no Aa; os ajustes do leitor também estão em Ajustes, Leitura de livros.</string>
 </resources>
