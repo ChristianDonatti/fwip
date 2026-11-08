@@ -480,7 +480,7 @@ object GeneratedCover {
         val a = author?.takeIf { it.isNotBlank() }?.let { fit(it, f.sans, w * 0.055f, alpha(INK, 200), tw, band * 0.22f, Layout.Alignment.ALIGN_CENTER, maxLines = 2) }
         val t = fit(title, f.serif, w * 0.105f, INK, tw, band * (if (a != null) 0.6f else 0.8f), Layout.Alignment.ALIGN_CENTER)
         val gap = h * 0.03f
-        val total = t.height + (a?.let { it.height + gap } ?: 0)
+        val total = t.height + (a?.let { it.height + gap } ?: 0f)
         var y = top + band / 2f - total / 2f
         c.at(m, y, t); y += t.height + gap
         a?.let { c.at(m, y, it) }
