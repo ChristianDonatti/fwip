@@ -218,6 +218,8 @@ fun LibraryScreen(
     var browsing by rememberSaveable { mutableStateOf<String?>(null) }
     var showStats by rememberSaveable { mutableStateOf(false) }
     var showUpdateNotes by remember { mutableStateOf(false) }
+    var dismissedProblems by rememberSaveable { mutableStateOf(setOf<String>()) }
+    val lastSettings = remember { arrayOf("") }
     var libraryFilter by rememberSaveable { mutableStateOf(Filter.All) }
     // Widgets can open a screen directly.
     LaunchedEffect(state.requestedScreen) {
@@ -324,92 +326,131 @@ fun LibraryScreen(
             val tall = maxHeight > maxWidth && maxWidth >= 600.dp
             val gutter = if (wide) 48.dp else 20.dp
 
-            if (fresh && !ui.welcomed) {
-                WelcomeScreen(
-                    onPickFolder = { ui.setWelcomed(); actions.addFolder() },
-                    onServers = { ui.setWelcomed(); tab = Tab.Servers },
-                    onSkip = { ui.setWelcomed() },
-                )
-            } else if (settingsAt != null) {
-                SettingsScreen(
-                    full, actions, serverActions, syncActions,
-                    start = settingsAt?.ifEmpty { null },
-                    onBrowse = { s -> settingsAt = null; browsing = s.id },
-                    onClose = { settingsAt = null },
-                )
-            } else if (showStats) {
-                StatsScreen(full, actions.stats, gutter, wide, onBack = { showStats = false })
-            } else if (browsingServer != null && browsingServer.kind.isFolder) {
-                NetBrowser(browsingServer, state.folders, serverActions, wide, gutter, onClose = { browsing = null })
-            } else if (browsingServer != null) {
-                ServerBrowser(browsingServer, serverActions, wide, gutter, onClose = { browsing = null })
-            } else AnimatedContent(
-                targetState = shelf,
+            // Settings, stats and server pages slide in over the library and back out again.
+            settingsAt?.let { lastSettings[0] = it }
+            val pageKey = when {
+                fresh && !ui.welcomed -> "welcome"
+                settingsAt != null -> "settings"
+                showStats -> "stats"
+                browsingServer != null -> (if (browsingServer.kind.isFolder) "net:" else "server:") + browsingServer.id
+                else -> "main"
+            }
+            AnimatedContent(
+                targetState = pageKey,
                 transitionSpec = {
-                    if (targetState != null) {
-                        (slideInHorizontally(tween(320)) { it / 6 } + fadeIn(tween(260))) togetherWith fadeOut(tween(160))
-                    } else {
-                        fadeIn(tween(260)) togetherWith (slideOutHorizontally(tween(260)) { it / 6 } + fadeOut(tween(200)))
+                    when {
+                        initialState == "welcome" || targetState == "welcome" -> fadeIn(tween(320)) togetherWith fadeOut(tween(220))
+                        targetState != "main" -> (slideInHorizontally(tween(320)) { it / 8 } + fadeIn(tween(260))) togetherWith fadeOut(tween(180))
+                        else -> fadeIn(tween(260)) togetherWith (slideOutHorizontally(tween(260)) { it / 8 } + fadeOut(tween(200)))
                     }
                 },
-                contentKey = { it?.toToken() },
-                label = "shelf",
-            ) { current ->
-                if (current != null) {
-                    ShelfScreen(
-                        onEditSeries = { list -> seriesEditFor = list.map { it.comic.id } },
-                        shelf = current,
-                        state = state,
-                        actions = actions,
-                        wide = wide,
-                        gutter = gutter,
-                        onBack = { shelfToken = null },
-                        onMenu = showMenu,
-                        selection = selection,
+                label = "page",
+            ) { page ->
+                val pageServer = state.servers.firstOrNull { it.id == page.substringAfter(':', "") }
+                if (page == "welcome") {
+                    WelcomeScreen(
+                        onPickFolder = { ui.setWelcomed(); actions.addFolder() },
+                        onServers = { ui.setWelcomed(); tab = Tab.Servers },
+                        onSkip = { ui.setWelcomed() },
                     )
-                } else {
-                    Column(Modifier.fillMaxSize()) {
-                        Header(
+                } else if (page == "settings") {
+                    SettingsScreen(
+                        full, actions, serverActions, syncActions,
+                        start = lastSettings[0].ifEmpty { null },
+                        onBrowse = { s -> settingsAt = null; browsing = s.id },
+                        onClose = { settingsAt = null },
+                    )
+                } else if (page == "stats") {
+                    StatsScreen(full, actions.stats, gutter, wide, onBack = { showStats = false })
+                } else if (pageServer != null && page.startsWith("net:")) {
+                    NetBrowser(pageServer, state.folders, serverActions, wide, gutter, onClose = { browsing = null })
+                } else if (pageServer != null) {
+                    ServerBrowser(pageServer, serverActions, wide, gutter, onClose = { browsing = null })
+                } else AnimatedContent(
+                    targetState = shelf,
+                    transitionSpec = {
+                        if (targetState != null) {
+                            (slideInHorizontally(tween(320)) { it / 6 } + fadeIn(tween(260))) togetherWith fadeOut(tween(160))
+                        } else {
+                            fadeIn(tween(260)) togetherWith (slideOutHorizontally(tween(260)) { it / 6 } + fadeOut(tween(200)))
+                        }
+                    },
+                    contentKey = { it?.toToken() },
+                    label = "shelf",
+                ) { current ->
+                    if (current != null) {
+                        ShelfScreen(
+                            onEditSeries = { list -> seriesEditFor = list.map { it.comic.id } },
+                            shelf = current,
+                            state = state,
+                            actions = actions,
                             wide = wide,
-                            tab = tab,
-                            onTab = { tab = it },
-                            scanning = state.scanning,
-                            onRefresh = actions.refresh,
-                            onAdd = actions.addFolder,
-                            onFolders = { settingsAt = "" },
-                            onSearch = { tab = Tab.Library; searching = true },
-                            onAbout = { settingsAt = "about" },
-                            modeSwitch = modeSwitch,
-                            modifier = Modifier.padding(horizontal = gutter, vertical = if (wide) 24.dp else 12.dp),
+                            gutter = gutter,
+                            onBack = { shelfToken = null },
+                            onMenu = showMenu,
+                            selection = selection,
                         )
-                        when {
-                            full.items.isEmpty() && tab != Tab.Servers -> EmptyState(state.folders.isEmpty(), state.scanning, actions.addFolder, onServers = { tab = Tab.Servers })
-                            tab == Tab.Home -> Home(
-                                state, selected, { selected = it }, actions, openShelf, showMenu, seeAll,
-                                onStats = { showStats = true },
-                                gutter = gutter, maxWidth = boxWidth, maxHeight = boxHeight, wide = wide,
-                                layout = when {
-                                    tall -> HomeLayout.Upright
-                                    wide -> HomeLayout.Landscape
-                                    else -> HomeLayout.Phone
-                                },
+                    } else {
+                        Column(Modifier.fillMaxSize()) {
+                            Header(
+                                wide = wide,
+                                tab = tab,
+                                onTab = { tab = it },
+                                scanning = state.scanning,
+                                onRefresh = actions.refresh,
+                                onAdd = actions.addFolder,
+                                onFolders = { settingsAt = "" },
+                                onSearch = { tab = Tab.Library; searching = true },
+                                onAbout = { settingsAt = "about" },
+                                modeSwitch = modeSwitch,
+                                modifier = Modifier.padding(horizontal = gutter, vertical = if (wide) 24.dp else 12.dp),
                             )
-                            tab == Tab.Servers -> ServersTab(state.servers, serverActions, wide, gutter, onBrowse = { browsing = it.id })
-                            tab == Tab.Library -> LibraryTab(
-                                state, actions, openShelf, showMenu, wide, gutter, selection,
-                                searching = searching,
-                                query = query,
-                                onQuery = { query = it },
-                                onCloseSearch = { searching = false; query = "" },
-                                filter = libraryFilter,
-                                onFilter = { libraryFilter = it },
-                                everything = full,
-                                onOpenSetting = { target -> searching = false; query = ""; settingsAt = target },
-                            )
-                            else -> CollectionsTab(state, actions, openShelf, wide, gutter)
+                            when {
+                                full.items.isEmpty() && tab != Tab.Servers -> EmptyState(state.folders.isEmpty(), state.scanning, actions.addFolder, onServers = { tab = Tab.Servers }, found = state.scanFound)
+                                tab == Tab.Home -> Home(
+                                    state, selected, { selected = it }, actions, openShelf, showMenu, seeAll,
+                                    onStats = { showStats = true },
+                                    gutter = gutter, maxWidth = boxWidth, maxHeight = boxHeight, wide = wide,
+                                    layout = when {
+                                        tall -> HomeLayout.Upright
+                                        wide -> HomeLayout.Landscape
+                                        else -> HomeLayout.Phone
+                                    },
+                                )
+                                tab == Tab.Servers -> ServersTab(state.servers, serverActions, wide, gutter, onBrowse = { browsing = it.id })
+                                tab == Tab.Library -> LibraryTab(
+                                    state, actions, openShelf, showMenu, wide, gutter, selection,
+                                    searching = searching,
+                                    query = query,
+                                    onQuery = { query = it },
+                                    onCloseSearch = { searching = false; query = "" },
+                                    filter = libraryFilter,
+                                    onFilter = { libraryFilter = it },
+                                    everything = full,
+                                    onOpenSetting = { target -> searching = false; query = ""; settingsAt = target },
+                                )
+                                else -> CollectionsTab(state, actions, openShelf, wide, gutter)
+                            }
                         }
                     }
                 }
+            }
+            // A folder that could not be read: say which, and offer the way out.
+            val problem = full.scanProblems.firstOrNull { it.uri.toString() !in dismissedProblems }
+            if (problem != null && full.undo == null && !(full.toAnalyze >= 5 && full.analyzed < full.toAnalyze)) {
+                ProblemBar(
+                    problem, folderLabel(problem.uri, full.servers),
+                    onAct = { if (problem.unreachable) actions.refresh() else actions.addFolder() },
+                    onDismiss = { dismissedProblems = dismissedProblems + problem.uri.toString() },
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = if (wide || selection.active) 24.dp else 92.dp),
+                )
+            }
+            // A new library arriving: covers and details of many new files are being read.
+            if (full.undo == null && full.toAnalyze >= 5 && full.analyzed < full.toAnalyze) {
+                ArrivingBar(
+                    full.analyzed, full.toAnalyze,
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = if (wide || selection.active) 24.dp else 92.dp),
+                )
             }
             full.undo?.let { offer ->
                 UndoBar(
@@ -1448,7 +1489,7 @@ private fun PhoneTabBar(tab: Tab, onTab: (Tab) -> Unit, modifier: Modifier = Mod
 }
 
 @Composable
-private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit, onServers: () -> Unit) {
+private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit, onServers: () -> Unit, found: Int = 0) {
     Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
         Column(
             Modifier.widthIn(max = 460.dp),
@@ -1458,6 +1499,8 @@ private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit,
             if (scanning) {
                 CircularProgressIndicator(color = FwipColors.Text)
                 Text(str(R.string.scanning), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextSoft)
+                if (found > 0) Text(str(R.string.scan_found, found), style = MaterialTheme.typography.titleMedium, color = FwipColors.Amber)
+                Text(str(R.string.scanning_hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, textAlign = TextAlign.Center)
             } else {
                 Text(
                     if (noFolders) str(R.string.empty_title) else str(R.string.empty_no_comics),
@@ -1476,6 +1519,62 @@ private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit,
                 PillButton(str(R.string.connect_server), onServers, style = PillStyle.Ghost)
             }
         }
+    }
+}
+
+/** "No access to Comics anymore" or "The NAS did not answer", with what to do about it. */
+@Composable
+private fun ProblemBar(
+    problem: io.github.christiandonatti.fwip.data.LibraryRepository.ScanProblem,
+    label: String,
+    onAct: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier,
+) {
+    Row(
+        modifier
+            .padding(horizontal = 16.dp)
+            .widthIn(max = 560.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(FwipColors.PanelHigh)
+            .border(1.dp, FwipColors.Danger.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+            .padding(start = 18.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            str(if (problem.unreachable) R.string.problem_unreachable else R.string.problem_no_access, label),
+            style = MaterialTheme.typography.bodyMedium,
+            color = FwipColors.Text,
+            modifier = Modifier.weight(1f),
+        )
+        PillButton(str(if (problem.unreachable) R.string.try_again else R.string.problem_choose_again), onAct, style = PillStyle.Amber, height = 40.dp)
+        CircleIconButton(Icons.Filled.Close, str(R.string.close), onDismiss, size = 36.dp)
+    }
+}
+
+/** "Preparing your library: 12 of 340", with a thin bar, while new files get their covers. */
+@Composable
+private fun ArrivingBar(done: Int, total: Int, modifier: Modifier) {
+    Column(
+        modifier
+            .padding(horizontal = 16.dp)
+            .widthIn(max = 460.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(FwipColors.PanelHigh)
+            .border(1.dp, FwipColors.Stroke, RoundedCornerShape(18.dp))
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(str(R.string.arriving, done, total), style = MaterialTheme.typography.labelLarge, color = FwipColors.TextSoft)
+        androidx.compose.material3.LinearProgressIndicator(
+            progress = { if (total > 0) done / total.toFloat() else 0f },
+            modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+            color = FwipColors.Amber,
+            trackColor = FwipColors.Text.copy(alpha = 0.1f),
+        )
     }
 }
 

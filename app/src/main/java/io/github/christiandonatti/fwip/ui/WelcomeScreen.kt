@@ -70,6 +70,8 @@ fun WelcomeScreen(onPickFolder: () -> Unit, onServers: () -> Unit, onSkip: () ->
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 840.dp
+        // A tablet lying down: the first page goes side by side so it all fits without scrolling.
+        val landscape = wide && maxHeight < 820.dp
         Column(
             Modifier
                 .fillMaxSize()
@@ -104,14 +106,14 @@ fun WelcomeScreen(onPickFolder: () -> Unit, onServers: () -> Unit, onSkip: () ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(
                         Modifier
-                            .widthIn(max = 560.dp)
+                            .widthIn(max = if (s == 0 && landscape) 940.dp else 560.dp)
                             .verticalScroll(rememberScrollState())
                             .padding(vertical = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(18.dp),
                     ) {
                         when (s) {
-                            0 -> Intro(wide)
+                            0 -> if (landscape) IntroSideBySide() else Intro(wide)
                             1 -> Kind { step++ }
                             2 -> Look()
                             else -> Comics(onPickFolder, onServers, onSkip)
@@ -157,6 +159,22 @@ private fun Intro(wide: Boolean) {
     Feature(Glyph.Page, str(R.string.welcome_f1_title), str(R.string.welcome_f1))
     Feature(Glyph.Balloon, str(R.string.welcome_f2_title), str(R.string.welcome_f2))
     Feature(Glyph.Shelf, str(R.string.welcome_f3_title), str(R.string.welcome_f3))
+}
+
+/** The first page on a tablet lying down: the covers on the left, the words on the right. */
+@Composable
+private fun IntroSideBySide() {
+    Row(horizontalArrangement = Arrangement.spacedBy(40.dp), verticalAlignment = Alignment.CenterVertically) {
+        FannedCovers(Modifier.size(300.dp, 210.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text(str(R.string.welcome_title), style = MaterialTheme.typography.headlineMedium)
+            Text(str(R.string.welcome_subtitle), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextSoft)
+            Spacer(Modifier.height(2.dp))
+            Feature(Glyph.Page, str(R.string.welcome_f1_title), str(R.string.welcome_f1))
+            Feature(Glyph.Balloon, str(R.string.welcome_f2_title), str(R.string.welcome_f2))
+            Feature(Glyph.Shelf, str(R.string.welcome_f3_title), str(R.string.welcome_f3))
+        }
+    }
 }
 
 /** "Comics, books or both?": sets which half of the library comes first and what Fwip talks about. */

@@ -6,6 +6,7 @@
 
 package io.github.christiandonatti.fwip.book
 
+import io.github.christiandonatti.fwip.ui.tick
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Icon
@@ -106,6 +107,7 @@ import io.github.christiandonatti.fwip.reader.ReaderSettings
 import io.github.christiandonatti.fwip.str
 import io.github.christiandonatti.fwip.ui.CircleIconButton
 import io.github.christiandonatti.fwip.ui.PillButton
+import io.github.christiandonatti.fwip.ui.PillStyle
 import io.github.christiandonatti.fwip.ui.theme.FwipColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -147,7 +149,7 @@ class OpenedBook(val publication: Publication, val positions: List<List<Locator>
 private sealed interface BookLoad {
     data object Loading : BookLoad
     data class Ready(val book: OpenedBook) : BookLoad
-    data class Failed(val message: String) : BookLoad
+    data class Failed(val message: String, val detail: String? = null, val canRetry: Boolean = false) : BookLoad
 }
 
 private tailrec fun Context.activity(): Activity? = when (this) {
@@ -250,17 +252,28 @@ fun BookReaderScreen(
     onClose: () -> Unit,
     onProgress: (page: Int, pageCount: Int) -> Unit,
     coverPath: String? = null,
+    next: io.github.christiandonatti.fwip.data.LibraryItem? = null,
+    onOpenNext: () -> Unit = {},
+    seriesNote: String? = null,
 ) {
     val context = LocalContext.current
     val light = remember { LightSettings.get(context) }
     val settings = remember { BookSettings.get(context) }
     BackHandler(onBack = onClose)
-    val loaded by produceState<BookLoad>(BookLoad.Loading, comic.id) {
+    var attempt by remember(comic.id) { mutableStateOf(0) }
+    val loaded by produceState<BookLoad>(BookLoad.Loading, comic.id, attempt) {
+        value = BookLoad.Loading
         value = runCatching { openBook(context, comic) }.fold(
             { BookLoad.Ready(it) },
-            { BookLoad.Failed(str(R.string.error_open_file) + "\n" + (it.message ?: it.javaClass.simpleName)) },
+            { e ->
+                val f = io.github.christiandonatti.fwip.ui.friendlyError(e, comic)
+                // A Kindle book with DRM says so in its own words.
+                if (e.message?.contains(str(R.string.mobi_drm)) == true) BookLoad.Failed(e.message!!, null, false)
+                else BookLoad.Failed(f.message, f.detail, f.canRetry)
+            },
         )
     }
+
     val current = loaded
     DisposableEffect(current) { onDispose { (current as? BookLoad.Ready)?.book?.publication?.close() } }
     val (bg, fg) = pageColors(settings.theme, light.ink)
@@ -273,10 +286,14 @@ fun BookReaderScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(title, style = MaterialTheme.typography.headlineSmall, color = Color(fg), textAlign = TextAlign.Center)
-                Text(l.message, style = MaterialTheme.typography.bodyMedium, color = Color(fg).copy(alpha = 0.7f), textAlign = TextAlign.Center)
-                PillButton(str(R.string.back), onClose)
+                Text(l.message, style = MaterialTheme.typography.bodyLarge, color = Color(fg).copy(alpha = 0.8f), textAlign = TextAlign.Center)
+                l.detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Color(fg).copy(alpha = 0.55f), textAlign = TextAlign.Center, maxLines = 3) }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (l.canRetry) PillButton(str(R.string.try_again), { attempt++ }, style = PillStyle.Amber)
+                    PillButton(str(R.string.back), onClose, style = if (l.canRetry) PillStyle.Ghost else PillStyle.Solid)
+                }
             }
-            is BookLoad.Ready -> BookReader(comic, title, author, l.book, startPage, settings, light, onClose, onProgress, coverPath)
+            is BookLoad.Ready -> BookReader(comic, title, author, l.book, startPage, settings, light, onClose, onProgress, coverPath, next, onOpenNext, seriesNote)
         }
     }
 }
@@ -293,9 +310,14 @@ private fun BookReader(
     onClose: () -> Unit,
     onProgress: (Int, Int) -> Unit,
     coverPath: String?,
+    next: io.github.christiandonatti.fwip.data.LibraryItem?,
+    onOpenNext: () -> Unit,
+    seriesNote: String?,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    // Past the last page: the end of the book, and what to read next.
+    var showEnd by remember { mutableStateOf(false) }
     val turner = remember { PageTurner(scope) }
     val notes = remember(comic.id) { BookNotes.load(context, comic.id) }
     var notesVersion by remember { mutableIntStateOf(0) }
@@ -522,7 +544,7 @@ private fun BookReader(
         // ---------- What the navigator tells us ----------
         val nav = navigator
         LaunchedEffect(nav, prefs) { nav?.submitPreferences(prefs) }
-        turner.onEnd = { chrome = true }
+        turner.onEnd = { showEnd = true }
         LaunchedEffect(nav) {
             val n = nav ?: return@LaunchedEffect
             n.addInputListener(object : InputListener {
@@ -534,7 +556,7 @@ private fun BookReader(
                     when {
                         panel != null -> panel = null
                         move != 0 && turner.enabled -> turner.turnPage(move > 0)
-                        move > 0 -> n.goForward(animated = settings.turn == BookTurn.Slide && !reduceMotion)
+                        move > 0 -> if (!n.goForward(animated = settings.turn == BookTurn.Slide && !reduceMotion)) showEnd = true
                         move < 0 -> n.goBackward(animated = settings.turn == BookTurn.Slide && !reduceMotion)
                         else -> chrome = !chrome
                     }
@@ -591,7 +613,7 @@ private fun BookReader(
                 val animated = settings.turn == BookTurn.Slide && !reduceMotion
                 when {
                     turner.enabled -> turner.turnPage(k > 0)
-                    k > 0 -> n.goForward(animated = animated)
+                    k > 0 -> if (!n.goForward(animated = animated)) showEnd = true
                     else -> n.goBackward(animated = animated)
                 }
             }
@@ -642,8 +664,10 @@ private fun BookReader(
                     Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(locator?.let { chapterTitle(publication, it) } ?: author.orEmpty(), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+                val markView = LocalView.current
                 val toggleMark = {
                     locator?.let { loc ->
+                        markView.tick()
                         toggleMark(notes, publication, loc)
                         notesVersion++
                     }
@@ -761,6 +785,17 @@ private fun BookReader(
                     notes.save(); notesVersion++; editing = null
                 },
                 onDismiss = { editing = null },
+            )
+        }
+        if (showEnd) {
+            io.github.christiandonatti.fwip.reader.EndCard(
+                title = title,
+                next = next,
+                onNext = { showEnd = false; onOpenNext() },
+                onLibrary = onClose,
+                onDismiss = { showEnd = false },
+                seriesNote = seriesNote,
+                byline = author,
             )
         }
         // The first time: where to tap, the long press on a word, the corner to drag.

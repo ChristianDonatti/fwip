@@ -1010,4 +1010,17 @@
     <string name="tips_menu_aa_text">font, size, colours and margins</string>
     <string name="tips_note_comics">You can change taps and gestures in Settings, Comic reading.</string>
     <string name="tips_note_books">Everything about the page is in Aa; the reader\'s settings are also in Settings, Book reading.</string>
+    <string name="end_series_progress">%1$d of %2$d read in %3$s</string>
+    <string name="end_series_done">You have read all of %1$s</string>
+    <string name="scan_found">%1$d found so far</string>
+    <string name="scanning_hint">Big folders and network drives take a little longer the first time.</string>
+    <string name="arriving">Preparing your library: covers and details, %1$d of %2$d</string>
+    <string name="err_no_access">Fwip no longer has access to this file\'s folder. Choose the folder again in Settings, Library (Android sometimes drops access after an update or a card is removed).</string>
+    <string name="err_offline">The server or network folder did not answer. Check that you are on the same network and that it is on, then try again.</string>
+    <string name="err_missing">The file is no longer where it was: it may have been moved, renamed or deleted. Refresh the library to find it again.</string>
+    <string name="err_damaged">The file seems damaged or unfinished (a download cut short, perhaps). Try copying it again.</string>
+    <string name="err_memory">This one is too heavy to open right now. Close other apps and try again.</string>
+    <string name="problem_no_access">Fwip lost access to %1$s. Choose it again to see what is in it.</string>
+    <string name="problem_unreachable">%1$s did not answer. Showing what was there last time.</string>
+    <string name="problem_choose_again">Choose again</string>
 </resources>

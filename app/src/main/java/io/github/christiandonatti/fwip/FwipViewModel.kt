@@ -51,6 +51,13 @@ data class LibraryState(
     val items: List<LibraryItem> = emptyList(),
     val folders: List<Uri> = emptyList(),
     val scanning: Boolean = false,
+    /** While the folders are walked: how many comics and books were found so far. */
+    val scanFound: Int = 0,
+    /** Folders the last scan could not read (access lost, network place not answering). */
+    val scanProblems: List<io.github.christiandonatti.fwip.data.LibraryRepository.ScanProblem> = emptyList(),
+    /** Reading covers and details of new files: how many done out of how many (0 of 0 when idle). */
+    val analyzed: Int = 0,
+    val toAnalyze: Int = 0,
     val loaded: Boolean = false,
     val openComicId: String? = null,
     /** The collection a comic was opened from, so "next" follows its reading order. */
@@ -238,8 +245,17 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
     fun refresh() {
         scanJob?.cancel()
         scanJob = viewModelScope.launch {
-            _state.update { it.copy(scanning = true) }
-            val comics = repository.scan()
+            _state.update { it.copy(scanning = true, scanFound = 0) }
+            // The count of files found so far, shown while the folders are walked.
+            val counter = launch {
+                while (true) {
+                    kotlinx.coroutines.delay(300)
+                    val n = repository.foundSoFar
+                    if (n != _state.value.scanFound) _state.update { it.copy(scanFound = n) }
+                }
+            }
+            val comics = try { repository.scan() } finally { counter.cancel() }
+            _state.update { it.copy(scanProblems = repository.lastProblems) }
             // Moved comics: carry their reading state over to the file's new place.
             synchronized(pendingMoves) {
                 for (m in pendingMoves) {
@@ -259,13 +275,17 @@ class FwipViewModel(app: Application) : AndroidViewModel(app) {
             // New comics on this device go to the NAS, when that is turned on.
             io.github.christiandonatti.fwip.data.NasUpload.schedule(getApplication())
             // Covers and metadata are read one comic at a time so the shelves fill in while you watch.
-            for (comic in twins.visible) {
-                if (repository.isAnalyzed(comic)) continue
-                repository.analyze(comic)
-                val fresh = itemFor(comic)
-                _state.update { s -> s.copy(items = s.items.map { if (it.comic.id == comic.id) fresh else it }) }
+            val todo = twins.visible.filterNot { repository.isAnalyzed(it) }
+            _state.update { it.copy(analyzed = 0, toAnalyze = todo.size) }
+            try {
+                todo.forEachIndexed { i, comic ->
+                    repository.analyze(comic)
+                    val fresh = itemFor(comic)
+                    _state.update { s -> s.copy(items = s.items.map { if (it.comic.id == comic.id) fresh else it }, analyzed = i + 1) }
+                }
+            } finally {
+                _state.update { it.copy(scanning = false, analyzed = 0, toAnalyze = 0) }
             }
-            _state.update { it.copy(scanning = false) }
             refreshHomeScreen()
         }
     }

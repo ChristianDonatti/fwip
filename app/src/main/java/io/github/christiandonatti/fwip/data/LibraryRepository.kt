@@ -147,9 +147,24 @@ class LibraryRepository(private val context: Context) {
     }
 
     /** Walks every chosen folder (and its subfolders) looking for comic files. */
+    /** A folder the last scan could not read: access lost, or a network place not answering. */
+    data class ScanProblem(val uri: android.net.Uri, val unreachable: Boolean)
+
+    @Volatile var lastProblems: List<ScanProblem> = emptyList()
+        private set
+
+    /** Files found by the scan running now (read from another thread while it walks the folders). */
+    @Volatile var foundSoFar = 0
+        private set
+
     suspend fun scan(): List<Comic> = withContext(Dispatchers.IO) {
-        val found = LinkedHashMap<String, Comic>()
+        foundSoFar = 0
+        val found = object : LinkedHashMap<String, Comic>() {
+            override fun put(key: String, value: Comic): Comic? = super.put(key, value).also { foundSoFar = size }
+        }
         val cached by lazy { cachedComics() }
+        val problems = ArrayList<ScanProblem>()
+        val granted = runCatching { context.contentResolver.persistedUriPermissions.filter { it.isReadPermission }.map { it.uri }.toSet() }.getOrDefault(emptySet())
         for (tree in folders()) {
             if (io.github.christiandonatti.fwip.remote.NetUris.isNet(tree)) {
                 try {
@@ -162,14 +177,20 @@ class LibraryRepository(private val context: Context) {
                     // Away from home or the NAS is asleep: keep what was found last time.
                     val prefix = tree.toString().trimEnd('/') + "/"
                     cached.filter { it.id.startsWith(prefix) }.forEach { found[it.id] = it }
+                    problems += ScanProblem(tree, unreachable = true)
                 }
                 continue
             }
-            runCatching {
+            val walked = runCatching {
                 val rootId = DocumentsContract.getTreeDocumentId(tree)
                 walk(tree, rootId, folderName = "", depth = 0, out = found)
             }
+            val err = walked.exceptionOrNull()
+            if (tree.scheme == "content" && err != null && (err is SecurityException || tree !in granted)) {
+                problems += ScanProblem(tree, unreachable = false)
+            }
         }
+        lastProblems = problems
         // Books downloaded from servers live in the app's own "Baixadas" folder.
         io.github.christiandonatti.fwip.remote.RemoteComics.downloadsDir(context).listFiles()
             ?.filter { it.isFile && !it.name.endsWith(".part") }

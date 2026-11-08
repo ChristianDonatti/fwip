@@ -679,6 +679,8 @@ internal fun EndCard(
     onNext: () -> Unit,
     onLibrary: () -> Unit,
     onDismiss: () -> Unit,
+    seriesNote: String? = null,
+    byline: String? = null,
 ) {
     androidx.activity.compose.BackHandler(onBack = onDismiss)
     Box(
@@ -714,6 +716,19 @@ internal fun EndCard(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
+            byline?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextSoft, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+            // Where this leaves the series: how many read, or the whole series done.
+            seriesNote?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = FwipColors.Amber,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(FwipColors.Amber.copy(alpha = 0.14f)).padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
             if (next != null) {
                 Spacer(Modifier.height(10.dp))
                 io.github.christiandonatti.fwip.ui.CoverImage(

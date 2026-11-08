@@ -1,5 +1,6 @@
 package io.github.christiandonatti.fwip
 
+import io.github.christiandonatti.fwip.ui.tick
 import android.os.Bundle
 import android.view.KeyEvent
 import io.github.christiandonatti.fwip.data.isBook
@@ -192,13 +193,13 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                         addFolder = { pickFolder.launch(null) },
                         removeFolder = viewModel::removeFolder,
                         refresh = viewModel::refresh,
-                        setRead = viewModel::setReadWithUndo,
+                        setRead = { ids, read -> window.decorView.tick(); viewModel.setReadWithUndo(ids, read) },
                         createCollection = viewModel::createCollection,
                         renameCollection = viewModel::renameCollection,
                         deleteCollection = viewModel::deleteCollectionWithUndo,
-                        setInCollection = viewModel::setInCollection,
-                        setWant = viewModel::setWant,
-                        setWantUndo = viewModel::setWantWithUndo,
+                        setInCollection = { c, ids, inside -> window.decorView.tick(); viewModel.setInCollection(c, ids, inside) },
+                        setWant = { ids, on -> window.decorView.tick(); viewModel.setWant(ids, on) },
+                        setWantUndo = { ids, on -> window.decorView.tick(); viewModel.setWantWithUndo(ids, on) },
                     )
                 }
 
@@ -282,6 +283,16 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                         }
                         val item = state.item(comic.id)
                         val next = item?.let { state.nextAfter(it, state.openContext) }
+                        // For the end card: how far along the series this leaves you.
+                        val seriesNote = item?.let { cur ->
+                            val key = io.github.christiandonatti.fwip.data.seriesKey(cur.series.name)
+                            val all = state.items.filter { io.github.christiandonatti.fwip.data.seriesKey(it.series.name) == key }
+                            if (all.size < 2) null else {
+                                val read = all.count { it.comic.id == cur.comic.id || it.progress?.finished == true }
+                                if (read >= all.size) getString(R.string.end_series_done, cur.series.name)
+                                else getString(R.string.end_series_progress, read, all.size, cur.series.name)
+                            }
+                        }
                         if (comic.format.isBook) io.github.christiandonatti.fwip.book.BookReaderScreen(
                             comic = comic,
                             title = item?.title ?: comic.title,
@@ -290,11 +301,15 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                             onClose = viewModel::closeReader,
                             onProgress = { page, count -> viewModel.saveProgress(comic, page, count) },
                             coverPath = item?.coverPath,
+                            next = next,
+                            onOpenNext = { next?.let { viewModel.switchTo(it.comic) } },
+                            seriesNote = seriesNote,
                         ) else ReaderScreen(
                             comic = comic,
                             title = item?.title ?: comic.title,
                             meta = item?.meta,
                             next = next,
+                            seriesNote = seriesNote,
                             onOpenNext = { next?.let { viewModel.switchTo(it.comic) } },
                             startPage = start,
                             onClose = viewModel::closeReader,

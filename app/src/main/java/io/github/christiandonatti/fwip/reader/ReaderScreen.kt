@@ -2,6 +2,7 @@
 
 package io.github.christiandonatti.fwip.reader
 
+import io.github.christiandonatti.fwip.ui.tick
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -74,6 +76,7 @@ import io.github.christiandonatti.fwip.data.ComicSources
 import io.github.christiandonatti.fwip.data.LibraryItem
 import io.github.christiandonatti.fwip.str
 import io.github.christiandonatti.fwip.ui.PillButton
+import io.github.christiandonatti.fwip.ui.PillStyle
 import io.github.christiandonatti.fwip.ui.theme.FwipColors
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
@@ -110,7 +113,7 @@ sealed interface NavCommand {
 private sealed interface Loaded {
     data object Loading : Loaded
     data class Ready(val source: ComicSource) : Loaded
-    data class Failed(val message: String) : Loaded
+    data class Failed(val message: String, val detail: String? = null, val canRetry: Boolean = false) : Loaded
 }
 
 private enum class PendingStop { First, Last }
@@ -130,16 +133,22 @@ fun ReaderScreen(
     startPage: Int,
     onClose: () -> Unit,
     onProgress: (page: Int, pageCount: Int) -> Unit,
+    seriesNote: String? = null,
 ) {
     val context = LocalContext.current
     val settings = remember { ReaderSettings.get(context) }
     val light = remember { LightSettings.get(context) }
 
-    val loaded by produceState<Loaded>(Loaded.Loading, comic.id) {
+    var attempt by remember(comic.id) { mutableStateOf(0) }
+    val loaded by produceState<Loaded>(Loaded.Loading, comic.id, attempt) {
+        value = Loaded.Loading
         value = withContext(Dispatchers.IO) {
             runCatching { ComicSources.open(context, comic) }.fold(
                 onSuccess = { src -> if (src.pageCount > 0) Loaded.Ready(src) else { src.close(); Loaded.Failed(str(R.string.error_no_pages)) } },
-                onFailure = { Loaded.Failed(str(R.string.error_open_file) + "\n" + (it.message ?: it.javaClass.simpleName)) },
+                onFailure = { e ->
+                    val f = io.github.christiandonatti.fwip.ui.friendlyError(e, comic)
+                    Loaded.Failed(f.message, f.detail, f.canRetry)
+                },
             )
         }
     }
@@ -176,10 +185,14 @@ fun ReaderScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-                Text(l.message, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted, textAlign = TextAlign.Center)
-                PillButton(str(R.string.back), onClose)
+                Text(l.message, style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextSoft, textAlign = TextAlign.Center)
+                l.detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, textAlign = TextAlign.Center, maxLines = 3) }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (l.canRetry) PillButton(str(R.string.try_again), { attempt++ }, style = PillStyle.Amber)
+                    PillButton(str(R.string.back), onClose, style = if (l.canRetry) PillStyle.Ghost else PillStyle.Solid)
+                }
             }
-            is Loaded.Ready -> Reader(comic, title, meta, next, onOpenNext, l.source, startPage, settings, light, onClose, onProgress)
+            is Loaded.Ready -> Reader(comic, title, meta, next, onOpenNext, l.source, startPage, settings, light, onClose, onProgress, seriesNote)
         }
     }
 }
@@ -197,6 +210,7 @@ private fun Reader(
     light: LightSettings,
     onClose: () -> Unit,
     onProgress: (Int, Int) -> Unit,
+    seriesNote: String? = null,
 ) {
     val context = LocalContext.current
 
@@ -467,6 +481,7 @@ private fun Reader(
         fun toggleBookmark() {
             val pages = spreads.getOrNull(spread).orEmpty().map(pageMap::real)
             if (pages.isEmpty()) return
+            a11yView.tick()
             marks = if (pages.any { it in marks }) marks - pages.toSet() else marks + pages.first()
             bookmarkStore.set(comic.id, marks)
         }
@@ -709,6 +724,7 @@ private fun Reader(
                 onNext = { showEnd = false; onOpenNext() },
                 onLibrary = onClose,
                 onDismiss = { showEnd = false },
+                seriesNote = seriesNote,
             )
         }
 

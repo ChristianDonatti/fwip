@@ -1009,4 +1009,17 @@
     <string name="tips_menu_aa_text">letra, tamanho, cores e margens</string>
     <string name="tips_note_comics">Toques e gestos podem ser mudados em Ajustes, Leitura de HQs.</string>
     <string name="tips_note_books">Tudo sobre a página fica no Aa; os ajustes do leitor também estão em Ajustes, Leitura de livros.</string>
+    <string name="end_series_progress">%1$d de %2$d lidos em %3$s</string>
+    <string name="end_series_done">Você leu tudo de %1$s</string>
+    <string name="scan_found">%1$d encontrados até agora</string>
+    <string name="scanning_hint">Pastas grandes e de rede demoram um pouco mais na primeira vez.</string>
+    <string name="arriving">Preparando sua biblioteca: capas e dados, %1$d de %2$d</string>
+    <string name="err_no_access">O Fwip perdeu o acesso à pasta deste arquivo. Escolha a pasta de novo em Ajustes, Biblioteca (o Android às vezes tira o acesso depois de uma atualização ou quando o cartão sai).</string>
+    <string name="err_offline">O servidor ou a pasta de rede não respondeu. Confira se está na mesma rede e se ele está ligado, e tente de novo.</string>
+    <string name="err_missing">O arquivo não está mais onde estava: pode ter sido movido, renomeado ou apagado. Atualize a biblioteca para encontrá-lo de novo.</string>
+    <string name="err_damaged">O arquivo parece estar com defeito ou incompleto (talvez um download interrompido). Tente copiá-lo de novo.</string>
+    <string name="err_memory">Este é pesado demais para abrir agora. Feche outros apps e tente de novo.</string>
+    <string name="problem_no_access">O Fwip perdeu o acesso a %1$s. Escolha a pasta de novo para ver o que tem nela.</string>
+    <string name="problem_unreachable">%1$s não respondeu. Mostrando o que estava lá da última vez.</string>
+    <string name="problem_choose_again">Escolher de novo</string>
 </resources>
