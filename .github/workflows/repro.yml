@@ -3,14 +3,14 @@ name: Reader repro
 # Runs when a commit message contains [repro]; pushes screenshots to the repro-shots branch.
 on:
   push:
-    branches: [main, books, book3d]
+    branches: [main, books, book3d, ux]
 
 permissions:
   contents: write
 
 jobs:
   repro:
-    if: contains(github.event.head_commit.message, '[repro]') || contains(github.event.head_commit.message, '[uicheck]') || contains(github.event.head_commit.message, '[nascheck]') || contains(github.event.head_commit.message, '[newcheck]') || contains(github.event.head_commit.message, '[lookcheck]') || contains(github.event.head_commit.message, '[setcheck]') || contains(github.event.head_commit.message, '[bookcheck]') || contains(github.event.head_commit.message, '[uxcheck]') || contains(github.event.head_commit.message, '[3dcheck]') || contains(github.event.head_commit.message, '[updcheck]')
+    if: contains(github.event.head_commit.message, '[repro]') || contains(github.event.head_commit.message, '[uicheck]') || contains(github.event.head_commit.message, '[nascheck]') || contains(github.event.head_commit.message, '[newcheck]') || contains(github.event.head_commit.message, '[lookcheck]') || contains(github.event.head_commit.message, '[setcheck]') || contains(github.event.head_commit.message, '[bookcheck]') || contains(github.event.head_commit.message, '[uxcheck]') || contains(github.event.head_commit.message, '[3dcheck]') || contains(github.event.head_commit.message, '[updcheck]') || contains(github.event.head_commit.message, '[tourcheck]')
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     steps:
@@ -67,7 +67,7 @@ jobs:
           disk-size: 4G
           emulator-options: -no-window -gpu ${{ contains(github.event.head_commit.message, '[guestgpu]') && 'guest' || 'swiftshader_indirect' }} -noaudio -no-boot-anim -no-snapshot
           disable-animations: false
-          script: bash scripts/${{ contains(github.event.head_commit.message, '[updcheck]') && 'update_check.sh' || contains(github.event.head_commit.message, '[3dcheck]') && 'book3d_check.sh' || contains(github.event.head_commit.message, '[uxcheck]') && 'ux_check.sh' || contains(github.event.head_commit.message, '[bookcheck]') && 'books_check.sh' || contains(github.event.head_commit.message, '[setcheck]') && 'settings_check.sh' || contains(github.event.head_commit.message, '[lookcheck]') && 'look_check.sh' || contains(github.event.head_commit.message, '[newcheck]') && 'new_check.sh' || (contains(github.event.head_commit.message, '[nascheck]') && 'nas_check.sh' || (contains(github.event.head_commit.message, '[uicheck]') && 'ui_check.sh' || 'repro.sh')) }}
+          script: bash scripts/${{ contains(github.event.head_commit.message, '[tourcheck]') && 'tour_check.sh' || contains(github.event.head_commit.message, '[updcheck]') && 'update_check.sh' || contains(github.event.head_commit.message, '[3dcheck]') && 'book3d_check.sh' || contains(github.event.head_commit.message, '[uxcheck]') && 'ux_check.sh' || contains(github.event.head_commit.message, '[bookcheck]') && 'books_check.sh' || contains(github.event.head_commit.message, '[setcheck]') && 'settings_check.sh' || contains(github.event.head_commit.message, '[lookcheck]') && 'look_check.sh' || contains(github.event.head_commit.message, '[newcheck]') && 'new_check.sh' || (contains(github.event.head_commit.message, '[nascheck]') && 'nas_check.sh' || (contains(github.event.head_commit.message, '[uicheck]') && 'ui_check.sh' || 'repro.sh')) }}
       - name: Host memory after the run
         if: always()
         run: |
