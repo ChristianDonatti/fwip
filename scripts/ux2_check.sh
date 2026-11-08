@@ -87,6 +87,8 @@ crashes error
 # ---- List rows that swipe ----
 adb shell am force-stop $APP
 prefs welcomed=true comicTips=true seenVersion=i:999999 libraryList=true
+# Books turn instantly here: many paper turns in a row with the screen being read take the emulator down.
+python3 scripts/look_prefs.py turn=Instant > /tmp/books.xml; put /tmp/books.xml shared_prefs/fwip_books.xml
 restart 20
 ui '^Library\|' ; sleep 2
 shot f01-library-list 1
