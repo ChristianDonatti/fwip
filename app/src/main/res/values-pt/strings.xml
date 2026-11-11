@@ -1047,4 +1047,10 @@
     <string name="filter_downloaded_empty">Nada baixado neste aparelho ainda. Baixe de um servidor ou do NAS para ler sem internet.</string>
     <string name="filter_this_week_empty">Nada novo nos últimos sete dias.</string>
     <string name="series_progress">%1$d%% da série lida</string>
+    <string name="news_real_book">Livro 3D com cara de livro</string>
+    <string name="news_real_book_text">Papel curvo, o bloco de folhas crescendo de um lado conforme você lê, capa dura, brochura ou HQ grampeada, a cor do lugar na página e a capa que fecha quando você termina.</string>
+    <string name="news_filters">Filtros rápidos e progresso da série</string>
+    <string name="news_filters_text">Na Biblioteca: Em andamento, Baixadas e Adicionadas esta semana. O cartão de cada série mostra quanto você já leu.</string>
+    <string name="news_rotation">Travar a rotação</string>
+    <string name="news_rotation_text">Um botão nos dois leitores deixa a tela como está, para ler deitado.</string>
 </resources>

@@ -25,7 +25,7 @@ Fluid, simple and made to feel like reading a real comic book, or a good e-reade
 - Comics and books share the library, collections and sync; with both, a switch at the top shows one or the other, and books can stand on a shelf by their spines
 - Text and page: seven page colours (paper, e-ink, calm, night and more), fonts made for reading (Literata, Bitter, Atkinson Hyperlegible, OpenDyslexic) or your own TTF and OTF files, size, line spacing, margins, justified text, hyphenation, bolder text, publisher styles, one or two columns
 - Page turns like paper (the page curls under your finger, as in the comics), or instant, slide or continuous scroll
-- 3D book (books and comics): the book lies in a place, with its boards, the stack of page edges growing on the left as you read, the curve of the paper at the spine, and the cover opening when you start; its size is up to you
+- 3D book (books and comics): the book lies in a place, its paper curving up from the gutter, the block of pages growing on the left as you read, and the cover opening when you start and closing when you finish; hardcover, paperback or stapled comic (picked by length, or by you), the colour of the place's light on the page, and a size of your choosing
 - Places, each drawn and as a photo, with moving touches: a desk, a library, by the fire, mountains, a park, a rainy window over a city, a beach at sunset, a starry night; ambient sound made live by the app (fire, rain, wind, birds, waves, crickets, a clock), and depth when you tilt the tablet
 - Time left in the chapter or the book at your own reading pace, like on a Kindle; tap the line to see page or percentage instead
 - Contents, bookmarks, search in the whole book, highlights in four colours with notes, shared as Markdown, and a dictionary lookup
@@ -56,6 +56,7 @@ Fluid, simple and made to feel like reading a real comic book, or a good e-reade
 - In list view, swipe a row right to mark it read or left to add it to Want to read, with undo
 - Books without a cover get a generated one (four designs, with title, author and series)
 - A short guide to taps and gestures the first time you open each reader, and an end card that shows how far you are in the series
+- Quick filters in the Library (In progress, Downloaded, Added this week), how much of each series you have read on its card, and a rotation lock in both readers
 - Clear messages when a file will not open (damaged, missing, offline, no access) with a retry, and a notice when a folder or server could not be read
 - Pinch to make covers bigger or smaller; a short welcome on first launch
 - Make it yours: six themes (Night, Paper, OLED, Comic, Manga, or follow the system) each with its own matching colours and title font; the highlight colour can also follow the selected cover or your wallpaper

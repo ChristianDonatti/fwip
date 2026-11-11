@@ -1048,4 +1048,10 @@
     <string name="filter_downloaded_empty">Nothing downloaded to this device yet. Download from a server or the NAS to read offline.</string>
     <string name="filter_this_week_empty">Nothing new in the last seven days.</string>
     <string name="series_progress">%1$d%% of the series read</string>
+    <string name="news_real_book">A 3D book that looks like a book</string>
+    <string name="news_real_book_text">Curved paper, the block of pages growing on one side as you read, hardcover, paperback or stapled comic, the colour of the place on the page, and the cover closing when you finish.</string>
+    <string name="news_filters">Quick filters and series progress</string>
+    <string name="news_filters_text">In the Library: In progress, Downloaded and Added this week. Series cards show how much you have read.</string>
+    <string name="news_rotation">Lock the rotation</string>
+    <string name="news_rotation_text">A button in both readers keeps the screen as it is, for reading lying down.</string>
 </resources>
