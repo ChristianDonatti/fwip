@@ -61,6 +61,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          notes="fastlane/metadata/android/en-US/changelogs/$CODE.txt"
-          [ -f "$notes" ] || notes=/dev/null
+          # Release notes in both languages, from the store changelogs.
+          en="fastlane/metadata/android/en-US/changelogs/$CODE.txt"
+          pt="fastlane/metadata/android/pt-BR/changelogs/$CODE.txt"
+          notes="$RUNNER_TEMP/notes.md"
+          : > "$notes"
+          [ -f "$en" ] && cat "$en" >> "$notes"
+          [ -f "$pt" ] && printf '\n\n**Português**\n\n' >> "$notes" && cat "$pt" >> "$notes"
           gh release create "v$VERSION" "fwip-$VERSION.apk" --target "$GITHUB_SHA" --title "Fwip $VERSION" --notes-file "$notes"

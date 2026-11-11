@@ -1054,4 +1054,5 @@
     <string name="news_filters_text">In the Library: In progress, Downloaded and Added this week. Series cards show how much you have read.</string>
     <string name="news_rotation">Lock the rotation</string>
     <string name="news_rotation_text">A button in both readers keeps the screen as it is, for reading lying down.</string>
+    <string name="whats_new_in">What is new in %1$s</string>
 </resources>

@@ -1053,4 +1053,5 @@
     <string name="news_filters_text">Na Biblioteca: Em andamento, Baixadas e Adicionadas esta semana. O cartão de cada série mostra quanto você já leu.</string>
     <string name="news_rotation">Travar a rotação</string>
     <string name="news_rotation_text">Um botão nos dois leitores deixa a tela como está, para ler deitado.</string>
+    <string name="whats_new_in">Novidades da versão %1$s</string>
 </resources>

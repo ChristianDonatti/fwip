@@ -73,7 +73,11 @@ object WhatsNew {
 fun WhatsNewDialog(all: Boolean, onDismiss: () -> Unit, since: Int = 0, onTry: ((String) -> Unit)? = null) {
     val list = WhatsNew.items.filter { all || it.batch > since }.sortedByDescending { it.batch }
     FwipDialog(onDismiss) {
-        DialogTitle(str(R.string.whats_new), onDismiss)
+        // After an update to an official version, say which one it is.
+        val title = if (!all && io.github.christiandonatti.fwip.BuildConfig.OFFICIAL) {
+            str(R.string.whats_new_in, io.github.christiandonatti.fwip.BuildConfig.VERSION_NAME)
+        } else str(R.string.whats_new)
+        DialogTitle(title, onDismiss)
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             list.forEach { n ->
                 Row(
