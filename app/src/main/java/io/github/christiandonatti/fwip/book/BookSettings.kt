@@ -102,6 +102,14 @@ class BookSettings private constructor(context: Context) {
     /** Fire, leaves, rain and the rest move; off keeps the scene still (and saves battery). */
     var sceneMotion by mutableStateOf(prefs.getBoolean("sceneMotion", true))
         private set
+    /** Hardcover, paperback or stapled, for books and for comics; Auto goes by length. */
+    var bookEdition by mutableStateOf(enumPref("edition", EditionChoice.Auto))
+        private set
+    var comicEdition by mutableStateOf(enumPref("comicEdition", EditionChoice.Auto))
+        private set
+    /** The colour of the place falls on the book (warm by the fire, blue by the rain). */
+    var sceneLight by mutableStateOf(prefs.getBoolean("sceneLight", true))
+        private set
     var progress by mutableStateOf(enumPref("progress", BookProgress.ChapterTime))
         private set
     var ttsRate by mutableFloatStateOf(prefs.getFloat("ttsRate", 1.0f))
@@ -135,6 +143,9 @@ class BookSettings private constructor(context: Context) {
     fun updateAmbientVolume(v: Float) { ambientVolume = v.coerceIn(0f, 1f); prefs.edit().putFloat("ambientVolume", ambientVolume).apply() }
     fun updateParallax(v: Boolean) { parallax = v; prefs.edit().putBoolean("parallax", v).apply() }
     fun updateSceneMotion(v: Boolean) { sceneMotion = v; prefs.edit().putBoolean("sceneMotion", v).apply() }
+    fun updateBookEdition(v: EditionChoice) { bookEdition = v; prefs.edit().putString("edition", v.name).apply() }
+    fun updateComicEdition(v: EditionChoice) { comicEdition = v; prefs.edit().putString("comicEdition", v.name).apply() }
+    fun updateSceneLight(v: Boolean) { sceneLight = v; prefs.edit().putBoolean("sceneLight", v).apply() }
 
     fun reset() {
         updateTheme(BookTheme.Paper); updateFont(BookFontKind.Literata); updateFontSize(1f); updateLineHeight(1.5f)
@@ -152,6 +163,7 @@ class BookSettings private constructor(context: Context) {
         .put("book3d", book3d).put("bookScale", bookScale.toDouble()).put("scene", scene.name)
         .put("photoScenes", org.json.JSONArray(photoScenes.toList())).put("ambientSound", ambientSound)
         .put("ambientVolume", ambientVolume.toDouble()).put("parallax", parallax).put("sceneMotion", sceneMotion)
+        .put("edition", bookEdition.name).put("comicEdition", comicEdition.name).put("sceneLight", sceneLight)
 
     fun fromJson(o: org.json.JSONObject) {
         runCatching { updateTheme(BookTheme.valueOf(o.getString("theme"))) }
@@ -178,6 +190,9 @@ class BookSettings private constructor(context: Context) {
         if (o.has("ambientVolume")) updateAmbientVolume(o.getDouble("ambientVolume").toFloat())
         if (o.has("parallax")) updateParallax(o.getBoolean("parallax"))
         if (o.has("sceneMotion")) updateSceneMotion(o.getBoolean("sceneMotion"))
+        runCatching { updateBookEdition(EditionChoice.valueOf(o.getString("edition"))) }
+        runCatching { updateComicEdition(EditionChoice.valueOf(o.getString("comicEdition"))) }
+        if (o.has("sceneLight")) updateSceneLight(o.getBoolean("sceneLight"))
     }
 
     companion object {

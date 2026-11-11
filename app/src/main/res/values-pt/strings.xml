@@ -1031,4 +1031,11 @@
     <string name="news_end">Primeira e última página melhores</string>
     <string name="news_end_text">Um guia curto de toques e gestos na primeira leitura e, no fim, quanto falta da série. Mensagens mais claras quando um arquivo não abre.</string>
     <string name="one_page">1 página</string>
+    <string name="edition">Edição</string>
+    <string name="edition_auto">Automática</string>
+    <string name="edition_hardcover">Capa dura</string>
+    <string name="edition_paperback">Brochura</string>
+    <string name="edition_stapled">Grampeada</string>
+    <string name="scene_light">Luz do lugar no livro</string>
+    <string name="scene_light_hint">As páginas pegam a cor do lugar: quente na lareira, azulada na janela com chuva.</string>
 </resources>

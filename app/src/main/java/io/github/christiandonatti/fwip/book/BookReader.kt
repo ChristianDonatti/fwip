@@ -427,7 +427,6 @@ private fun BookReader(
     }
     val cover = remember(coverPath) { coverPath?.let { runCatching { android.graphics.BitmapFactory.decodeFile(it) }.getOrNull() } }
     val board = remember(cover, settings.scene) { boardColor(cover, Color(settings.scene.cover)) }
-    var opened by remember { mutableStateOf(false) }
     var pagePainted by remember { mutableStateOf(false) }
     LaunchedEffect(navigator) {
         if (navigator == null || pagePainted) return@LaunchedEffect
@@ -449,8 +448,13 @@ private fun BookReader(
             settings.columns == BookColumns.Two -> true
             else -> wide
         }
+        val fraction = locator?.locations?.totalProgression?.toFloat() ?: 0f
+        val bookPage = bookPageRect(wPx, hPx, topInset + with(density) { 22.dp.toPx() }, bottomInset + with(density) { 48.dp.toPx() }, settings.bookScale, spread)
+        val edition = settings.bookEdition.resolve(comic = false, pages = book.total)
+        val shape = remember(bookPage, spread, edition, (fraction * 200).toInt()) { BookShape(bookPage, spread, edition, fraction, book.total) }
+        val sceneLight = if (settings.sceneLight) SceneLight.of(settings.scene) else SceneLight.Neutral.copy(fromDegrees = SceneLight.of(settings.scene).fromDegrees)
         val pageRect = if (book3d) {
-            bookPageRect(wPx, hPx, topInset + with(density) { 20.dp.toPx() }, bottomInset + with(density) { 44.dp.toPx() }, settings.bookScale, spread)
+            shape.content
         } else {
             // A paper margin above and below the text, as in a printed book; the bottom one holds the time left.
             androidx.compose.ui.geometry.Rect(0f, topInset + with(density) { 18.dp.toPx() }, wPx, hPx - bottomInset - with(density) { 30.dp.toPx() })
@@ -459,7 +463,6 @@ private fun BookReader(
         turner.spread = spread
         val prefs = preferencesFor(settings, ink, spread = if (turner.enabled || book3d) spread else null)
         val (pageBg, _) = pageColors(settings.theme, ink)
-        val fraction = locator?.locations?.totalProgression?.toFloat() ?: 0f
 
         if (book3d) {
             Box(
@@ -506,7 +509,7 @@ private fun BookReader(
                     parallax = settings.parallax && !reduceMotion,
                 )
             }
-            BookBody(pageRect, spread, board, Color(pageBg), fraction)
+            BookBody(shape, board, Color(pageBg))
         }
         // A new font of the user's needs a new navigator to declare it; it opens where we were.
         val twoColumns = spread && (turner.enabled || book3d)
@@ -525,11 +528,12 @@ private fun BookReader(
             )
         }
         // While a page turns, the turn covers the pages anyway (and one layer less over it is easier on GPUs).
-        if (book3d && turner.turn == null) BookFront(pageRect, spread)
+        if (book3d && turner.turn == null) BookFront(shape, sceneLight)
         TurnOverlay(turner, Color(pageBg))
-        if (book3d && !opened) {
-            CoverOpening(
-                pageRect, spread, remember(cover) { cover?.asImageBitmap() }, board, ready = pagePainted,
+        if (book3d) SceneLightLayer(shape, sceneLight, settings.sceneMotion && !reduceMotion && ink == InkLook.Off)
+        if (book3d) {
+            BookCover(
+                shape, remember(cover) { cover?.asImageBitmap() }, board, ready = pagePainted, closed = showEnd,
                 place = {
                     io.github.christiandonatti.fwip.book.scene.SceneBackground(
                         scene = settings.scene,
@@ -538,7 +542,7 @@ private fun BookReader(
                         parallax = settings.parallax && !reduceMotion,
                     )
                 },
-            ) { opened = true }
+            )
         }
 
         // ---------- What the navigator tells us ----------
@@ -798,7 +802,11 @@ private fun BookReader(
                 onDismiss = { editing = null },
             )
         }
-        if (showEnd) {
+        val endCard by produceState(false, showEnd, book3d) {
+            if (showEnd && book3d) kotlinx.coroutines.delay(1300)
+            value = showEnd
+        }
+        if (showEnd && endCard) {
             io.github.christiandonatti.fwip.reader.EndCard(
                 title = title,
                 next = next,
@@ -807,6 +815,7 @@ private fun BookReader(
                 onDismiss = { showEnd = false },
                 seriesNote = seriesNote,
                 byline = author,
+                veil = if (book3d) 0.72f else 0.94f,
             )
         }
         // The first time: where to tap, the long press on a word, the corner to drag.

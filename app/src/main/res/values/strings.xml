@@ -1032,4 +1032,11 @@
     <string name="news_end">Better first page and last page</string>
     <string name="news_end_text">A short guide to taps and gestures the first time you read, and at the end, how far you are in the series. Clearer messages when a file will not open.</string>
     <string name="one_page">1 page</string>
+    <string name="edition">Edition</string>
+    <string name="edition_auto">Automatic</string>
+    <string name="edition_hardcover">Hardcover</string>
+    <string name="edition_paperback">Paperback</string>
+    <string name="edition_stapled">Stapled</string>
+    <string name="scene_light">Light of the place on the book</string>
+    <string name="scene_light_hint">The pages take the colour of the place: warm by the fire, blue by the rainy window.</string>
 </resources>

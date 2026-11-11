@@ -302,10 +302,15 @@ private fun Reader(
         val fullW = with(density) { maxWidth.toPx() }
         val fullH = with(density) { maxHeight.toPx() }
         // In 3D the pages are the book's, smaller than the screen; otherwise the whole screen.
-        val pageRect = if (in3d) {
-            val top = WindowInsets.statusBarsIgnoringVisibility.getTop(density) + with(density) { 20.dp.toPx() }
-            val bottom = WindowInsets.navigationBarsIgnoringVisibility.getBottom(density) + with(density) { 44.dp.toPx() }
+        val edition = books3d.comicEdition.resolve(comic = true, pages = source.pageCount)
+        val bookPage = if (in3d) {
+            val top = WindowInsets.statusBarsIgnoringVisibility.getTop(density) + with(density) { 22.dp.toPx() }
+            val bottom = WindowInsets.navigationBarsIgnoringVisibility.getBottom(density) + with(density) { 48.dp.toPx() }
             io.github.christiandonatti.fwip.book.bookPageRect(fullW, fullH, top, bottom, books3d.bookScale, double, io.github.christiandonatti.fwip.book.COMIC_ASPECT)
+        } else Rect.Zero
+        // The live pages sit a little inside the paper, whose edges curve around them.
+        val pageRect = if (in3d) {
+            io.github.christiandonatti.fwip.book.BookShape(bookPage, double, edition, 0f, source.pageCount).content
         } else Rect(0f, 0f, fullW, fullH)
         val wPx = pageRect.width.roundToInt().coerceAtLeast(1)
         val hPx = pageRect.height.roundToInt().coerceAtLeast(1)
@@ -551,6 +556,12 @@ private fun Reader(
         val scenePhoto = books3d.isPhoto(books3d.scene) && io.github.christiandonatti.fwip.book.scene.scenePhotoExists(context, books3d.scene)
         val sceneMotion = books3d.sceneMotion && !reduceMotion && light.ink == InkLook.Off
         val sceneParallax = books3d.parallax && !reduceMotion
+        val fraction = if (spreads.size > 1) spread.toFloat() / (spreads.size - 1) else 0f
+        val shape = remember(bookPage, double, edition, spread, rtl) {
+            io.github.christiandonatti.fwip.book.BookShape(bookPage, double, edition, if (rtl) 1f - fraction else fraction, source.pageCount)
+        }
+        val sceneLight = io.github.christiandonatti.fwip.book.SceneLight.of(books3d.scene).let { if (books3d.sceneLight) it else it.copy(strength = 0f) }
+        var comicTurning by remember { mutableStateOf(false) }
         if (in3d) {
             Box(
                 Modifier
@@ -569,8 +580,7 @@ private fun Reader(
             ) {
                 io.github.christiandonatti.fwip.book.scene.SceneBackground(books3d.scene, scenePhoto, sceneMotion, sceneParallax)
             }
-            val fraction = if (spreads.size > 1) spread.toFloat() / (spreads.size - 1) else 0f
-            io.github.christiandonatti.fwip.book.BookBody(pageRect, double, board, paper3d, if (rtl) 1f - fraction else fraction)
+            io.github.christiandonatti.fwip.book.BookBody(shape, board, paper3d)
         }
         Box(
             if (in3d) {
@@ -604,6 +614,7 @@ private fun Reader(
                     onDoubleTap = onDoubleTap,
                     onEnd = { showEnd = true },
                     onTurn = turnFeedback,
+                    onTurning = { comicTurning = it },
                 )
             } else {
                 PagerReader(
@@ -621,16 +632,21 @@ private fun Reader(
         }
         }
         }
-        // No paper curve drawn over the comic's pages: the spine shadow of the spread already does it,
-        // and a layer over a page turn brought the emulator down.
+        // The light and shade of the paper's curve is left out while a page turns or the page is
+        // zoomed in: it belongs to the paper, not to what moves over it.
         if (in3d) {
-            if (!opened) {
-                io.github.christiandonatti.fwip.book.CoverOpening(
-                    pageRect, double, remember(cover) { cover?.asImageBitmap() }, board,
-                    ready = cover != null,
-                    place = { io.github.christiandonatti.fwip.book.scene.SceneBackground(books3d.scene, scenePhoto, sceneMotion, sceneParallax) },
-                ) { opened = true }
-            }
+            if (!comicTurning && zoom?.isZoomed != true) io.github.christiandonatti.fwip.book.BookFront(shape, sceneLight)
+            // Staples show only on the middle pages of a stapled comic, as on paper.
+            val centre = spreads.getOrNull(spread)?.map(pageMap::real)?.let { p -> p.size == 2 && (source.pageCount / 2) in p && (source.pageCount / 2 - 1) in p } == true
+            if (edition == io.github.christiandonatti.fwip.book.Edition.Stapled && centre) io.github.christiandonatti.fwip.book.Staples(shape)
+            io.github.christiandonatti.fwip.book.SceneLightLayer(shape, sceneLight, sceneMotion)
+            io.github.christiandonatti.fwip.book.BookCover(
+                shape, remember(cover) { cover?.asImageBitmap() }, board,
+                ready = cover != null,
+                closed = showEnd,
+                startOpen = opened,
+                place = { io.github.christiandonatti.fwip.book.scene.SceneBackground(books3d.scene, scenePhoto, sceneMotion, sceneParallax) },
+            ) { opened = true }
         }
 
         // Front light over the pages: warmth, the veil below the minimum, the matte e-ink film
@@ -717,7 +733,12 @@ private fun Reader(
             )
         }
 
-        if (showEnd) {
+        // In 3D the comic closes first, then the card comes over a lighter veil.
+        val endCard by androidx.compose.runtime.produceState(false, showEnd, in3d) {
+            if (showEnd && in3d) kotlinx.coroutines.delay(1300)
+            value = showEnd
+        }
+        if (showEnd && endCard) {
             EndCard(
                 title = title,
                 next = next,
@@ -725,6 +746,7 @@ private fun Reader(
                 onLibrary = onClose,
                 onDismiss = { showEnd = false },
                 seriesNote = seriesNote,
+                veil = if (in3d) 0.72f else 0.94f,
             )
         }
 

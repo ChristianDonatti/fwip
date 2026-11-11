@@ -169,8 +169,11 @@ fun CurlReader(
     onDoubleTap: (Offset, ZoomState) -> Boolean,
     onEnd: () -> Unit,
     onTurn: () -> Unit = {},
+    onTurning: (Boolean) -> Unit = {},
 ) {
     val ctl = remember { CurlController(host, startSpread) }
+    val turning = ctl.turn != null
+    LaunchedEffect(turning) { onTurning(turning) }
     ctl.updateHost(host)
     val spreads = host.spreads
     ctl.onEnd = onEnd

@@ -165,6 +165,7 @@ fun ComicSceneSettings(settings: ReaderSettings) {
         toggleTitle = str(R.string.comic3d),
         toggleHint = str(R.string.comic3d_hint),
         toggleKey = "comic3d",
+        comic = true,
     )
 }
 

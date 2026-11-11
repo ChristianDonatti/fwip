@@ -605,6 +605,13 @@ internal fun HighlightDialog(highlight: BookHighlight, onSave: (BookHighlight) -
 
 // ---------------------------------------------------------------- The 3D book and its place
 
+fun editionLabel(e: EditionChoice): String = when (e) {
+    EditionChoice.Auto -> str(R.string.edition_auto)
+    EditionChoice.Hardcover -> str(R.string.edition_hardcover)
+    EditionChoice.Paperback -> str(R.string.edition_paperback)
+    EditionChoice.Stapled -> str(R.string.edition_stapled)
+}
+
 /** The 3D book, where it lies, and the sound around it: in the reader and in Settings > Books. */
 @Composable
 fun BookSceneSettings(
@@ -614,6 +621,7 @@ fun BookSceneSettings(
     toggleTitle: String = str(R.string.scene_book3d),
     toggleHint: String = str(R.string.scene_book3d_hint),
     toggleKey: String = "book3d",
+    comic: Boolean = false,
 ) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -657,6 +665,16 @@ fun BookSceneSettings(
                 key = "sceneStyle",
             )
         }
+        val edition = if (comic) settings.comicEdition else settings.bookEdition
+        Choice(
+            str(R.string.edition),
+            EditionChoice.entries.toList(),
+            edition,
+            { editionLabel(it) },
+            { if (comic) settings.updateComicEdition(it) else settings.updateBookEdition(it) },
+            key = if (comic) "comicEdition" else "bookEdition",
+        )
+        Toggle(str(R.string.scene_light), str(R.string.scene_light_hint), settings.sceneLight, { settings.updateSceneLight(it) }, key = "sceneLight")
         LevelSlider(str(R.string.scene_size), (settings.bookScale - 0.6f) / 0.36f, 0f..1f, { settings.updateBookScale(0.6f + it * 0.36f) }, key = "bookScale", valueLabel = "${(settings.bookScale * 100).toInt()}%")
         Toggle(str(R.string.scene_sound), str(R.string.scene_sound_hint), settings.ambientSound, { settings.updateAmbientSound(it) }, key = "ambientSound")
         if (settings.ambientSound) LevelSlider(str(R.string.scene_volume), settings.ambientVolume, 0f..1f, { settings.updateAmbientVolume(it) }, key = "ambientVolume")

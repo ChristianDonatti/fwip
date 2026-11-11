@@ -681,12 +681,13 @@ internal fun EndCard(
     onDismiss: () -> Unit,
     seriesNote: String? = null,
     byline: String? = null,
+    veil: Float = 0.94f,
 ) {
     androidx.activity.compose.BackHandler(onBack = onDismiss)
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color(0xF00B0C10))
+            .background(Color(0xFF0B0C10).copy(alpha = veil))
             .clickable(
                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                 indication = null,
