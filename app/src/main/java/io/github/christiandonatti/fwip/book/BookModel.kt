@@ -433,7 +433,7 @@ data class SceneLight(val color: Color, val strength: Float, val fromDegrees: Fl
         return Offset(cos(a).toFloat(), -sin(a).toFloat())
     }
     /** The colour laid over the book for this light. */
-    val veil: Color get() = color.copy(alpha = (strength * 0.5f).coerceIn(0f, 0.3f))
+    val veil: Color get() = lerp(color, Color.Black, 0.35f).copy(alpha = (strength * 0.4f).coerceIn(0f, 0.14f))
 
     val towardsX: Float get() = direction.x.coerceIn(-1f, 1f).let { if (abs(it) < 0.25f) -0.5f else it }
 
