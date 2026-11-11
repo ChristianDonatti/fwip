@@ -127,8 +127,8 @@ private fun rememberTilt(enabled: Boolean): () -> Offset {
 fun SceneBackground(scene: Scene, photo: Boolean, motion: Boolean, parallax: Boolean, modifier: Modifier = Modifier.fillMaxSize()) {
     val painter = remember(scene) { painterFor(scene) }
     val clock = rememberSceneClock(motion)
-    // Desk is a texture seen from above: kept sharp. Other photos are backgrounds, so soft.
-    val image = if (photo) rememberScenePhoto(scene, blur = if (scene == Scene.Desk) 1 else 3) else null
+    // The photos are surfaces seen from above, right under the book: kept sharp.
+    val image = if (photo) rememberScenePhoto(scene, blur = 1) else null
     val tilt = rememberTilt(parallax)
     Canvas(
         modifier.graphicsLayer {
@@ -142,7 +142,7 @@ fun SceneBackground(scene: Scene, photo: Boolean, motion: Boolean, parallax: Boo
         val t = clock()
         if (image != null) {
             drawCover(image)
-            with(painter) { paintMoving(t, photo = true) }
+            topDownTouches(scene, t)
         } else {
             with(painter) { drawn(t) }
         }
@@ -157,7 +157,6 @@ fun SceneThumb(scene: Scene, photo: Boolean, modifier: Modifier) {
     Canvas(modifier) {
         if (image != null) {
             drawCover(image)
-            with(painter) { paintMoving(12f, photo = true) }
         } else with(painter) { drawn(12f) }
     }
 }
@@ -174,8 +173,6 @@ private fun DrawScope.drawCover(image: ImageBitmap) {
         dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
         filterQuality = FilterQuality.High,
     )
-    // A little darker, so the book stands out.
-    drawRect(Color.Black.copy(alpha = 0.12f))
 }
 
 /** The sound of [scene] while [on] and the app is in front; quiet otherwise. */

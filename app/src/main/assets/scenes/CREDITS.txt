@@ -7,3 +7,5 @@ beach: umhlanga_sunrise
 night: dikhololo_night
 rain: shanghai_bund
 desk: wood_table_001
+
+Library, fireplace and beach photos (seen from above) were generated with GPT Image 2.6 through Higgsfield for Fwip.

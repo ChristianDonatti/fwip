@@ -963,8 +963,9 @@ private fun LibraryTab(
             }
             // "Nothing found" only when nothing at all matched, settings and collections included.
             if (results.isNotEmpty() || (matchingSeries.isEmpty() && matchingCollections.isEmpty() && matchingSettings.isEmpty())) item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(
-                    when (results.size) { 0 -> str(R.string.search_none, query); 1 -> str(R.string.search_one); else -> str(R.string.search_n, results.size) },
+                if (results.isEmpty()) Hint(str(R.string.search_none, query), art = EmptyKind.Search)
+                else Text(
+                    if (results.size == 1) str(R.string.search_one) else str(R.string.search_n, results.size),
                     style = MaterialTheme.typography.bodyMedium,
                     color = FwipColors.TextMuted,
                 )
@@ -1045,6 +1046,7 @@ private fun LibraryTab(
                                 Filter.ThisWeek -> str(R.string.filter_this_week_empty)
                                 else -> str(R.string.all_read)
                             },
+                            art = if (filter == Filter.Unread) EmptyKind.Done else EmptyKind.Shelf,
                         )
                     }
                 }
@@ -1264,13 +1266,19 @@ private fun CollectionsTab(
 }
 
 @Composable
-private fun Hint(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = FwipColors.TextMuted,
-        modifier = Modifier.padding(vertical = 24.dp),
-    )
+private fun Hint(text: String, art: EmptyKind? = null) {
+    if (art == null) {
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted, modifier = Modifier.padding(vertical = 24.dp))
+    } else {
+        Column(
+            Modifier.fillMaxWidth().padding(vertical = 36.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            EmptyArt(art)
+            Text(text, style = MaterialTheme.typography.bodyMedium, color = FwipColors.TextMuted, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 380.dp))
+        }
+    }
 }
 
 /** A series, folder or collection opened full screen. */
@@ -1440,7 +1448,8 @@ private fun ShelfScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Hint(
                     if (collection != null) str(R.string.empty_collection)
-                    else str(R.string.nothing_yet)
+                    else str(R.string.nothing_yet),
+                    art = EmptyKind.Shelf,
                 )
             }
         }
@@ -1519,6 +1528,7 @@ private fun EmptyState(noFolders: Boolean, scanning: Boolean, onAdd: () -> Unit,
                 if (found > 0) Text(str(R.string.scan_found, found), style = MaterialTheme.typography.titleMedium, color = FwipColors.Amber)
                 Text(str(R.string.scanning_hint), style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, textAlign = TextAlign.Center)
             } else {
+                EmptyArt(EmptyKind.Shelf, size = 168.dp)
                 Text(
                     if (noFolders) str(R.string.empty_title) else str(R.string.empty_no_comics),
                     style = MaterialTheme.typography.headlineSmall,

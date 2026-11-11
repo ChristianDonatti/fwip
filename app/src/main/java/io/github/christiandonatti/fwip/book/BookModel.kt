@@ -31,6 +31,10 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.ImageShader
+import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -170,6 +174,8 @@ private val Ink = Color.Black
  */
 @Composable
 fun BookBody(shape: BookShape, cover: Color, paper: Color, light: SceneLight = SceneLight.Neutral) {
+    val clothTex = rememberTile(io.github.christiandonatti.fwip.R.drawable.tex_cloth)
+    val paperTex = rememberTile(io.github.christiandonatti.fwip.R.drawable.tex_paper)
     // Kept as a ready picture: it only changes when the book does, not with every frame of the scene.
     Canvas(Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) {
         if (shape.page.width < 8f) return@Canvas
@@ -178,7 +184,9 @@ fun BookBody(shape: BookShape, cover: Color, paper: Color, light: SceneLight = S
         val h = s.height
 
         // Shadow: a wide soft one, as from a lamp above and in front, and a tight one where it touches.
-        softShadow(RoundRect(b, CornerRadius(s.overhang + 4f)), Offset(h * 0.015f, h * 0.035f), h * 0.05f, 0.55f)
+        // The shadow falls away from the light of the place.
+        val away = Offset(-light.direction.x, -light.direction.y)
+        softShadow(RoundRect(b, CornerRadius(s.overhang + 4f)), Offset(away.x * h * 0.03f, away.y * h * 0.03f + h * 0.012f), h * 0.05f, 0.55f)
         softShadow(RoundRect(b, CornerRadius(s.overhang + 4f)), Offset(0f, h * 0.008f), h * 0.012f, 0.6f)
 
         when (s.edition) {
@@ -194,7 +202,7 @@ fun BookBody(shape: BookShape, cover: Color, paper: Color, light: SceneLight = S
                     ),
                     top.topLeft, top.size, r,
                 )
-                cloth(top, cover)
+                drawRoundRect(clothTex, top.topLeft, top.size, r)
                 drawRoundRect(Color.White.copy(alpha = 0.10f), top.topLeft, top.size, r, style = Stroke(1.2f))
                 if (s.spread) {
                     // The hinge of the spine between the boards.
@@ -276,6 +284,8 @@ fun BookBody(shape: BookShape, cover: Color, paper: Color, light: SceneLight = S
 
         // The paper you read: its curved edges reach past the live pages.
         drawPath(s.sheet, paper)
+        drawPath(s.sheet, paperTex)
+        drawPath(s.face, paperTex)
         if (s.edition == Edition.Hardcover && s.spread) headbands(s)
         // The light of the place on everything but the live pages (they get it on their own layer).
         if (light.strength > 0f) drawRoundRect(light.veil, b.topLeft, b.size, CornerRadius(s.overhang + 4f))
@@ -295,13 +305,11 @@ private fun DrawScope.headbands(s: BookShape) {
     }
 }
 
-private fun DrawScope.cloth(r: Rect, cover: Color) {
-    val light = Color.White.copy(alpha = 0.035f)
-    var y = r.top + 2f
-    while (y < r.bottom) { drawLine(light, Offset(r.left + 2f, y), Offset(r.right - 2f, y), 0.8f); y += 2.4f }
-    val dark = lerp(cover, Ink, 0.3f).copy(alpha = 0.06f)
-    var x = r.left + 2f
-    while (x < r.right) { drawLine(dark, Offset(x, r.top + 2f), Offset(x, r.bottom - 2f), 0.8f); x += 3.1f }
+/** A small texture repeated over whatever it is drawn on. */
+@Composable
+internal fun rememberTile(id: Int): ShaderBrush {
+    val image = ImageBitmap.imageResource(id)
+    return remember(image) { ShaderBrush(ImageShader(image, TileMode.Repeated, TileMode.Repeated)) }
 }
 
 /**
@@ -443,13 +451,13 @@ data class SceneLight(val color: Color, val strength: Float, val fromDegrees: Fl
 
         fun of(scene: Scene): SceneLight = when (scene) {
             Scene.Desk -> SceneLight(Color(0xFFFFE0B5), 0.16f, 135f)
-            Scene.Library -> SceneLight(Color(0xFFFFD7A3), 0.20f, 110f)
-            Scene.Fireplace -> SceneLight(Color(0xFFFFAE72), 0.26f, 200f, flicker = true)
+            Scene.Library -> SceneLight(Color(0xFFFFD7A3), 0.20f, 135f)
+            Scene.Fireplace -> SceneLight(Color(0xFFFFAE72), 0.26f, 180f, flicker = true)
             Scene.Mountain -> SceneLight(Color(0xFFE3ECF7), 0.10f, 60f)
             Scene.Park -> SceneLight(Color(0xFFF1F6D8), 0.10f, 100f)
-            Scene.Rain -> SceneLight(Color(0xFFC6D2E6), 0.22f, 170f)
+            Scene.Rain -> SceneLight(Color(0xFFC6D2E6), 0.22f, 180f)
             Scene.Beach -> SceneLight(Color(0xFFFFC789), 0.24f, 15f)
-            Scene.Night -> SceneLight(Color(0xFFB6C2E8), 0.30f, 80f)
+            Scene.Night -> SceneLight(Color(0xFFB6C2E8), 0.30f, 70f)
         }
     }
 }
@@ -492,6 +500,7 @@ fun BookCover(
     place: @Composable () -> Unit = {},
     onOpened: () -> Unit = {},
 ) {
+    val coverTex = rememberTile(io.github.christiandonatti.fwip.R.drawable.tex_cloth)
     val angle = remember { Animatable(if (startOpen) 180f else 0f) }
     val fade = remember { Animatable(if (startOpen) 0f else 1f) }
     var first by remember { mutableStateOf(!startOpen) }
@@ -567,6 +576,7 @@ fun BookCover(
                     )
                 } else {
                     drawRoundRect(board, Offset.Zero, faceSize, r)
+                    drawRoundRect(coverTex, Offset.Zero, faceSize, r)
                 }
                 // The hinge groove by the spine, a glossy sheen, and the light leaving it as it turns.
                 val groove = if (shape.edition == Edition.Hardcover) o * 2.2f else faceSize.width * 0.03f
