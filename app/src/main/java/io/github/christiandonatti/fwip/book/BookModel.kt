@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -303,29 +304,45 @@ private fun DrawScope.cloth(r: Rect, cover: Color) {
     while (x < r.right) { drawLine(dark, Offset(x, r.top + 2f), Offset(x, r.bottom - 2f), 0.8f); x += 3.1f }
 }
 
-/** A blurred shape for shadows; plain fading layers where blur is not drawn by the GPU. */
+/**
+ * A blurred rounded shape for shadows. The blur is made once, small, on the CPU, and the
+ * picture is stretched over the shape: a live blur this wide redrawn under every frame of a
+ * moving scene is heavy, and too much for some GPUs.
+ */
 private fun DrawScope.softShadow(r: RoundRect, offset: Offset, radius: Float, alpha: Float) {
-    if (Build.VERSION.SDK_INT >= 28 && radius >= 1f) {
-        drawIntoCanvas { c ->
-            val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                color = android.graphics.Color.argb((alpha * 255).roundToInt(), 0, 0, 0)
-                maskFilter = android.graphics.BlurMaskFilter(radius, android.graphics.BlurMaskFilter.Blur.NORMAL)
-            }
-            c.nativeCanvas.drawRoundRect(
-                r.left + offset.x, r.top + offset.y, r.right + offset.x, r.bottom + offset.y,
-                r.topLeftCornerRadius.x, r.topLeftCornerRadius.y, p,
-            )
+    val img = ShadowCache.get(r.width, r.height, r.topLeftCornerRadius.x, radius, alpha) ?: return
+    val pad = radius * 2f
+    drawImage(
+        img,
+        dstOffset = IntOffset((r.left + offset.x - pad).roundToInt(), (r.top + offset.y - pad).roundToInt()),
+        dstSize = IntSize((r.width + pad * 2).roundToInt(), (r.height + pad * 2).roundToInt()),
+    )
+}
+
+private object ShadowCache {
+    private const val SCALE = 4f
+    private val map = object : LinkedHashMap<List<Int>, ImageBitmap>(8, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<List<Int>, ImageBitmap>?) = size > 8
+    }
+
+    @Synchronized
+    fun get(w: Float, h: Float, corner: Float, radius: Float, alpha: Float): ImageBitmap? {
+        if (w < 2f || h < 2f) return null
+        val key = listOf((w / SCALE).roundToInt(), (h / SCALE).roundToInt(), (corner / SCALE).roundToInt(), (radius / SCALE).roundToInt(), (alpha * 100).roundToInt())
+        map[key]?.let { return it }
+        val pad = radius * 2f / SCALE
+        val bw = (w / SCALE + pad * 2).roundToInt().coerceAtLeast(1)
+        val bh = (h / SCALE + pad * 2).roundToInt().coerceAtLeast(1)
+        val bmp = runCatching { android.graphics.Bitmap.createBitmap(bw, bh, android.graphics.Bitmap.Config.ARGB_8888) }.getOrNull() ?: return null
+        val c = android.graphics.Canvas(bmp)
+        val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.argb((alpha * 255).roundToInt(), 0, 0, 0)
+            if (radius / SCALE >= 0.5f) maskFilter = android.graphics.BlurMaskFilter(radius / SCALE, android.graphics.BlurMaskFilter.Blur.NORMAL)
         }
-    } else {
-        for (i in 5 downTo 1) {
-            val g = radius * i / 5f
-            drawRoundRect(
-                Ink.copy(alpha = alpha / 6f),
-                Offset(r.left + offset.x - g, r.top + offset.y - g),
-                Size(r.width + g * 2, r.height + g * 2),
-                CornerRadius(r.topLeftCornerRadius.x + g),
-            )
-        }
+        c.drawRoundRect(pad, pad, bw - pad, bh - pad, corner / SCALE, corner / SCALE, p)
+        val img = bmp.asImageBitmap()
+        map[key] = img
+        return img
     }
 }
 
