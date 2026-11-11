@@ -6,6 +6,7 @@
 
 package io.github.christiandonatti.fwip.book
 
+import io.github.christiandonatti.fwip.reader.toggleRotationLock
 import io.github.christiandonatti.fwip.ui.tick
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.LocalContentColor
@@ -699,6 +700,13 @@ private fun BookReader(
                             DropdownMenuItem(text = { Text(str(R.string.book_search)) }, leadingIcon = { Icon(Icons.Filled.Search, null) }, onClick = { menu = false; panel = BookPanel.Search })
                             DropdownMenuItem(text = { Text(str(R.string.book_scene)) }, leadingIcon = { Text("3D", style = MaterialTheme.typography.labelMedium) }, onClick = { menu = false; panel = BookPanel.Scene })
                             DropdownMenuItem(text = { Text(str(R.string.book_listen)) }, leadingIcon = { Text("♪") }, onClick = { menu = false; panel = BookPanel.Listen })
+                            val config = androidx.compose.ui.platform.LocalConfiguration.current
+                            val rotationLocked = light.rotation != io.github.christiandonatti.fwip.reader.ScreenRotation.Auto
+                            DropdownMenuItem(
+                                text = { Text(str(if (rotationLocked) R.string.rotation_unlock else R.string.rotation_lock)) },
+                                leadingIcon = { io.github.christiandonatti.fwip.reader.RotationIcon(LocalContentColor.current, rotationLocked) },
+                                onClick = { menu = false; light.toggleRotationLock(config.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) },
+                            )
                             DropdownMenuItem(
                                 text = { Text(str(if (marked) R.string.book_unmark else R.string.book_mark)) },
                                 leadingIcon = { Icon(Icons.Filled.Star, null, tint = if (marked) FwipColors.Amber else LocalContentColor.current) },
@@ -711,6 +719,7 @@ private fun BookReader(
                     TextIconButton("Aa", str(R.string.book_text_settings)) { panel = BookPanel.Text }
                     TextIconButton("3D", str(R.string.book_scene)) { panel = BookPanel.Scene }
                     TextIconButton("♪", str(R.string.book_listen)) { panel = BookPanel.Listen }
+                    io.github.christiandonatti.fwip.reader.RotationLockButton(light)
                     CircleIconButton(
                         Icons.Filled.Star,
                         str(if (marked) R.string.book_unmark else R.string.book_mark),

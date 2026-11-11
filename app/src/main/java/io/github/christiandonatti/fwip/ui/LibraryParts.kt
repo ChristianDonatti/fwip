@@ -2,6 +2,9 @@
 
 package io.github.christiandonatti.fwip.ui
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.semantics.contentDescription
+import kotlin.math.roundToInt
 import io.github.christiandonatti.fwip.R
 import io.github.christiandonatti.fwip.str
 import android.net.Uri
@@ -426,6 +429,32 @@ fun ShelfCard(
             Text(title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = FwipColors.TextMuted, maxLines = 1)
         }
+        // How far into the series: whole issues read, plus the part of the one being read.
+        if (shelf is io.github.christiandonatti.fwip.data.Shelf.Series && items.size > 1) {
+            val done = items.sumOf { i -> (if (i.progress?.finished == true) 1f else i.progress?.fraction ?: 0f).toDouble() }.toFloat() / items.size
+            if (done > 0f) SeriesProgressBar(done, tint ?: FwipColors.Amber)
+        }
+    }
+}
+
+@Composable
+private fun SeriesProgressBar(done: Float, color: Color) {
+    val label = str(R.string.series_progress, (done * 100).roundToInt())
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(4.dp)
+            .clip(CircleShape)
+            .background(FwipColors.Text.copy(alpha = 0.10f))
+            .semantics { contentDescription = label },
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth(done.coerceIn(0.03f, 1f))
+                .fillMaxHeight()
+                .clip(CircleShape)
+                .background(color),
+        )
     }
 }
 

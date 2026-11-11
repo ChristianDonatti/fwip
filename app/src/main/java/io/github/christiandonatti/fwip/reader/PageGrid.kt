@@ -347,3 +347,48 @@ fun PagePickerDialog(comic: io.github.christiandonatti.fwip.data.Comic, title: S
         }
     }
 }
+
+/** A phone outline with a padlock (locked) or two turning arrows (free to turn). */
+@Composable
+internal fun RotationIcon(color: Color, locked: Boolean, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(18.dp)) {
+        val u = size.width / 24f
+        val s = Stroke(width = 2f * u)
+        drawRoundRect(color, androidx.compose.ui.geometry.Offset(5 * u, 2 * u), androidx.compose.ui.geometry.Size(10 * u, 17 * u), androidx.compose.ui.geometry.CornerRadius(2 * u), style = s)
+        if (locked) {
+            drawRoundRect(color, androidx.compose.ui.geometry.Offset(14 * u, 15 * u), androidx.compose.ui.geometry.Size(8 * u, 7 * u), androidx.compose.ui.geometry.CornerRadius(1.2f * u))
+            drawArc(color, 180f, 180f, false, androidx.compose.ui.geometry.Offset(15.5f * u, 11.5f * u), androidx.compose.ui.geometry.Size(5 * u, 7 * u), style = Stroke(width = 1.8f * u))
+        } else {
+            drawArc(color, 200f, 110f, false, androidx.compose.ui.geometry.Offset(1 * u, 1 * u), androidx.compose.ui.geometry.Size(22 * u, 22 * u), style = Stroke(width = 1.8f * u))
+            drawArc(color, 20f, 110f, false, androidx.compose.ui.geometry.Offset(1 * u, 1 * u), androidx.compose.ui.geometry.Size(22 * u, 22 * u), style = Stroke(width = 1.8f * u))
+        }
+    }
+}
+
+/** Keeps the screen the way it is now (lying in bed), or lets it turn again. */
+@Composable
+internal fun RotationLockButton(light: LightSettings, size: androidx.compose.ui.unit.Dp = 44.dp) {
+    val config = androidx.compose.ui.platform.LocalConfiguration.current
+    val locked = light.rotation != ScreenRotation.Auto
+    val view = androidx.compose.ui.platform.LocalView.current
+    DrawnIconButton(
+        io.github.christiandonatti.fwip.str(if (locked) io.github.christiandonatti.fwip.R.string.rotation_unlock else io.github.christiandonatti.fwip.R.string.rotation_lock),
+        {
+            view.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
+            light.toggleRotationLock(config.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+        },
+        size = size,
+        on = locked,
+    ) { RotationIcon(it, locked) }
+}
+
+/** Locks the screen in the way it is held now, or frees it again. */
+internal fun LightSettings.toggleRotationLock(landscape: Boolean) {
+    updateRotation(
+        when {
+            rotation != ScreenRotation.Auto -> ScreenRotation.Auto
+            landscape -> ScreenRotation.Landscape
+            else -> ScreenRotation.Portrait
+        },
+    )
+}

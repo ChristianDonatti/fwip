@@ -1039,4 +1039,13 @@
     <string name="edition_stapled">Stapled</string>
     <string name="scene_light">Light of the place on the book</string>
     <string name="scene_light_hint">The pages take the colour of the place: warm by the fire, blue by the rainy window.</string>
+    <string name="rotation_lock">Lock rotation</string>
+    <string name="rotation_unlock">Let the screen turn</string>
+    <string name="filter_in_progress">In progress</string>
+    <string name="filter_downloaded">Downloaded</string>
+    <string name="filter_this_week">Added this week</string>
+    <string name="filter_in_progress_empty">Nothing started and not finished.</string>
+    <string name="filter_downloaded_empty">Nothing downloaded to this device yet. Download from a server or the NAS to read offline.</string>
+    <string name="filter_this_week_empty">Nothing new in the last seven days.</string>
+    <string name="series_progress">%1$d%% of the series read</string>
 </resources>

@@ -127,6 +127,32 @@ for style in ${ALL_SCENES:+drawn photo}; do
   done
 done
 
+# ---- Editions: paperback and hardcover books, a hardcover comic, and the comic closing at its end ----
+for ed in Paperback Hardcover; do
+  stopapp
+  books book3d=true scene=Desk ambientSound=false "photoScenes=set:Desk" sceneMotion=false parallax=false edition=$ed
+  openb $BOOK 16
+  shot e-book-$ed 1
+  crashes book-$ed
+done
+stopapp
+books scene=Rain ambientSound=false "photoScenes=set:Rain" sceneMotion=false parallax=false comicEdition=Hardcover
+python3 scripts/look_prefs.py comic3d=true > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
+openb PepperCarrot_01.cbz 12
+shot e-comic-hardcover 1
+stopapp
+books scene=Beach ambientSound=false "photoScenes=set:Beach" sceneMotion=false parallax=false comicEdition=Stapled
+openb PepperCarrot_01.cbz 12
+shot e-comic-stapled 1
+# Pages in pairs after the cover: that many taps reach the last spread, one more is the end.
+N=$(python3 -c "import zipfile; print(len([f for f in zipfile.ZipFile('comics/PepperCarrot_01.cbz').namelist() if f.lower().endswith(('.jpg','.jpeg','.png','.webp'))]))")
+SPREADS=$(( 1 + N / 2 ))
+for k in $(seq 1 $SPREADS); do tap $(( W - 120 )) $(( H / 2 )) 1.8; done
+for k in 1 2 3 4 5 6; do sleep 0.4; quick e-closing-$k; done
+shot e-end-card 2
+crashes comic-end
+python3 scripts/look_prefs.py comic3d=false > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml
+
 # ---- Paper turns without the 3D book ----
 stopapp
 books book3d=false turn=Paper

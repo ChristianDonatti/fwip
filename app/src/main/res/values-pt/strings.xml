@@ -1038,4 +1038,13 @@
     <string name="edition_stapled">Grampeada</string>
     <string name="scene_light">Luz do lugar no livro</string>
     <string name="scene_light_hint">As páginas pegam a cor do lugar: quente na lareira, azulada na janela com chuva.</string>
+    <string name="rotation_lock">Travar a rotação</string>
+    <string name="rotation_unlock">Deixar a tela girar</string>
+    <string name="filter_in_progress">Em andamento</string>
+    <string name="filter_downloaded">Baixadas</string>
+    <string name="filter_this_week">Adicionadas esta semana</string>
+    <string name="filter_in_progress_empty">Nada começado e ainda não terminado.</string>
+    <string name="filter_downloaded_empty">Nada baixado neste aparelho ainda. Baixe de um servidor ou do NAS para ler sem internet.</string>
+    <string name="filter_this_week_empty">Nada novo nos últimos sete dias.</string>
+    <string name="series_progress">%1$d%% da série lida</string>
 </resources>

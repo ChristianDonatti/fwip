@@ -684,6 +684,7 @@ private fun Reader(
             bookmarked = spreads.getOrNull(spread)?.any { pageMap.real(it) in marks } == true,
             onBookmark = ::toggleBookmark,
             onPages = { showPages = true },
+            extra = { RotationLockButton(light, size = 48.dp) },
             guidedAvailable = !scroll,
             scrubPreview = { s -> ScrubPreview(spreads.getOrNull(s).orEmpty(), cache, rtl) },
             scrubThumb = if (settings.filmStrip) ({ s, m -> StripThumb(spreads.getOrNull(s).orEmpty(), cache, rtl, m) }) else null,

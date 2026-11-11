@@ -162,7 +162,8 @@ private enum class Tab(@androidx.annotation.StringRes val labelRes: Int) {
 }
 
 internal enum class Filter(@androidx.annotation.StringRes val labelRes: Int) {
-    All(R.string.filter_all), Series(R.string.filter_series), Publishers(R.string.filter_publishers), Folders(R.string.filter_folders), Want(R.string.smart_want), Unread(R.string.smart_unread), Finished(R.string.smart_read);
+    All(R.string.filter_all), Series(R.string.filter_series), Publishers(R.string.filter_publishers), Folders(R.string.filter_folders), Unread(R.string.smart_unread), InProgress(R.string.filter_in_progress), Want(R.string.smart_want), Finished(R.string.smart_read),
+    Downloaded(R.string.filter_downloaded), ThisWeek(R.string.filter_this_week);
 
     val label: String get() = str(labelRes)
 }
@@ -1024,11 +1025,27 @@ private fun LibraryTab(
                     Filter.Unread -> state.items.filter { it.matches(SmartKind.Unread) }
                     Filter.Want -> state.items.filter { it.matches(SmartKind.Want) }
                     Filter.Finished -> state.items.filter { it.matches(SmartKind.Finished) }
+                    Filter.InProgress -> state.items.filter { it.matches(SmartKind.Reading) }
+                    // On this device after coming from a server or the NAS: there to read offline.
+                    Filter.Downloaded -> state.items.filter { it.comic.uri.scheme == "file" || it.alsoOnNas }
+                    Filter.ThisWeek -> {
+                        val since = System.currentTimeMillis() - 7L * 24 * 3600 * 1000
+                        state.items.filter { (it.arrived ?: it.comic.lastModified) >= since }
+                    }
                     else -> state.items
-                }.sortedFor(sort)
+                }.let { l -> if (filter == Filter.ThisWeek && sort == SortOrder.Title) l.sortedFor(SortOrder.Added) else l.sortedFor(sort) }
                 if (list.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Hint(if (filter == Filter.Finished) str(R.string.none_read) else str(R.string.all_read))
+                        Hint(
+                            when (filter) {
+                                Filter.Finished -> str(R.string.none_read)
+                                Filter.Unread -> str(R.string.all_read)
+                                Filter.InProgress -> str(R.string.filter_in_progress_empty)
+                                Filter.Downloaded -> str(R.string.filter_downloaded_empty)
+                                Filter.ThisWeek -> str(R.string.filter_this_week_empty)
+                                else -> str(R.string.all_read)
+                            },
+                        )
                     }
                 }
                 if (allBooks && ui.bookSpines && !ui.libraryList) {

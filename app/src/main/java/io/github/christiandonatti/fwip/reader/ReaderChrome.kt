@@ -235,6 +235,8 @@ internal fun ReaderChrome(
     scrubPreview: (@Composable (Int) -> Unit)? = null,
     /** A small picture of a spread, for the strip of pages along the bar (Panels style); null for the slim bar. */
     scrubThumb: (@Composable (Int, Modifier) -> Unit)? = null,
+    /** Next to the page overview: the rotation lock. */
+    extra: (@Composable () -> Unit)? = null,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val roomy = maxWidth >= 600.dp
@@ -298,6 +300,7 @@ internal fun ReaderChrome(
                 horizontalArrangement = Arrangement.spacedBy(if (film) 12.dp else 16.dp),
             ) {
                 DrawnIconButton(str(R.string.pages_title), onPages, size = 48.dp) { GridIcon(it) }
+                extra?.invoke()
                 if (scrubThumb != null) {
                     FilmScrubber(
                         value = spreadIndex,
