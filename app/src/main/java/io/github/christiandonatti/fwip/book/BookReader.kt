@@ -510,7 +510,7 @@ private fun BookReader(
                     parallax = settings.parallax && !reduceMotion,
                 )
             }
-            BookBody(shape, board, Color(pageBg))
+            BookBody(shape, board, Color(pageBg), sceneLight)
         }
         // A new font of the user's needs a new navigator to declare it; it opens where we were.
         val twoColumns = spread && (turner.enabled || book3d)

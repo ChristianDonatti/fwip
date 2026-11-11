@@ -168,7 +168,7 @@ private val Ink = Color.Black
  * with its layered edges, and the curved paper around the live pages.
  */
 @Composable
-fun BookBody(shape: BookShape, cover: Color, paper: Color) {
+fun BookBody(shape: BookShape, cover: Color, paper: Color, light: SceneLight = SceneLight.Neutral) {
     val density = LocalDensity.current
     Canvas(Modifier.fillMaxSize()) {
         if (shape.page.width < 8f) return@Canvas
@@ -276,6 +276,8 @@ fun BookBody(shape: BookShape, cover: Color, paper: Color) {
         // The paper you read: its curved edges reach past the live pages.
         drawPath(s.sheet, paper)
         if (s.edition == Edition.Hardcover && s.spread) headbands(s)
+        // The light of the place on everything but the live pages (they get it on their own layer).
+        if (light.strength > 0f) drawRoundRect(light.veil, b.topLeft, b.size, CornerRadius(s.overhang + 4f))
     }
 }
 
@@ -413,6 +415,9 @@ data class SceneLight(val color: Color, val strength: Float, val fromDegrees: Fl
         val a = Math.toRadians(fromDegrees.toDouble())
         return Offset(cos(a).toFloat(), -sin(a).toFloat())
     }
+    /** The colour laid over the book for this light. */
+    val veil: Color get() = color.copy(alpha = (strength * 0.5f).coerceIn(0f, 0.3f))
+
     val towardsX: Float get() = direction.x.coerceIn(-1f, 1f).let { if (abs(it) < 0.25f) -0.5f else it }
 
     companion object {
@@ -446,13 +451,11 @@ fun SceneLightLayer(shape: BookShape, light: SceneLight, motion: Boolean) {
         a * b
     } else 1f
     Canvas(Modifier.fillMaxSize()) {
-        val b = shape.bounds
-        // A plain veil of the light's colour (a multiply blend would be truer, but it makes some
-        // GPUs read back the screen under a page turn, and the emulator falls over).
-        drawRoundRect(
-            light.color.copy(alpha = (light.strength * 0.5f * flicker).coerceIn(0f, 0.3f)),
-            b.topLeft, b.size, CornerRadius(shape.overhang + 4f),
-        )
+        // A plain veil of the light's colour over the live pages (a multiply blend would be truer,
+        // but it makes some GPUs read back the screen under a page turn). The rest of the book
+        // gets its veil in [BookBody].
+        val r = shape.content
+        drawRect(light.veil.copy(alpha = (light.veil.alpha * flicker).coerceIn(0f, 0.35f)), r.topLeft, r.size)
     }
 }
 

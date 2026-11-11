@@ -1,5 +1,6 @@
 package io.github.christiandonatti.fwip.reader
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.VectorConverter
@@ -170,6 +171,8 @@ fun CurlReader(
     onEnd: () -> Unit,
     onTurn: () -> Unit = {},
     onTurning: (Boolean) -> Unit = {},
+    /** The light of the 3D place over the pages, drawn in the same layer as the turn. */
+    veil: Color = Color.Transparent,
 ) {
     val ctl = remember { CurlController(host, startSpread) }
     val turning = ctl.turn != null
@@ -279,6 +282,7 @@ fun CurlReader(
                 SpreadView(spreads[ctl.current], host.double, host.rtl, host.cache, host.decodeW, host.decodeH, isWide = host::isWide)
             }
         }
+        if (veil.alpha > 0f && ctl.turn == null) Canvas(Modifier.fillMaxSize()) { drawRect(veil) }
 
         // The turn itself, drawn over everything while it lasts.
         ctl.turn?.let { t ->
@@ -314,6 +318,7 @@ fun CurlReader(
                         paper = 0xFFF7F4EC.toInt(),
                     )
                 }
+                if (veil.alpha > 0f) drawRect(veil)
             }
         }
     }

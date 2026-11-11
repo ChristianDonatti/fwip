@@ -580,7 +580,7 @@ private fun Reader(
             ) {
                 io.github.christiandonatti.fwip.book.scene.SceneBackground(books3d.scene, scenePhoto, sceneMotion, sceneParallax)
             }
-            io.github.christiandonatti.fwip.book.BookBody(shape, board, paper3d)
+            io.github.christiandonatti.fwip.book.BookBody(shape, board, paper3d, sceneLight)
         }
         Box(
             if (in3d) {
@@ -615,6 +615,7 @@ private fun Reader(
                     onEnd = { showEnd = true },
                     onTurn = turnFeedback,
                     onTurning = { comicTurning = it },
+                    veil = if (in3d) sceneLight.veil else androidx.compose.ui.graphics.Color.Transparent,
                 )
             } else {
                 PagerReader(
@@ -639,7 +640,6 @@ private fun Reader(
             // Staples show only on the middle pages of a stapled comic, as on paper.
             val centre = spreads.getOrNull(spread)?.map(pageMap::real)?.let { p -> p.size == 2 && (source.pageCount / 2) in p && (source.pageCount / 2 - 1) in p } == true
             if (edition == io.github.christiandonatti.fwip.book.Edition.Stapled && centre) io.github.christiandonatti.fwip.book.Staples(shape)
-            io.github.christiandonatti.fwip.book.SceneLightLayer(shape, sceneLight, sceneMotion)
             io.github.christiandonatti.fwip.book.BookCover(
                 shape, remember(cover) { cover?.asImageBitmap() }, board,
                 ready = cover != null,

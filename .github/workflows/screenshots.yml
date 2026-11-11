@@ -3,7 +3,7 @@ name: Screenshots
 # Runs when a commit message contains [screenshots]; commits the pictures back to docs/ and fastlane/.
 on:
   push:
-    branches: [main]
+    branches: [main, ux]
 
 permissions:
   contents: write
@@ -32,7 +32,9 @@ jobs:
         run: |
           mkdir -p comics
           python3 scripts/sample_comics.py comics
-          ls -la comics
+          mkdir -p books
+          python3 scripts/sample_books.py books
+          ls -la comics books
           echo "::notice::$(ls comics | wc -l) sample comics: $(ls comics | head -3 | tr '\n' ',')"
 
       - name: Enable KVM

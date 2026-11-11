@@ -1,26 +1,107 @@
-# fwip
+<div align="center">
 
-A comic and book reader for Android tablets and phones, inspired by Panels on iOS.
-Fluid, simple and made to feel like reading a real comic book, or a good e-reader.
+<img src="fastlane/metadata/android/en-US/images/icon.png" width="104" alt="Fwip icon">
 
-<p>
-  <img src="docs/screenshots/tablet-1-home.png" width="49%" alt="Home on a tablet: cover carousel with ambient glow">
-  <img src="docs/screenshots/tablet-3-curl.png" width="49%" alt="A page curling over the spine of a two-page spread">
-</p>
-<p>
-  <img src="docs/screenshots/tablet-4-balloons.png" width="49%" alt="Balloon by balloon reading">
-  <img src="docs/screenshots/tablet-5-pages.png" width="49%" alt="Page overview with thumbnails">
-</p>
-<p>
+# Fwip
+
+**Comics and books on Android, read like paper.**<br>
+Inspired by Panels on iOS. Made for tablets, at home on phones. Free and open source.
+
+<a href="https://github.com/ChristianDonatti/fwip/releases/latest"><img src="https://img.shields.io/github/v/release/ChristianDonatti/fwip?style=for-the-badge&label=download&color=F2B84B&labelColor=1B1C22" alt="Download the latest version"></a>
+<img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white&labelColor=1B1C22" alt="Android 8.0 or newer">
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-5B8DEF?style=for-the-badge&labelColor=1B1C22" alt="GPL-3.0 license"></a>
+
+[Português](README.pt-BR.md) · [Download](https://github.com/ChristianDonatti/fwip/releases/latest) · [What it does](#everything-it-does) · [Build](#building)
+
+<br>
+
+<img src="docs/screenshots/tablet-1-home.png" width="92%" alt="Home on a tablet: a carousel of covers glowing in the colours of the selected comic">
+
+</div>
+
+<br>
+
+## Why Fwip
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 📖 Paper that turns
+The page curls under your finger, shows its back and casts a soft shadow. In 3D the book lies in a place, by the fire or on a desk, and closes when you finish.
+
+</td>
+<td width="33%" valign="top">
+
+### 💬 Panel by panel
+Guided reading finds the panels and the speech balloons on the device and takes you through them in order. Double tap a balloon to zoom straight in.
+
+</td>
+<td width="33%" valign="top">
+
+### 🗄️ Your files, your NAS
+Your own folders, SMB and WebDAV shares, Komga, Kavita and OPDS. Progress follows you between tablet and phone, with no account.
+
+</td>
+</tr>
+</table>
+
+## A look inside
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/tablet-3-curl.png" alt="A page curling over the spine of a two-page spread"><p align="center"><sub><b>A page that turns like paper</b></sub></p></td>
+<td width="50%"><img src="docs/screenshots/tablet-4-balloons.png" alt="Balloon by balloon reading with a spotlight"><p align="center"><sub><b>Balloon by balloon</b></sub></p></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/screenshots/tablet-7-book3d.png" alt="A hardcover book open on a desk, its paper curving into the gutter"><p align="center"><sub><b>The 3D book: hardcover, paperback or stapled</b></sub></p></td>
+<td width="50%"><img src="docs/screenshots/tablet-8-comic3d.png" alt="A comic open by the fire, lit by its warm light"><p align="center"><sub><b>Comics in 3D, lit by the place</b></sub></p></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/screenshots/tablet-6-book.png" alt="A page of Dom Casmurro in the book reader"><p align="center"><sub><b>Books: EPUB, Kindle files, FB2 and TXT</b></sub></p></td>
+<td width="50%"><img src="docs/screenshots/tablet-9-series.png" alt="Series in the library, each with how much of it was read"><p align="center"><sub><b>Series, filters and progress at a glance</b></sub></p></td>
+</tr>
+</table>
+
+<p align="center">
   <img src="docs/screenshots/phone-1-home.png" width="24%" alt="Home on a phone">
   <img src="docs/screenshots/phone-2-reader.png" width="24%" alt="Reading on a phone">
+  <img src="docs/screenshots/tablet-5-pages.png" width="48%" alt="Page overview with thumbnails">
 </p>
 
-<sub>Sample pages: <a href="https://www.peppercarrot.com">Pepper&amp;Carrot</a> by David Revoy, CC BY 4.0.</sub>
+<p align="center"><sub>Sample pages: <a href="https://www.peppercarrot.com">Pepper&amp;Carrot</a> by David Revoy, CC BY 4.0. Book: <i>Dom Casmurro</i> by Machado de Assis, public domain.</sub></p>
 
-## Features
+## Highlights
 
-**Books**
+- **Comics:** CBZ, CBR (RAR4 and RAR5), CB7 and PDF, double pages on tablets, manga mode, webtoon scrolling, margin cropping and filters for old scans
+- **Books:** EPUB and Kindle files without DRM, your fonts, highlights with notes, a dictionary, read aloud and time left at your own pace
+- **3D:** eight places, drawn or photographed, with moving touches and ambient sound made live; the light of the place falls on the page
+- **Library:** a home that follows your reading, series and collections, quick filters, swipe to mark read, generated covers, widgets and stats
+- **Comfort:** brightness below the minimum, warm light, e-ink looks, rotation lock, volume keys and tap zones you choose
+- **Network:** read from the NAS in place or download, send new comics to the NAS by themselves, sync progress through a shared folder
+- **Updates inside the app**, backups in one file, English and Portuguese
+
+## Install
+
+1. Open the [latest release](https://github.com/ChristianDonatti/fwip/releases/latest) on your device and download the APK.
+2. Open it and allow installing from this source when Android asks.
+3. Open Fwip, tap **Choose folder** and pick where your comics and books live, or connect a server in the **Servers** tab.
+
+New versions show up on the home screen; **Update** downloads and installs them inside the app.
+
+<details>
+<summary><b>Test builds</b></summary>
+
+Every push to `main` builds a [test APK](https://github.com/ChristianDonatti/fwip/releases/tag/teste). Test builds use a public development key, so they install over each other but not over an official release (back up in Settings, uninstall, install, restore).
+
+</details>
+
+## Everything it does
+
+<details>
+<summary><b>Open the full list</b></summary>
+
+#### Books
 - EPUB, Kindle files without DRM (MOBI, AZW3, PRC), FB2 and TXT, laid out by Readium; Kindle files are rebuilt as EPUB with libmobi, TXT and FB2 converted once and kept
 - Comics and books share the library, collections and sync; with both, a switch at the top shows one or the other, and books can stand on a shelf by their spines
 - Text and page: seven page colours (paper, e-ink, calm, night and more), fonts made for reading (Literata, Bitter, Atkinson Hyperlegible, OpenDyslexic) or your own TTF and OTF files, size, line spacing, margins, justified text, hyphenation, bolder text, publisher styles, one or two columns
@@ -31,12 +112,12 @@ Fluid, simple and made to feel like reading a real comic book, or a good e-reade
 - Contents, bookmarks, search in the whole book, highlights in four colours with notes, shared as Markdown, and a dictionary lookup
 - Read aloud with the device's voices, with speed and a sleep timer (minutes or end of chapter)
 
-**E-reader light**
+#### E-reader light
 - Brightness below the system minimum, warm light by hand, at sunset or on a schedule, and the room's light sensor
 - E-ink themes for the app, and an e-ink look for comic pages (16 greys or soft colour) with an optional refresh blink
 - Clock and battery on the page, focus mode (do not disturb while reading) and a screen saver with your covers
 
-**Reading comics**
+#### Reading comics
 - Paper page curl that follows your finger, with the back of the sheet and soft shadows; in landscape on tablets the page turns over the spine of a double spread
 - Guided reading, panel by panel or balloon by balloon: panels are found from the page gutters (with the ML model as a fallback) and speech balloons by an on-device model, both in reading order with a spotlight; double tap a balloon to zoom straight into it
 - Page overview with thumbnails, a page bar made of little pages (like Panels) with a big preview while you drag it, bookmarks, manga mode (right to left), automatic margin cropping, wide double pages shown whole
@@ -48,7 +129,7 @@ Fluid, simple and made to feel like reading a real comic book, or a good e-reade
 - Page filters for old scans: yellowed paper made white again and faded ink darkened, less noise, sharper lines
 - Double pages split in two halves when only one page fits on screen
 
-**Library**
+#### Library
 - Your own folders (subfolders included): CBZ, CBR (RAR4 and RAR5, solid archives too), CB7 and PDF
 - Launcher-style home: cover carousel with an ambient glow that follows the selected comic, a swipeable shelf of series, collections and folders, and a roomier layout for tablets held upright
 - The cover you tap grows into the reader, and shrinks back into its place when you close it
@@ -81,7 +162,7 @@ Fluid, simple and made to feel like reading a real comic book, or a good e-reade
 - Reset the progress of a comic, next issue card at the end of a comic and icon shortcuts
 - Home screen widgets in the app's colours: continue reading (with a next issue button), up next in every series, an event or collection in its reading order, reading stats with the week, new arrivals, and shortcuts (continue, surprise me, receive over Wi-Fi, sync)
 
-**Your NAS and your devices**
+#### Your NAS and your devices
 - Network folders over SMB (Windows shares, Samba, most NAS) and WebDAV: comics are read in place, a block at a time, or downloaded for offline reading, one comic or a whole series straight from the library
 - Komga, Kavita and OPDS servers: browse and search catalogs, read online page by page (progress synced back to Komga) or download
 - Sync between your tablet and phone without an account: progress, bookmarks and collections go through a folder both devices share (one kept in step by Syncthing or similar, or a network folder). Each device writes its own small file in a hidden `.fwip` folder there and reads the others', so sync tools never see conflicting edits. Comics are matched by file name and size
@@ -90,17 +171,11 @@ Fluid, simple and made to feel like reading a real comic book, or a good e-reade
 - A notice on the home screen when a new version is out on GitHub; Update downloads and installs it inside the app (Android asks once to allow Fwip to install its own updates), and a crash report you can save and send
 - English and Portuguese (follows the system, or pick the app language on Android 13+)
 
-## Install a test build
-
-1. On your device, open the [latest test build](../../releases/tag/teste) and download `fwip.apk`.
-2. Open the file and allow installing from this source when Android asks.
-3. Open Fwip, tap **Choose folder** and pick the folder where your comics live, or connect a server in the **Servers** tab.
-
-Every push to `main` builds a new APK automatically, and it installs over the previous one keeping your library and progress.
+</details>
 
 ## Releases
 
-Tagged versions (`v0.3.0` and so on) are built and signed with a private key by the Release workflow; see [RELEASING.md](RELEASING.md). Store texts and images for F-Droid live in `fastlane/metadata/android`.
+Tagged versions are built and signed with a private key by the Release workflow; see [RELEASING.md](RELEASING.md). Store texts and images for F-Droid live in `fastlane/metadata/android`.
 
 ## Translations
 
@@ -116,7 +191,7 @@ Requires JDK 17 and the Android SDK.
 
 The APK ends up in `app/build/outputs/apk/release/`.
 
-Test builds are signed with the development key in `keystore/`. It is public on purpose so that anyone's builds can update each other; official store releases will use a private key.
+Test builds are signed with the development key in `keystore/`. It is public on purpose so that anyone's builds can update each other; official releases use a private key.
 
 ## Tech
 
@@ -129,7 +204,7 @@ You can use, study, share and modify it, as long as derived versions stay under 
 
 ## Credits
 
-Screenshots show [Pepper&Carrot](https://www.peppercarrot.com) by David Revoy (CC BY 4.0), built into sample comics by `scripts/sample_comics.py`; the Screenshots workflow takes them on an emulator when a commit message contains `[screenshots]`.
+Screenshots show [Pepper&Carrot](https://www.peppercarrot.com) by David Revoy (CC BY 4.0), built into sample comics by `scripts/sample_comics.py`; the Screenshots workflow takes them on an emulator when a commit message contains `[screenshots]`. The book is *Dom Casmurro* by Machado de Assis, from [Project Gutenberg](https://www.gutenberg.org/ebooks/55752) (public domain).
 
 Speech balloon detection uses the YOLOv4-tiny model trained by [Seeneva](https://github.com/Seeneva/seeneva-reader-android) (GPL-3.0-or-later, Copyright 2021-2023 Sergei Solodovnikov), see `app/src/main/assets/balloons/NOTICE.txt`.
 

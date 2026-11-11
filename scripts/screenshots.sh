@@ -18,7 +18,8 @@ center_tap() { adb shell input tap $(( $1 / 2 )) $(( $2 / 2 )); }
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 # Straight into the app's own downloads folder, which the library always scans.
 adb shell "run-as $APP mkdir -p files/Baixadas"
-for f in comics/*.cbz; do
+for f in comics/*.cbz books/Dom_Casmurro.epub; do
+  [ -f "$f" ] || continue
   b=$(basename "$f")
   adb exec-in "run-as $APP sh -c 'cat > files/Baixadas/$b'" < "$f"
 done
@@ -65,6 +66,40 @@ run_device() {
 }
 
 run_device tablet 1920 1200 240
+
+# ---- Books, the 3D book and comic, and the library (tablet) ----
+D=/data/user/0/$APP/files/Baixadas
+put() { timeout 20 adb exec-in "run-as $APP sh -c 'cat > $2'" < "$1"; }
+books() { python3 scripts/look_prefs.py "$@" > /tmp/books.xml; put /tmp/books.xml shared_prefs/fwip_books.xml; }
+reader() { python3 scripts/look_prefs.py "$@" > /tmp/reader.xml; put /tmp/reader.xml shared_prefs/fwip_reader.xml; }
+openb() { timeout 20 adb shell am start -n $APP/.MainActivity -a $APP.OPEN_COMIC --es comic "file://$D/$1"; sleep "${2:-12}"; }
+fwd() { for k in $(seq 1 $1); do timeout 20 adb shell input tap 1800 600; sleep 2; done; }
+adb shell wm size 1920x1200
+adb shell wm density 240
+if [ -f books/Dom_Casmurro.epub ]; then
+  adb shell am force-stop $APP
+  books book3d=false turn=Paper
+  openb Dom_Casmurro.epub 14
+  fwd 3
+  shot tablet-6-book 3
+  adb shell am force-stop $APP
+  books book3d=true scene=Desk "photoScenes=set:Desk" edition=Hardcover ambientSound=false sceneMotion=false parallax=false bookScale=0.86
+  openb Dom_Casmurro.epub 20
+  shot tablet-7-book3d 4
+fi
+adb shell am force-stop $APP
+books book3d=false scene=Fireplace "photoScenes=set:Fireplace" comicEdition=Auto ambientSound=false sceneMotion=false parallax=false bookScale=0.86
+reader comic3d=true
+COMIC=$(ls comics | sed -n 3p)
+openb "$COMIC" 14
+fwd 1
+shot tablet-8-comic3d 4
+adb shell am force-stop $APP
+reader comic3d=false
+adb shell am start -n $APP/.MainActivity
+sleep 15
+ui '^Library\|' && sleep 2
+ui '^Series\|' && shot tablet-9-series 3
 echo "::notice::device after tablet: $(timeout 20 adb get-state)"
 run_device phone 1080 2400 420
 adb shell wm size reset
