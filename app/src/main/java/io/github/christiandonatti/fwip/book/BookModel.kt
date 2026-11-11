@@ -434,7 +434,7 @@ data class SceneLight(val color: Color, val strength: Float, val fromDegrees: Fl
 
 /**
  * The colour of the place falling on the book: warm by the fire, blue by the rainy window,
- * golden at the beach. Multiplied over the book only; by the fire it flickers a little.
+ * golden at the beach. Over the book only; by the fire it flickers a little.
  */
 @Composable
 fun SceneLightLayer(shape: BookShape, light: SceneLight, motion: Boolean) {
@@ -447,10 +447,11 @@ fun SceneLightLayer(shape: BookShape, light: SceneLight, motion: Boolean) {
     } else 1f
     Canvas(Modifier.fillMaxSize()) {
         val b = shape.bounds
+        // A plain veil of the light's colour (a multiply blend would be truer, but it makes some
+        // GPUs read back the screen under a page turn, and the emulator falls over).
         drawRoundRect(
-            light.color.copy(alpha = (light.strength * flicker).coerceIn(0f, 0.6f)),
+            light.color.copy(alpha = (light.strength * 0.5f * flicker).coerceIn(0f, 0.3f)),
             b.topLeft, b.size, CornerRadius(shape.overhang + 4f),
-            blendMode = BlendMode.Multiply,
         )
     }
 }
