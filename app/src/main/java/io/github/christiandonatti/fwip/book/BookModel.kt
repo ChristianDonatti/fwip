@@ -98,9 +98,9 @@ class BookShape(
         Edition.Stapled -> 0.010f
     }
     val thickness = height * when (edition) {
-        Edition.Stapled -> (0.002f + pages * 0.00012f).coerceAtMost(0.012f)
-        Edition.Paperback -> (0.006f + pages * 0.00008f).coerceAtMost(0.045f)
-        Edition.Hardcover -> (0.008f + pages * 0.00008f).coerceAtMost(0.05f)
+        Edition.Stapled -> (0.003f + pages * 0.00016f).coerceAtMost(0.014f)
+        Edition.Paperback -> (0.012f + pages * 0.00012f).coerceAtMost(0.058f)
+        Edition.Hardcover -> (0.014f + pages * 0.00012f).coerceAtMost(0.062f)
     }
     private val read = fraction.coerceIn(0f, 1f)
     val stackLeft = if (spread) thickness * (0.1f + 0.9f * read) else thickness * 0.1f
@@ -177,8 +177,8 @@ fun BookBody(shape: BookShape, cover: Color, paper: Color) {
         val h = s.height
 
         // Shadow: a wide soft one, as from a lamp above and in front, and a tight one where it touches.
-        softShadow(RoundRect(b, CornerRadius(s.overhang + 4f)), Offset(h * 0.012f, h * 0.03f), h * 0.05f, 0.42f)
-        softShadow(RoundRect(b, CornerRadius(s.overhang + 4f)), Offset(0f, h * 0.006f), h * 0.01f, 0.5f)
+        softShadow(RoundRect(b, CornerRadius(s.overhang + 4f)), Offset(h * 0.015f, h * 0.035f), h * 0.05f, 0.55f)
+        softShadow(RoundRect(b, CornerRadius(s.overhang + 4f)), Offset(0f, h * 0.008f), h * 0.012f, 0.6f)
 
         when (s.edition) {
             Edition.Hardcover -> {
@@ -263,7 +263,7 @@ fun BookBody(shape: BookShape, cover: Color, paper: Color) {
                 val y = s.bottomY(x) + s.stack(x) * f
                 if (k == 0) p.moveTo(x, y) else p.lineTo(x, y)
             }
-            drawPath(p, Ink.copy(alpha = 0.05f + 0.08f * ((i * 7919) % 13) / 13f), style = Stroke(0.6f))
+            drawPath(p, Ink.copy(alpha = 0.08f + 0.14f * ((i * 7919) % 13) / 13f), style = Stroke(0.7f))
         }
         if (s.spread) {
             val w = (s.page.right - s.gutter) * 0.05f
