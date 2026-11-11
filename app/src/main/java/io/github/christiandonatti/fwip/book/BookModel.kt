@@ -27,7 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -170,8 +170,8 @@ private val Ink = Color.Black
  */
 @Composable
 fun BookBody(shape: BookShape, cover: Color, paper: Color, light: SceneLight = SceneLight.Neutral) {
-    val density = LocalDensity.current
-    Canvas(Modifier.fillMaxSize()) {
+    // Kept as a ready picture: it only changes when the book does, not with every frame of the scene.
+    Canvas(Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) {
         if (shape.page.width < 8f) return@Canvas
         val s = shape
         val b = s.bounds
@@ -353,7 +353,7 @@ private object ShadowCache {
  */
 @Composable
 fun BookFront(shape: BookShape, light: SceneLight) {
-    Canvas(Modifier.fillMaxSize()) {
+    Canvas(Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) {
         val s = shape
         if (s.page.width < 8f) return@Canvas
         val towards = light.towardsX
