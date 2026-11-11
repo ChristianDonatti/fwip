@@ -85,6 +85,7 @@ if [ -f books/Dom_Casmurro.epub ]; then
   adb shell am force-stop $APP
   books book3d=true scene=Desk "photoScenes=set:Desk" edition=Hardcover ambientSound=false sceneMotion=false parallax=false bookScale=0.86
   openb Dom_Casmurro.epub 20
+  fwd 4
   shot tablet-7-book3d 4
 fi
 adb shell am force-stop $APP
