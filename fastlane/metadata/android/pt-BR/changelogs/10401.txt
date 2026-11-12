@@ -1,0 +1,1 @@
+Correções no livro 3D: os sons do ambiente não tocam mais uns por cima dos outros, a troca de lugar ficou mais rápida e sem piscar, e o livro abre sem travar.

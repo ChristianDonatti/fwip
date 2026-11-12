@@ -1,0 +1,1 @@
+Fixes for the 3D book: ambient sounds no longer play over each other, changing place is faster and no longer flashes, and the book opens without a hitch.
