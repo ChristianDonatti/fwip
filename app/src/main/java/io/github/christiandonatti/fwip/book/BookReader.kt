@@ -410,7 +410,8 @@ private fun BookReader(
     turner.onTurned = { feedback.turn(reader.turnHaptic, reader.turnSound, reader.soundKind) }
     turner.enabled = (book3d || settings.turn == BookTurn.Paper) && !reduceMotion
     // Ambient sound of the scene, only while reading in 3D and the app is in front.
-    val ambient = remember { io.github.christiandonatti.fwip.book.scene.AmbientSound() }
+    val ambient = io.github.christiandonatti.fwip.book.scene.AmbientSound.shared
+    val ambientOwner = remember { Any() }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     var resumed by remember { mutableStateOf(true) }
     DisposableEffect(lifecycle) {
@@ -419,14 +420,16 @@ private fun BookReader(
             if (e == androidx.lifecycle.Lifecycle.Event.ON_STOP) resumed = false
         }
         lifecycle.addObserver(obs)
-        onDispose { lifecycle.removeObserver(obs); ambient.stop() }
+        onDispose { lifecycle.removeObserver(obs); ambient.stop(ambientOwner) }
     }
-    ambient.volume = settings.ambientVolume
-    ambient.duck = speaker.playing
+    if (book3d) { ambient.volume = settings.ambientVolume; ambient.duck = speaker.playing }
     LaunchedEffect(book3d, settings.ambientSound, settings.scene, resumed) {
-        if (book3d && settings.ambientSound && resumed) ambient.play(settings.scene.sound) else ambient.stop()
+        if (book3d && settings.ambientSound && resumed) ambient.play(ambientOwner, settings.scene.sound) else ambient.stop(ambientOwner)
     }
-    val cover = remember(coverPath) { coverPath?.let { runCatching { android.graphics.BitmapFactory.decodeFile(it) }.getOrNull() } }
+    // Decoded away from the screen's thread, so opening the book does not hitch.
+    val cover by produceState<android.graphics.Bitmap?>(null, coverPath) {
+        value = coverPath?.let { withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { android.graphics.BitmapFactory.decodeFile(it) }.getOrNull() } }
+    }
     val board = remember(cover, settings.scene) { boardColor(cover, Color(settings.scene.cover)) }
     var pagePainted by remember { mutableStateOf(false) }
     LaunchedEffect(navigator) {

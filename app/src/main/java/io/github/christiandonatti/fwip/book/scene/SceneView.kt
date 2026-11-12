@@ -60,16 +60,26 @@ private fun rememberSceneClock(running: Boolean): () -> Float {
 @Composable
 private fun rememberScenePhoto(scene: Scene, blur: Int): ImageBitmap? {
     val context = LocalContext.current
-    val photo by produceState(PhotoMemo.get(scene, blur), scene, blur) {
-        if (value == null) value = withContext(Dispatchers.IO) { loadPhoto(context, scene, blur) }?.also { PhotoMemo.put(scene, blur, it) }
+    // The photo on screen stays until the next one is decoded: no flash of nothing in between.
+    var shown by remember { androidx.compose.runtime.mutableStateOf(PhotoMemo.get(scene, blur)) }
+    androidx.compose.runtime.LaunchedEffect(scene, blur) {
+        val ready = PhotoMemo.get(scene, blur)
+            ?: withContext(Dispatchers.IO) { loadPhoto(context, scene, blur) }?.also { PhotoMemo.put(scene, blur, it) }
+        if (ready != null) shown = ready
     }
-    return photo
+    return shown
 }
 
 /** The last couple of photos decoded, so a second view of the same place shows at once. */
 private object PhotoMemo {
     private val map = object : LinkedHashMap<Pair<Scene, Int>, ImageBitmap>(4, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Pair<Scene, Int>, ImageBitmap>?) = size > 2
+        // Thumbnails are tiny and all eight show at once in the picker; full photos are big.
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Pair<Scene, Int>, ImageBitmap>?): Boolean {
+            if (keys.count { it.second <= 1 } > 3) {
+                keys.firstOrNull { it.second <= 1 }?.let { remove(it) }
+            }
+            return size > 20
+        }
     }
     @Synchronized fun get(scene: Scene, blur: Int): ImageBitmap? = map[scene to blur]
     @Synchronized fun put(scene: Scene, blur: Int, image: ImageBitmap) { map[scene to blur] = image }
@@ -78,16 +88,23 @@ private object PhotoMemo {
 /** A photo, made small and then stretched back: the cheapest good-looking blur there is. */
 internal fun loadPhoto(context: Context, scene: Scene, blur: Int): ImageBitmap? = runCatching {
     val name = "scenes/" + scene.name.lowercase() + ".jpg"
-    val bmp: Bitmap = context.assets.open(name).use { BitmapFactory.decodeStream(it) } ?: return@runCatching null
-    val factor = blur.coerceAtLeast(1)
-    val small = if (factor > 1) Bitmap.createScaledBitmap(bmp, (bmp.width / factor).coerceAtLeast(8), (bmp.height / factor).coerceAtLeast(8), true) else bmp
-    if (small !== bmp) bmp.recycle()
-    small.asImageBitmap()
+    // Made small while it is decoded: a thumbnail never costs a whole photo.
+    val opts = BitmapFactory.Options().apply {
+        inSampleSize = Integer.highestOneBit(blur.coerceIn(1, 16))
+        inPreferredConfig = Bitmap.Config.RGB_565.takeIf { blur > 1 } ?: Bitmap.Config.ARGB_8888
+    }
+    val bmp: Bitmap = context.assets.open(name).use { BitmapFactory.decodeStream(it, null, opts) } ?: return@runCatching null
+    bmp.asImageBitmap()
 }.getOrNull()
 
 /** Whether the app carries a photo for [scene] (the drawn one is used otherwise). */
-fun scenePhotoExists(context: Context, scene: Scene): Boolean =
-    runCatching { context.assets.list("scenes")?.contains(scene.name.lowercase() + ".jpg") == true }.getOrDefault(false)
+fun scenePhotoExists(context: Context, scene: Scene): Boolean {
+    val names = scenePhotos ?: runCatching { context.assets.list("scenes")?.toSet() }.getOrNull().orEmpty().also { scenePhotos = it }
+    return (scene.name.lowercase() + ".jpg") in names
+}
+
+/** The photos the app carries, listed once: asking the assets is slow and this is asked often. */
+@Volatile private var scenePhotos: Set<String>? = null
 
 /** How the tablet is tilted, smoothed, as an offset in -1..1 on each axis. */
 @Composable
@@ -178,7 +195,8 @@ private fun DrawScope.drawCover(image: ImageBitmap) {
 /** The sound of [scene] while [on] and the app is in front; quiet otherwise. */
 @Composable
 fun SceneSound(on: Boolean, scene: Scene, volume: Float, duck: Boolean = false) {
-    val ambient = remember { AmbientSound() }
+    val ambient = AmbientSound.shared
+    val me = remember { Any() }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     var started by remember { androidx.compose.runtime.mutableStateOf(true) }
     androidx.compose.runtime.DisposableEffect(lifecycle) {
@@ -187,11 +205,10 @@ fun SceneSound(on: Boolean, scene: Scene, volume: Float, duck: Boolean = false) 
             if (e == androidx.lifecycle.Lifecycle.Event.ON_STOP) started = false
         }
         lifecycle.addObserver(obs)
-        onDispose { lifecycle.removeObserver(obs); ambient.stop() }
+        onDispose { lifecycle.removeObserver(obs); ambient.stop(me) }
     }
-    ambient.volume = volume
-    ambient.duck = duck
+    if (on) { ambient.volume = volume; ambient.duck = duck }
     androidx.compose.runtime.LaunchedEffect(on, scene, started) {
-        if (on && started) ambient.play(scene.sound) else ambient.stop()
+        if (on && started) ambient.play(me, scene.sound) else ambient.stop(me)
     }
 }

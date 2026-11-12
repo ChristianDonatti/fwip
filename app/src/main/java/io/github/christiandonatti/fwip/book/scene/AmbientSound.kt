@@ -15,6 +15,18 @@ import kotlin.math.tan
  * Plays at the media volume, under [volume], fading in and out.
  */
 class AmbientSound {
+    companion object {
+        /** The one sound of the app: two readers, or a screen turned, never play over each other. */
+        val shared = AmbientSound()
+    }
+
+    /** Who asked for the sound last; only they can stop it. */
+    @Volatile private var owner: Any? = null
+
+    fun play(by: Any, a: Ambience) { owner = by; play(a) }
+
+    fun stop(by: Any) { if (owner === by) stop() }
+
     @Volatile var volume = 0.35f
     /** Lowered while the book is read aloud. */
     @Volatile var duck = false
@@ -56,17 +68,21 @@ class AmbientSound {
             while (true) {
                 val want = ambience
                 if (want != current) {
-                    // A new place: the old sound fades out while the new one fades in.
+                    // A new place: the old sound fades out while the new one fades in. If a change
+                    // was already under way, what was coming in becomes what goes out, so there
+                    // are never more than two sounds.
+                    if (crossTo != null && cross > 0.5f) gen = crossTo
                     crossTo = want?.let { generatorFor(it, rate) }
                     cross = 0f
                     current = want
                 }
                 val target = if (!running) 0f else volume * (if (duck) 0.25f else 1f)
                 for (i in 0 until frames) {
-                    gain += (target - gain) * 0.00008f
+                    // Up gently, down quickly: a sound that was turned off should be gone.
+                    gain += (target - gain) * (if (target < gain) 0.0006f else 0.00008f)
                     var s = gen?.next() ?: 0f
                     crossTo?.let { n ->
-                        cross = (cross + 1f / (rate * 1.5f)).coerceAtMost(1f)
+                        cross = (cross + 1f / (rate * 0.7f)).coerceAtMost(1f)
                         s = s * (1f - cross) + n.next() * cross
                         if (cross >= 1f) { gen = n; crossTo = null }
                     }
