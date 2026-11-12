@@ -1,11 +1,2 @@
-Scene photos and the desk texture are from Poly Haven (https://polyhaven.com), CC0 (public domain):
-fireplace: fireplace (Greg Zaal)
-library: christmas_photo_studio_01
-mountain: cape_hill
-park: je_gray_02
-beach: umhlanga_sunrise
-night: dikhololo_night
-rain: shanghai_bund
-desk: wood_table_001
-
-Library, fireplace and beach photos (seen from above) were generated with GPT Image 2.6 through Higgsfield for Fwip.
+The photos of the eight places, each a surface seen from above, were generated for Fwip with
+GPT Image 2.6 through Higgsfield (https://higgsfield.ai) in November 2026.

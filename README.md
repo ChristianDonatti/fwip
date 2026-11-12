@@ -212,6 +212,6 @@ Archives in RAR5 format are read with [7-Zip-JBinding-4Android](https://github.c
 
 Books are opened and laid out with the [Readium Kotlin Toolkit](https://github.com/readium/kotlin-toolkit) (BSD-3-Clause). Kindle files are read with [libmobi](https://github.com/bfabiszewski/libmobi) by Bartek Fabiszewski (LGPL-3.0-or-later), built from source in `app/src/main/cpp/libmobi`.
 
-Scene photos and the desk texture come from [Poly Haven](https://polyhaven.com) (CC0, see `app/src/main/assets/scenes/CREDITS.txt`). The drawn scenes and all ambient sounds are made in code by Fwip.
+The photos of the eight places were generated for Fwip with GPT Image 2.6 through [Higgsfield](https://higgsfield.ai) (see `app/src/main/assets/scenes/CREDITS.txt`). The drawn scenes and all ambient sounds are made in code by Fwip.
 
 Fonts: [Unbounded](https://github.com/googlefonts/unbounded) and [Manrope](https://github.com/sharanda/manrope) for the app, and [Literata](https://github.com/googlefonts/literata), [Bitter](https://github.com/solmatas/BitterPro) and [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) for books, all under the SIL Open Font License 1.1 (see `FONTS-OFL.txt`).

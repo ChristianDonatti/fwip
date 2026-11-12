@@ -457,7 +457,7 @@ data class SceneLight(val color: Color, val strength: Float, val fromDegrees: Fl
             Scene.Park -> SceneLight(Color(0xFFF1F6D8), 0.10f, 100f)
             Scene.Rain -> SceneLight(Color(0xFFC6D2E6), 0.22f, 180f)
             Scene.Beach -> SceneLight(Color(0xFFFFC789), 0.24f, 15f)
-            Scene.Night -> SceneLight(Color(0xFFB6C2E8), 0.30f, 70f)
+            Scene.Night -> SceneLight(Color(0xFFB6C2E8), 0.30f, 45f)
         }
     }
 }
