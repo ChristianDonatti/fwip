@@ -6,7 +6,7 @@ import io.github.christiandonatti.fwip.str
 
 /**
  * Places to read in: the book lies on a desk or is held up in front of a library, a fire,
- * mountains... Each one is drawn by the app and most also come as a photo (CC0, Poly Haven)
+ * mountains... Each one is drawn by the app and also comes as a photo seen from above
  * with the same moving touches on top. [cover] is the board colour that suits the place.
  */
 enum class Scene(@StringRes private val labelRes: Int, val hasPhoto: Boolean, val cover: Long, val sound: Ambience) {
