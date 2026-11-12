@@ -454,6 +454,11 @@ private fun BookReader(
         val edition = settings.bookEdition.resolve(comic = false, pages = book.total)
         val shape = remember(bookPage, spread, edition, (fraction * 200).toInt()) { BookShape(bookPage, spread, edition, fraction, book.total) }
         val sceneLight = if (settings.sceneLight) SceneLight.of(settings.scene) else SceneLight.Neutral.copy(fromDegrees = SceneLight.of(settings.scene).fromDegrees)
+        // At its very beginning the book lies shut, showing its cover, until the first turn.
+        var userOpened by remember { mutableStateOf(false) }
+        val atStart = locator?.let { atBookStart(publication, it) } ?: false
+        LaunchedEffect(atStart) { if (!atStart) userOpened = false }
+        val shut = book3d && atStart && !userOpened
         val pageRect = if (book3d) {
             shape.content
         } else {
@@ -534,7 +539,7 @@ private fun BookReader(
         if (book3d) SceneLightLayer(shape, sceneLight, settings.sceneMotion && !reduceMotion && ink == InkLook.Off)
         if (book3d) {
             BookCover(
-                shape, remember(cover) { cover?.asImageBitmap() }, board, ready = pagePainted, closed = showEnd,
+                shape, remember(cover) { cover?.asImageBitmap() }, board, ready = pagePainted, closed = showEnd || shut,
                 place = {
                     io.github.christiandonatti.fwip.book.scene.SceneBackground(
                         scene = settings.scene,
@@ -554,6 +559,9 @@ private fun BookReader(
         // A forward turn that went nowhere on the last page: the end of the book.
         fun forward(n: EpubNavigatorFragment, animated: Boolean) {
             val before = n.currentLocator.value
+            // A shut book opens first. If its first page is only a picture of the cover, the
+            // turn goes on past it; otherwise the first page is there to read.
+            if (book3d && shut && !coverPage(publication)) { userOpened = true; return }
             if (!n.goForward(animated = animated)) { showEnd = true; return }
             scope.launch {
                 kotlinx.coroutines.delay(700)
@@ -937,6 +945,19 @@ internal fun atBookEnd(publication: Publication, loc: Locator?): Boolean {
     loc ?: return false
     val last = publication.readingOrder.lastOrNull()?.url()?.removeFragment()?.toString() ?: return false
     return loc.href.removeFragment().toString() == last
+}
+
+/** On the first page of the first chapter. */
+internal fun atBookStart(publication: Publication, loc: Locator): Boolean {
+    val first = publication.readingOrder.firstOrNull()?.url()?.removeFragment()?.toString() ?: return false
+    return loc.href.removeFragment().toString() == first && (loc.locations.progression ?: 0.0) < 0.001
+}
+
+/** Whether the book begins with a page that is just its cover again. */
+internal fun coverPage(publication: Publication): Boolean {
+    val first = publication.readingOrder.firstOrNull() ?: return false
+    val name = first.url().toString().substringAfterLast('/').lowercase()
+    return first.rels.contains("cover") || Regex("cover|capa|titlepage").containsMatchIn(name)
 }
 
 /** The same page, even if the navigator handed out a fresh locator for it. */

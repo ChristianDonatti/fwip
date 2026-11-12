@@ -643,8 +643,10 @@ private fun Reader(
             io.github.christiandonatti.fwip.book.BookCover(
                 shape, remember(cover) { cover?.asImageBitmap() }, board,
                 ready = cover != null,
-                closed = showEnd,
-                startOpen = opened,
+                // On its first page a comic is a closed comic: the cover is the cover, not a page
+                // lying open. The first turn opens it, turning back shuts it, and so does the end.
+                closed = showEnd || (spread == 0 && spreads.size > 1),
+                startOpen = opened && spread != 0,
                 place = { io.github.christiandonatti.fwip.book.scene.SceneBackground(books3d.scene, scenePhoto, sceneMotion, sceneParallax) },
             ) { opened = true }
         }
