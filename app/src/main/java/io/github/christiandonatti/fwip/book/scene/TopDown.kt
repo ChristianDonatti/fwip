@@ -63,9 +63,9 @@ internal fun DrawScope.topDownTouches(scene: Scene, t: Float) {
         }
         Scene.Library -> {
             // The lamp at the top left breathes; dust floats where its light falls.
-            pool(Offset(0.22f, 0.12f), 0.5f, Color(0xFFFFD08A), 0.10f + 0.04f * noise(t * 0.5f, 3))
+            pool(Offset(0.24f, 0.36f), 0.42f, Color(0xFFFFD08A), 0.10f + 0.04f * noise(t * 0.5f, 3))
             dust(t, 60, 13) { p ->
-                val d = (p - Offset(size.width * 0.3f, size.height * 0.2f)).getDistance() / size.width
+                val d = (p - Offset(size.width * 0.3f, size.height * 0.4f)).getDistance() / size.width
                 (1f - d * 1.8f).coerceIn(0f, 1f)
             }
         }
