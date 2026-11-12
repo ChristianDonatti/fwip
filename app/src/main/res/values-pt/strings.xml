@@ -1054,4 +1054,10 @@
     <string name="news_rotation">Travar a rotação</string>
     <string name="news_rotation_text">Um botão nos dois leitores deixa a tela como está, para ler deitado.</string>
     <string name="whats_new_in">Novidades da versão %1$s</string>
+    <string name="news_places">Oito lugares novos para o livro 3D</string>
+    <string name="news_places_text">Cada lugar agora é uma superfície vista de cima, com o livro deitado nela: o tapete na lareira, a mesa entre as estantes da biblioteca, a toalha na areia. Luz, faíscas, chuva e vaga-lumes se movem por cima.</string>
+    <string name="news_shut">Livro fechado mostra a capa</string>
+    <string name="news_shut_text">No 3D, livros e HQs começam fechados na capa, abrem na primeira virada e fecham de novo ao voltar ou terminar.</string>
+    <string name="news_touches">Tecido, papel e pequenos desenhos</string>
+    <string name="news_touches_text">Trama de tecido na capa dura, fibra de papel nas folhas, sombra que cai para longe da luz e desenhos onde uma lista está vazia.</string>
 </resources>

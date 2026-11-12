@@ -1055,4 +1055,10 @@
     <string name="news_rotation">Lock the rotation</string>
     <string name="news_rotation_text">A button in both readers keeps the screen as it is, for reading lying down.</string>
     <string name="whats_new_in">What is new in %1$s</string>
+    <string name="news_places">Eight new places for the 3D book</string>
+    <string name="news_places_text">Each place is now a surface seen from above, with the book lying on it: a rug by the fire, a table among library shelves, a towel on the sand. Light, sparks, rain and fireflies move over it.</string>
+    <string name="news_shut">A shut book shows its cover</string>
+    <string name="news_shut_text">In 3D, books and comics start closed on their cover, open with the first turn, and close again when you turn back or finish.</string>
+    <string name="news_touches">Cloth, paper and small drawings</string>
+    <string name="news_touches_text">Woven cloth on hardcovers, paper grain on the pages, a shadow that falls away from the light, and drawings where a list is empty.</string>
 </resources>

@@ -60,6 +60,9 @@ object WhatsNew {
         NewsItem(4, GroupGlyph.Folder, R.string.news_swipe, R.string.news_swipe_text, null),
         NewsItem(4, GroupGlyph.Palette, R.string.news_covers, R.string.news_covers_text, null),
         NewsItem(4, GroupGlyph.Info, R.string.news_end, R.string.news_end_text, null),
+        NewsItem(5, GroupGlyph.Book, R.string.news_places, R.string.news_places_text, "books/book3d"),
+        NewsItem(5, GroupGlyph.Book, R.string.news_shut, R.string.news_shut_text, null),
+        NewsItem(5, GroupGlyph.Palette, R.string.news_touches, R.string.news_touches_text, null),
     )
 
     val latest: Int get() = items.maxOf { it.batch }
