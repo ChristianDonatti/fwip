@@ -1,0 +1,17 @@
+ninja: Entering directory `/home/runner/work/fwip/fwip/app/.cxx/Debug/f1t416n5/x86_64'
+[1/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/compression.c.o
+[2/16] Building C object CMakeFiles/fwipmobi.dir/mobi_jni.c.o
+[3/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/debug.c.o
+[4/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/meta.c.o
+[5/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/buffer.c.o
+[6/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/memory.c.o
+[7/16] Building C object CMakeFiles/miniz.dir/libmobi/miniz.c.o
+[8/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/structure.c.o
+[9/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/read.c.o
+[10/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/index.c.o
+[11/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/write.c.o
+[12/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/xmlwriter.c.o
+[13/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/parse_rawml.c.o
+[14/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/opf.c.o
+[15/16] Building C object CMakeFiles/fwipmobi.dir/libmobi/util.c.o
+[16/16] Linking C shared library /home/runner/work/fwip/fwip/app/build/intermediates/cxx/Debug/f1t416n5/obj/x86_64/libfwipmobi.so

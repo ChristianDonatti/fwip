@@ -1,0 +1,17 @@
+# ninja log v5
+15	205	1794495556806434946	CMakeFiles/fwipmobi.dir/libmobi/compression.c.o	e9363d906af1d9e9
+8	206	1794495556803434964	CMakeFiles/fwipmobi.dir/mobi_jni.c.o	3ac48482a2c7cbbc
+13	258	1794495556856434638	CMakeFiles/fwipmobi.dir/libmobi/debug.c.o	b6b09b5941b930c2
+206	416	1794495557018433640	CMakeFiles/fwipmobi.dir/libmobi/meta.c.o	bd0b7b5775a91e9e
+11	458	1794495557055433412	CMakeFiles/fwipmobi.dir/libmobi/buffer.c.o	2c7c472df069d8ef
+205	518	1794495557110433073	CMakeFiles/fwipmobi.dir/libmobi/memory.c.o	5b804449ee62517d
+1	568	1794495557158432778	CMakeFiles/miniz.dir/libmobi/miniz.c.o	e8908b7f7b0e1308
+568	799	1794495557405431257	CMakeFiles/fwipmobi.dir/libmobi/structure.c.o	dca460232d0af84
+416	844	1794495557438431053	CMakeFiles/fwipmobi.dir/libmobi/read.c.o	f508a06093b9b083
+15	928	1794495557531430481	CMakeFiles/fwipmobi.dir/libmobi/index.c.o	8f61a51e1587559b
+799	1084	1794495557689429508	CMakeFiles/fwipmobi.dir/libmobi/write.c.o	190da01df357e350
+844	1323	1794495557922428073	CMakeFiles/fwipmobi.dir/libmobi/xmlwriter.c.o	315672f15083dc3e
+458	1811	1794495558413425049	CMakeFiles/fwipmobi.dir/libmobi/parse_rawml.c.o	a90c715533029639
+258	1944	1794495558543424248	CMakeFiles/fwipmobi.dir/libmobi/opf.c.o	405d0f6b869d68aa
+518	2254	1794495558859422303	CMakeFiles/fwipmobi.dir/libmobi/util.c.o	f61dce75f27168c0
+2254	2312	1794495558914421964	/home/runner/work/fwip/fwip/app/build/intermediates/cxx/Debug/f1t416n5/obj/x86_64/libfwipmobi.so	c0a131dd15a15584

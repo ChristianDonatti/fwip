@@ -1,0 +1,483 @@
++ W=1920
++ H=1200
++ adb install -r app/build/outputs/apk/debug/app-debug.apk
+Performing Streamed Install
+Success
++ adb shell settings put system screen_off_timeout 1800000
++ adb shell svc power stayon true
++ adb shell settings put secure immersive_mode_confirmations confirmed
++ adb shell wm size 1920x1200
++ adb shell wm density 240
++ timeout 10 adb logcat -c -b crash
++ adb shell pm clear io.github.christiandonatti.fwip
+Success
++ restart 15
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ sleep 15
++ shot a01-welcome-landscape 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/a01-welcome-landscape.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 119.3 MB/s (836332 bytes in 0.007s)
++ note a01-welcome-landscape
++ echo ::notice::a01-welcome-landscape
+::notice::a01-welcome-landscape
++ crashes welcome
++ timeout 20 adb logcat -d -b crash
++ '[' -s repro/crash-welcome.txt ']'
++ timeout 10 adb logcat -c -b crash
++ adb shell pm clear io.github.christiandonatti.fwip
+Success
++ adb shell 'run-as io.github.christiandonatti.fwip mkdir -p files/Baixadas shared_prefs'
++ prefs welcomed=true seenVersion=i:999999
++ python3 scripts/look_prefs.py welcomed=true seenVersion=i:999999
++ for k in 1 2 3
++ put /tmp/ui.xml shared_prefs/fwip_ui.xml
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_ui.xml'\'''
++ grep -q welcomed
++ adb shell 'run-as io.github.christiandonatti.fwip cat shared_prefs/fwip_ui.xml'
++ for k in 1 2 3
++ put /tmp/ui.xml shared_prefs/fwip_ui.xml
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_ui.xml'\'''
++ adb shell 'run-as io.github.christiandonatti.fwip cat shared_prefs/fwip_ui.xml'
++ grep -q welcomed
++ break
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f comics/PepperCarrot_01.cbz ']'
+++ basename comics/PepperCarrot_01.cbz
++ put comics/PepperCarrot_01.cbz files/Baixadas/PepperCarrot_01.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_01.cbz'\'''
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f comics/PepperCarrot_02.cbz ']'
+++ basename comics/PepperCarrot_02.cbz
++ put comics/PepperCarrot_02.cbz files/Baixadas/PepperCarrot_02.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_02.cbz'\'''
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f comics/PepperCarrot_03.cbz ']'
+++ basename comics/PepperCarrot_03.cbz
++ put comics/PepperCarrot_03.cbz files/Baixadas/PepperCarrot_03.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_03.cbz'\'''
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f comics/PepperCarrot_04.cbz ']'
+++ basename comics/PepperCarrot_04.cbz
++ put comics/PepperCarrot_04.cbz files/Baixadas/PepperCarrot_04.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_04.cbz'\'''
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f comics/PepperCarrot_05.cbz ']'
+++ basename comics/PepperCarrot_05.cbz
++ put comics/PepperCarrot_05.cbz files/Baixadas/PepperCarrot_05.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_05.cbz'\'''
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f comics/PepperCarrot_06.cbz ']'
+++ basename comics/PepperCarrot_06.cbz
++ put comics/PepperCarrot_06.cbz files/Baixadas/PepperCarrot_06.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_06.cbz'\'''
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f comics/PepperCarrot_07.cbz ']'
+++ basename comics/PepperCarrot_07.cbz
++ put comics/PepperCarrot_07.cbz files/Baixadas/PepperCarrot_07.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_07.cbz'\'''
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f comics/PepperCarrot_08.cbz ']'
+++ basename comics/PepperCarrot_08.cbz
++ put comics/PepperCarrot_08.cbz files/Baixadas/PepperCarrot_08.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/PepperCarrot_08.cbz'\'''
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f books/Quiet_Street_1.epub ']'
+++ basename books/Quiet_Street_1.epub
++ put books/Quiet_Street_1.epub files/Baixadas/Quiet_Street_1.epub
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/Quiet_Street_1.epub'\'''
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f books/Quiet_Street_2.epub ']'
+++ basename books/Quiet_Street_2.epub
++ put books/Quiet_Street_2.epub files/Baixadas/Quiet_Street_2.epub
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/Quiet_Street_2.epub'\'''
++ for f in comics/PepperCarrot_0*.cbz books/Quiet_Street_1.epub books/Quiet_Street_2.epub books/The_Bicycle.fb2
++ '[' -f books/The_Bicycle.fb2 ']'
+++ basename books/The_Bicycle.fb2
++ put books/The_Bicycle.fb2 files/Baixadas/The_Bicycle.fb2
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/The_Bicycle.fb2'\'''
++ restart 35
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ sleep 35
++ shot b01-home 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/b01-home.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 95.5 MB/s (1385186 bytes in 0.014s)
++ note b01-home
++ echo ::notice::b01-home
+::notice::b01-home
++ labels
++ timeout 60 python3 scripts/ui.py '^@@nothing@@$'
++ head -c 1500
+not found: ^@@nothing@@$ ['fwip|', 'Comics|', 'Books|', 'Home|', 'Library|', 'Collections|', 'Servers|', '|Search', '|Refresh library', '|Add folder', '|Settings', 'START|', 'Pepper&Carrot #8|', 'David Revoy · peppercarrot.com|', 'Pepper&Carrot episode 8: Pepper s Birthday Party. Art and story by David Revoy, CC BY 4.0, www.peppercarrot.com|', '7 pages · not started|', 'Start|', 'Options|', '|Previous', '|Next', '1 of 8|', 'Shelf|', 'All|', 'Series|', 'Publishers|', 'Collections|', 'Folders|', 'See all|', 'SERIES|', 'Pepper&Carrot|', 'New collection|']
++ echo
+
++ ui '^Library\|'
++ timeout 60 python3 scripts/ui.py '^Library\|'
++ sleep 2
++ ui Pepper
++ timeout 60 python3 scripts/ui.py Pepper
++ sleep 6
++ shot c01-comic-tips 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/c01-comic-tips.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 18.6 MB/s (907914 bytes in 0.047s)
++ note c01-comic-tips
++ echo ::notice::c01-comic-tips
+::notice::c01-comic-tips
++ tap 960 600
++ timeout 20 adb shell input tap 960 600
++ sleep 2
++ shot c02-comic-after-tips 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/c02-comic-after-tips.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 162.2 MB/s (1516890 bytes in 0.009s)
++ note c02-comic-after-tips
++ echo ::notice::c02-comic-after-tips
+::notice::c02-comic-after-tips
+++ seq 1 14
++ for k in $(seq 1 14)
++ tap 1820 600
++ timeout 20 adb shell input tap 1820 600
++ sleep 1.2
++ has 'of .* read in|You have read all|Tap outside to stay'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' 'of .* read in|You have read all|Tap outside to stay'
++ for k in $(seq 1 14)
++ tap 1820 600
++ timeout 20 adb shell input tap 1820 600
++ sleep 1.2
++ has 'of .* read in|You have read all|Tap outside to stay'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' 'of .* read in|You have read all|Tap outside to stay'
++ for k in $(seq 1 14)
++ tap 1820 600
++ timeout 20 adb shell input tap 1820 600
++ sleep 1.2
++ has 'of .* read in|You have read all|Tap outside to stay'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' 'of .* read in|You have read all|Tap outside to stay'
++ break
++ shot c03-comic-end 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/c03-comic-end.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 38.3 MB/s (212640 bytes in 0.005s)
++ note c03-comic-end
++ echo ::notice::c03-comic-end
+::notice::c03-comic-end
++ labels
++ timeout 60 python3 scripts/ui.py '^@@nothing@@$'
++ head -c 1500
+not found: ^@@nothing@@$ ['THE END|', 'Pepper&Carrot #1|', '1 of 8 read in Pepper&Carrot|', 'Up next|', 'Pepper&Carrot #2|', 'Read the next one|', 'Back to the library|', 'Tap outside to stay on the last page|']
++ echo
+
++ back 2
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 2
++ back 2
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 2
++ ui '^Home\|'
++ timeout 60 python3 scripts/ui.py '^Home\|'
++ sleep 2
++ crashes comic
++ timeout 20 adb logcat -d -b crash
++ '[' -s repro/crash-comic.txt ']'
++ timeout 10 adb logcat -c -b crash
++ shot b02-home-up-next 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/b02-home-up-next.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 122.5 MB/s (1473062 bytes in 0.011s)
++ note b02-home-up-next
++ echo ::notice::b02-home-up-next
+::notice::b02-home-up-next
++ labels
++ timeout 60 python3 scripts/ui.py '^@@nothing@@$'
++ head -c 1500
+not found: ^@@nothing@@$ ['fwip|', 'Comics|', 'Books|', 'Home|', 'Library|', 'Collections|', 'Servers|', '|Search', '|Refresh library', '|Add folder', '|Settings', 'Up next|', 'Pepper&Carrot #2|', 'David Revoy · peppercarrot.com|', 'Pepper&Carrot episode 2: Rainbow potions. Art and story by David Revoy, CC BY 4.0, www.peppercarrot.com|', '6 pages · not started|', 'Start|', 'Options|', '|Previous', '|Next', '1 of 8|', 'Shelf|', 'All|', 'Series|', 'Publishers|', 'Collections|', 'Folders|', 'See all|', 'SERIES|', 'Pepper&Carrot|', 'New collection|']
++ echo
+
++ ui '^Start\||^Continue\|'
++ timeout 60 python3 scripts/ui.py '^Start\||^Continue\|'
++ sleep 6
++ shot c04-comic-no-tips 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/c04-comic-no-tips.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 141.4 MB/s (2099917 bytes in 0.014s)
++ note c04-comic-no-tips
++ echo ::notice::c04-comic-no-tips
+::notice::c04-comic-no-tips
++ home
++ for k in 1 2 3
++ has '^Home\|'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' '^Home\|'
++ back 2
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 2
++ for k in 1 2 3
++ has '^Home\|'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' '^Home\|'
++ return
++ head -c 40000 /dev/urandom
++ put /tmp/Broken.cbz files/Baixadas/Broken_Issue.cbz
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > files/Baixadas/Broken_Issue.cbz'\'''
++ ui '\|Refresh library$'
++ timeout 60 python3 scripts/ui.py '\|Refresh library$'
++ sleep 6
++ ui '^Library\|'
++ timeout 60 python3 scripts/ui.py '^Library\|'
++ sleep 2
++ ui '^Search\||\|Search$'
++ timeout 60 python3 scripts/ui.py '^Search\||\|Search$'
++ sleep 1
++ timeout 20 adb shell input text Broken
++ sleep 2
++ timeout 20 adb shell input keyevent 111
++ sleep 1
++ shot e00-search-broken 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/e00-search-broken.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 81.8 MB/s (662153 bytes in 0.008s)
++ note e00-search-broken
++ echo ::notice::e00-search-broken
+::notice::e00-search-broken
++ ui 'Broken Issue'
++ timeout 60 python3 scripts/ui.py 'Broken Issue'
++ sleep 5
++ shot e01-error 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/e01-error.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 129.1 MB/s (533208 bytes in 0.004s)
++ note e01-error
++ echo ::notice::e01-error
+::notice::e01-error
++ labels
++ timeout 60 python3 scripts/ui.py '^@@nothing@@$'
++ head -c 1500
+not found: ^@@nothing@@$ ['|Back', '|Make it yours', 'BROKEN ISSUE|', 'SERIES|', 'Broken Issue|', '1 item|', 'Start|', 'Mark all as read|', 'Select|', 'Edit series|', 'BROKEN ISSUE|', 'NEW|', 'Broken Issue|']
++ echo
+
++ home
++ for k in 1 2 3
++ has '^Home\|'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' '^Home\|'
++ back 2
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 2
++ for k in 1 2 3
++ has '^Home\|'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' '^Home\|'
++ return
++ crashes error
++ timeout 20 adb logcat -d -b crash
++ '[' -s repro/crash-error.txt ']'
++ timeout 10 adb logcat -c -b crash
++ adb shell am force-stop io.github.christiandonatti.fwip
++ prefs welcomed=true comicTips=true seenVersion=i:999999 libraryList=true
++ python3 scripts/look_prefs.py welcomed=true comicTips=true seenVersion=i:999999 libraryList=true
++ for k in 1 2 3
++ put /tmp/ui.xml shared_prefs/fwip_ui.xml
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_ui.xml'\'''
++ adb shell 'run-as io.github.christiandonatti.fwip cat shared_prefs/fwip_ui.xml'
++ grep -q welcomed
++ break
++ python3 scripts/look_prefs.py turn=Instant
++ put /tmp/books.xml shared_prefs/fwip_books.xml
++ timeout 20 adb exec-in 'run-as io.github.christiandonatti.fwip sh -c '\''cat > shared_prefs/fwip_books.xml'\'''
++ restart 20
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ sleep 20
++ ui '^Library\|'
++ timeout 60 python3 scripts/ui.py '^Library\|'
++ sleep 2
++ shot f01-library-list 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/f01-library-list.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 177.7 MB/s (964199 bytes in 0.005s)
++ note f01-library-list
++ echo ::notice::f01-library-list
+::notice::f01-library-list
+++ find_xy Pepper
+++ timeout 60 python3 -c 'import sys; sys.path.insert(0,'\''scripts'\''); import ui; p=ui.find(sys.argv[1]); print(f'\''{p[0]} {p[1]}'\'' if p else '\'''\'')' Pepper
++ xy='882 325'
++ '[' -n '882 325' ']'
++ set -- 882 325
++ timeout 20 adb shell input swipe 300 325 900 325 500
++ shot f02-swiped-right 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/f02-swiped-right.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 83.1 MB/s (953331 bytes in 0.011s)
++ note f02-swiped-right
++ echo ::notice::f02-swiped-right
+::notice::f02-swiped-right
++ labels
++ timeout 60 python3 scripts/ui.py '^@@nothing@@$'
++ head -c 1500
+not found: ^@@nothing@@$ ['fwip|', 'Comics|', 'Books|', 'Home|', 'Library|', 'Collections|', 'Servers|', '|Search', '|Refresh library', '|Add folder', '|Settings', 'All|', 'Series|', 'Publishers|', 'Folders|', 'Unread|', 'In progress|', 'Want to read|', 'Read|', 'Downloaded|', 'Added this week|', 'Order: Title|', 'Covers|', 'BROKEN ISSUE|', 'Broken Issue|', '1 page|', 'Read|', 'Pepper&Carrot #1|', 'peppercarrot.com · 4 pages|', 'Read|', 'Pepper&Carrot #2|', 'peppercarrot.com · 6 pages|', 'Pepper&Carrot #3|', 'peppercarrot.com · 8 pages|', 'Pepper&Carrot #4|', 'peppercarrot.com · 4 pages|', 'Pepper&Carrot #5|', 'peppercarrot.com · 5 pages|', 'Pepper&Carrot #6|', 'peppercarrot.com · 10 pages|', 'Pepper&Carrot #7|', 'peppercarrot.com · 6 pages|', 'Pepper&Carrot #8|', 'peppercarrot.com · 7 pages|']
++ echo
+
++ sleep 6
++ timeout 20 adb shell input swipe 1200 325 500 325 500
++ shot f03-swiped-left 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/f03-swiped-left.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 48.7 MB/s (954312 bytes in 0.019s)
++ note f03-swiped-left
++ echo ::notice::f03-swiped-left
+::notice::f03-swiped-left
++ crashes swipe
++ timeout 20 adb logcat -d -b crash
++ '[' -s repro/crash-swipe.txt ']'
++ timeout 10 adb logcat -c -b crash
++ ui '^Home\|'
++ timeout 60 python3 scripts/ui.py '^Home\|'
++ sleep 2
++ ui '^Books\|'
++ timeout 60 python3 scripts/ui.py '^Books\|'
++ sleep 2
++ shot b03-books-covers 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/b03-books-covers.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 96.0 MB/s (698601 bytes in 0.007s)
++ note b03-books-covers
++ echo ::notice::b03-books-covers
+::notice::b03-books-covers
++ ui '^Start\||^Continue\|'
++ timeout 60 python3 scripts/ui.py '^Start\||^Continue\|'
++ sleep 10
++ shot d01-book-tips 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/d01-book-tips.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 95.8 MB/s (601228 bytes in 0.006s)
++ note d01-book-tips
++ echo ::notice::d01-book-tips
+::notice::d01-book-tips
++ tap 960 600
++ timeout 20 adb shell input tap 960 600
++ sleep 2
++ tap 960 600
++ timeout 20 adb shell input tap 960 600
++ sleep 2
++ has '\|Contents$'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' '\|Contents$'
++ ui '\|Contents$'
++ timeout 60 python3 scripts/ui.py '\|Contents$'
++ sleep 2
++ ui '^Chapter 6\||^Chapter 3\|'
++ timeout 60 python3 scripts/ui.py '^Chapter 6\||^Chapter 3\|'
++ sleep 4
+++ seq 1 40
++ for k in $(seq 1 40)
++ tap 1820 600
++ timeout 20 adb shell input tap 1820 600
++ sleep 1.3
++ '[' 1 = 0 ']'
++ for k in $(seq 1 40)
++ tap 1820 600
++ timeout 20 adb shell input tap 1820 600
++ sleep 1.3
++ '[' 2 = 0 ']'
++ for k in $(seq 1 40)
++ tap 1820 600
++ timeout 20 adb shell input tap 1820 600
++ sleep 1.3
++ '[' 3 = 0 ']'
++ for k in $(seq 1 40)
++ tap 1820 600
++ timeout 20 adb shell input tap 1820 600
++ sleep 1.3
++ '[' 0 = 0 ']'
++ has 'of .* read in|You have read all|Tap outside to stay'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' 'of .* read in|You have read all|Tap outside to stay'
++ break
++ shot d02-book-end 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/d02-book-end.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 55.7 MB/s (238818 bytes in 0.004s)
++ note d02-book-end
++ echo ::notice::d02-book-end
+::notice::d02-book-end
++ tail -8
++ timeout 20 adb logcat -d -s FwipEnd
++ labels
++ timeout 60 python3 scripts/ui.py '^@@nothing@@$'
++ head -c 1500
+not found: ^@@nothing@@$ ['THE END|', 'The Bicycle|', 'Rui Prado|', 'Back to the library|', 'Tap outside to stay on the last page|']
++ echo
+
++ home
++ for k in 1 2 3
++ has '^Home\|'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' '^Home\|'
++ back 2
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 2
++ for k in 1 2 3
++ has '^Home\|'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' '^Home\|'
++ back 2
++ timeout 20 adb shell input keyevent KEYCODE_BACK
++ sleep 2
++ for k in 1 2 3
++ has '^Home\|'
++ timeout 60 python3 -c 'import sys; sys.path.insert(0, '\''scripts'\''); import ui; sys.exit(0 if ui.find(sys.argv[1]) else 1)' '^Home\|'
++ return
++ crashes book
++ timeout 20 adb logcat -d -b crash
++ '[' -s repro/crash-book.txt ']'
++ timeout 10 adb logcat -c -b crash
++ adb shell wm size 1080x2400
++ adb shell wm density 420
++ restart 20
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ sleep 20
++ shot g01-phone-home 2
++ sleep 2
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/g01-phone-home.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 131.3 MB/s (682375 bytes in 0.005s)
++ note g01-phone-home
++ echo ::notice::g01-phone-home
+::notice::g01-phone-home
++ adb shell pm clear io.github.christiandonatti.fwip
+Success
++ restart 15
++ timeout 20 adb shell am force-stop io.github.christiandonatti.fwip
++ timeout 20 adb shell am start -n io.github.christiandonatti.fwip/.MainActivity
+Starting: Intent { cmp=io.github.christiandonatti.fwip/.MainActivity }
++ sleep 15
++ shot g02-phone-welcome 1
++ sleep 1
++ timeout 40 adb shell screencap -p /sdcard/shot.png
++ timeout 40 adb pull /sdcard/shot.png repro/g02-phone-welcome.png
+/sdcard/shot.png: 1 file pulled, 0 skipped. 7.0 MB/s (760315 bytes in 0.103s)
++ note g02-phone-welcome
++ echo ::notice::g02-phone-welcome
+::notice::g02-phone-welcome
++ crashes phone
++ timeout 20 adb logcat -d -b crash
++ '[' -s repro/crash-phone.txt ']'
++ timeout 10 adb logcat -c -b crash
++ note done
++ echo ::notice::done
+::notice::done
