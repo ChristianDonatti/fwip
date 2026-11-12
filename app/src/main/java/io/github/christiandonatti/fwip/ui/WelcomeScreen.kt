@@ -178,7 +178,7 @@ private fun Intro(wide: Boolean) {
 @Composable
 private fun IntroSideBySide() {
     Row(horizontalArrangement = Arrangement.spacedBy(40.dp), verticalAlignment = Alignment.CenterVertically) {
-        FannedCovers(Modifier.size(300.dp, 210.dp))
+        FannedCovers(Modifier.size(380.dp, 266.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(str(R.string.welcome_title), style = MaterialTheme.typography.headlineMedium)
             Text(str(R.string.welcome_subtitle), style = MaterialTheme.typography.bodyLarge, color = FwipColors.TextSoft)
@@ -421,8 +421,8 @@ private fun FannedCovers(modifier: Modifier) {
         }
         // The page being turned: lifted from the right edge, bending over the gutter.
         val lift = 0.35f + 0.3f * sway
-        val tipX = right - (right - mid) * lift * 1.5f
-        val tipY = top - 34f * lift
+        val tipX = right - (right - mid) * lift * 0.85f
+        val tipY = top - 30f * lift
         val leaf = Path().apply {
             moveTo(mid * u, (top + 6f) * u)
             cubicTo((mid + 20f) * u, (top - 16f * lift) * u, (tipX - 30f) * u, (tipY - 6f) * u, tipX * u, tipY * u)
